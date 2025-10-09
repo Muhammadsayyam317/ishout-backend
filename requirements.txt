@@ -1,0 +1,21 @@
+# FastAPI and web server
+fastapi
+uvicorn
+python-dotenv
+
+# OpenAI and LangChain
+openai
+langchain
+langchain-openai
+langchain-community
+
+# MongoDB
+pymongo
+motor
+
+# Other dependencies
+pydantic
+twilio
+starlette-context
+python-multipart
+colorlog
