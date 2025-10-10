@@ -3,25 +3,19 @@ import logging
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import MongoClient
+from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain_openai import OpenAIEmbeddings
 
-# Setup logging first so it's available for import statements
-logger = logging.getLogger(__name__)
-
-# Import MongoDB vector store from langchain_mongodb package
-try:
-    from langchain_mongodb import MongoDBAtlasVectorSearch
-    logger.info("Successfully imported MongoDBAtlasVectorSearch from langchain_mongodb package")
-except ImportError:
-    logger.error("Failed to import MongoDBAtlasVectorSearch. Make sure langchain_mongodb is installed.")
-    # Raise an explicit error since this is required for the application to work
-    raise ImportError("Cannot import MongoDBAtlasVectorSearch. Run: pip install langchain-mongodb")
 
 # MongoDB connection clients
 async_client: Optional[AsyncIOMotorClient] = None
 sync_client: Optional[MongoClient] = None
 db = None
 sync_db = None
+embeddings = None
+
+logger = logging.getLogger(__name__)
+
 
 async def connect_to_mongodb():
     """
@@ -49,8 +43,7 @@ async def connect_to_mongodb():
     
     return db
 
-# Initialize OpenAI embeddings
-embeddings = None
+
 
 def initialize_embeddings():
     """Initialize OpenAI embeddings with API key from environment variables"""

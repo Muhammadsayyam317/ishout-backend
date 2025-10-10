@@ -1,12 +1,11 @@
-from typing import Dict, Any, Tuple
-import json
+from typing import Dict, Any
 import logging
 from app.tools.instagram_influencers import search_instagram_influencers
 from app.tools.tiktok_influencers import search_tiktok_influencers
 from app.tools.youtube_influencers import search_youtube_influencers
 from app.services.guardrails_service import check_input_guard_rail
 from app.utils.prompts import FIND_INFLUENCER_PROMPT
-from app.utils.helpers import parse_follower_range, parse_follower_count
+from app.utils.helpers import parse_follower_count
 
 # Setup logging
 logger = logging.getLogger(__name__)
@@ -35,185 +34,63 @@ find_influencer_agent = Agent(
 )
 
 async def find_influencers(request_data: Dict[str, Any]):
-    """Handler for the find-influencer endpoint supporting multiple values"""
+    """Handler for the find-influencer endpoint for single queries"""
     try:
-        # Parse comma-separated values
-        categories = [c.strip() for c in str(request_data.get("category", "")).split(",") if c.strip()]
-        platforms = [p.strip() for p in str(request_data.get("platform", "")).split(",") if p.strip()]
+        # Extract single values from request
+        category = str(request_data.get("category", "")).strip()
+        platform = str(request_data.get("platform", "")).strip()
+        raw_followers = str(request_data.get("followers", "")).strip()
+        limit = str(request_data.get("limit", "5")).strip()
         
-        # Parse followers with support for K/M notation and ranges
-        raw_followers = [f.strip() for f in str(request_data.get("followers", "")).split(",") if f.strip()]
-        followers_list = []
-        raw_followers_list = []  # Keep the original strings for display
+        # Validate required fields
+        if not category or not platform:
+            return {"error": "Category and platform are required"}
         
-        for f in raw_followers:
-            min_count, max_count, original = parse_follower_range(f)
-            # Always use the maximum count for filtering
-            followers_list.append(max_count)
-            raw_followers_list.append(original)
+        # Parse followers if provided
+        min_followers = None
+        if raw_followers:
+            min_followers = parse_follower_count(raw_followers)
         
-        # Get raw limit values without parsing - we'll pass these directly to the prompt
-        raw_limits = [l.strip() for l in str(request_data.get("limit", "")).split(",") if l.strip()]
+        # Parse limit to integer
+        try:
+            api_limit = int(limit)
+        except ValueError:
+            api_limit = 5
         
-        # Default to 5 if no limit is provided
-        if not raw_limits:
-            raw_limits = ["5"]
-            
-        # For API calls, we need numeric values - but we'll be very liberal in what we accept
-        api_limits = []
-        for limit_str in raw_limits:
-            try:
-                if "-" in limit_str:
-                    # For ranges like "2-6", use the end value for API call limit
-                    # but keep the original string for the prompt
-                    _, end = map(int, limit_str.split("-", 1))
-                    api_limits.append(end)
-                else:
-                    # For single values, convert to int
-                    api_limits.append(int(limit_str))
-            except ValueError:
-                # If conversion fails, default to 5
-                api_limits.append(5)
-
-        # Determine the number of queries to run
-        max_len = max(len(categories), len(platforms), len(followers_list), len(raw_limits))
-        if max_len == 0:
-            return {"error": "No valid input provided."}
-
-        # Extend lists to match max_len by repeating last value
-        def extend(lst):
-            return lst + [lst[-1]] * (max_len - len(lst)) if lst else [None] * max_len
-        categories = extend(categories)
-        platforms = extend(platforms)
-        followers_list = extend(followers_list)
-        raw_followers_list = extend(raw_followers_list)  # Extend the raw followers list
-        raw_limits = extend(raw_limits)
-        api_limits = extend(api_limits)
-
-        all_results = []
-        for i in range(max_len):
-            category = categories[i]
-            platform = platforms[i]
-            followers = followers_list[i]  # Numeric value for filtering
-            raw_followers = raw_followers_list[i]  # Original string with K/M notation
-            api_limit = api_limits[i]
-            
-            # Get the original limit string to pass directly to the query
-            limit_value = raw_limits[i]
-            
-            # Check if this is a range or a single value
-            is_range = "-" in limit_value
-            
-            if is_range:
-                # For range format, be very explicit about the dynamic selection
-                start, end = map(int, limit_value.split("-", 1))
-                query = f"Find between {start} and {end} influencers for a {category} campaign on {platform}. CRITICAL INSTRUCTION: You must dynamically decide the exact number within this range that would be most appropriate - DO NOT automatically select {end} influencers. Consider the query specificity to determine if you should return closer to {start} or closer to {end} influencers. Only include influencers who have {raw_followers} or more followers."
-            else:
-                # For single value
-                query = f"find exactly {limit_value} influencer(s) for {category} campaign on {platform} who have more than or equal to {raw_followers} followers"
-            # Select tool
-            if platform.lower() == "instagram":
-                tool = search_instagram_influencers
-            elif platform.lower() == "tiktok":
-                tool = search_tiktok_influencers
-            elif platform.lower() == "youtube":
-                tool = search_youtube_influencers
-            else:
-                tool = search_instagram_influencers
-            try:
-                # Make the API call with the api_limit and additional parameters
-                result = await tool(query=query, limit=api_limit, category=category, min_followers=followers)
-                
-                # Get the influencers from the result
-                influencers = result.get("influencers", result)
-                current_count = len(influencers)
-                
-                # Log the results with more detailed information
-                if is_range:
-                    start, end = map(int, limit_value.split("-", 1))
-                    logger.info(f"Range requested: {start}-{end}, Retrieved: {current_count} influencers")
-                    if current_count == end:
-                        logger.warning(f"Model returned the maximum number ({end}) from the range {start}-{end}. Verify dynamic selection is working correctly.")
-                    elif start <= current_count < end:
-                        logger.info(f"Model dynamically selected {current_count} influencers within the range {start}-{end} as requested.")
-                else:
-                    logger.info(f"Exact count requested: {limit_value}, Retrieved: {current_count} influencers")
-                    
-                # Create the result item with the original limit value and follower display
-                result_item = {
-                    "category": category,
-                    "platform": platform,
-                    "followers": followers,  # Numeric value for filtering
-                    "followers_display": raw_followers,  # Original string with K/M suffix
-                    "limit": limit_value,
-                }
-                
-                # Add range information if applicable for limit
-                if is_range:
-                    try:
-                        start, end = map(int, limit_value.split("-", 1))
-                        result_item["range_min"] = start
-                        result_item["range_max"] = end
-                        
-                        # Add range satisfaction status
-                        count = len(influencers)
-                        if start <= count <= end:
-                            result_item["range_status"] = "satisfied"
-                        elif count < start:
-                            result_item["range_status"] = f"insufficient (found {count}, requested {limit_value})"
-                        else:
-                            result_item["range_status"] = f"exceeded (found {count}, requested {limit_value})"
-                    except ValueError:
-                        # If we can't parse the range for some reason, just continue without range info
-                        pass
-                
-                # Add follower range information if applicable
-                if "-" in str(raw_followers):
-                    try:
-                        min_followers, max_followers, _ = parse_follower_range(raw_followers)
-                        result_item["followers_min"] = min_followers
-                        result_item["followers_max"] = max_followers
-                    except Exception:
-                        # If we can't parse the range, continue without follower range info
-                        pass
-                
-                result_item["data"] = influencers
-                result_item["count"] = len(influencers)
-                
-                all_results.append(result_item)
-            except Exception as e:
-                # Construct the error response
-                error_item = {
-                    "category": category,
-                    "platform": platform,
-                    "followers": followers,
-                    "followers_display": raw_followers,  # Original string with K/M suffix
-                    "limit": limit_value,
-                    "error": str(e)
-                }
-                
-                # Add range information if applicable for limit
-                if is_range:
-                    try:
-                        start, end = map(int, limit_value.split("-", 1))
-                        error_item["range_min"] = start
-                        error_item["range_max"] = end
-                    except ValueError:
-                        # If we can't parse the range, continue without range info
-                        pass
-                        
-                # Add follower range information if applicable
-                if "-" in str(raw_followers):
-                    try:
-                        min_followers, max_followers, _ = parse_follower_range(raw_followers)
-                        error_item["followers_min"] = min_followers
-                        error_item["followers_max"] = max_followers
-                    except Exception:
-                        # If we can't parse the range, continue without follower range info
-                        pass
-                
-                all_results.append(error_item)
-        return {"results": all_results}
+        # Build query
+        query = f"find {category} influencers on {platform}"
+        if raw_followers:
+            query += f" with {raw_followers} or more followers"
+        
+        # Select tool based on platform
+        if platform.lower() == "instagram":
+            tool = search_instagram_influencers
+        elif platform.lower() == "tiktok":
+            tool = search_tiktok_influencers
+        elif platform.lower() == "youtube":
+            tool = search_youtube_influencers
+        else:
+            return {"error": f"Unsupported platform: {platform}"}
+        
+        # Log the search
+        logger.info(f"Searching for {category} influencers on {platform} with min_followers: {min_followers}, limit: {api_limit}")
+        
+        # Make the API call
+        result = await tool(query=query, limit=api_limit, category=category, min_followers=min_followers)
+        
+        # Get the influencers from the result
+        influencers = result.get("influencers", [])
+        
+        # Return simplified response
+        return {
+            "category": category,
+            "platform": platform,
+            "followers": min_followers,
+            "limit": api_limit,
+            "count": len(influencers),
+            "influencers": influencers
+        }
+        
     except Exception as e:
         logger.error(f"Error in find_influencers: {str(e)}")
         return {"error": str(e)}
