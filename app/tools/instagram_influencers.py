@@ -7,13 +7,15 @@ logger = logging.getLogger(__name__)
 
 
 
-async def search_instagram_influencers(query: str, limit: int = 10) -> Dict[str, Any]:
+async def search_instagram_influencers(query: str, limit: int = 10, category: str = None, min_followers: int = None) -> Dict[str, Any]:
     """
-    Search for Instagram influencers based on a query
+    Search for Instagram influencers based on query, category, and follower count
     
     Args:
         query: The search query
         limit: Maximum number of influencers to return
+        category: Category filter (e.g., "beauty", "fitness")
+        min_followers: Minimum follower count filter
         
     Returns:
         Dictionary containing platform and influencer data
@@ -22,9 +24,9 @@ async def search_instagram_influencers(query: str, limit: int = 10) -> Dict[str,
     logger.info(f"Instagram search with query: '{query}', limit: {limit}")
     
     try:
-        print(f"DEBUG: About to call query_vector_store for Instagram with query: {query}")
-        # Call the vector store search with error handling
-        result = await query_vector_store(query, "instagram", limit)
+        print(f"DEBUG: About to call query_vector_store for Instagram with query: {query}, category: {category}, min_followers: {min_followers}")
+        # Call the vector store search with error handling and new parameters
+        result = await query_vector_store(query, "instagram", limit, category, min_followers)
         print(f"DEBUG: Instagram vector search returned {len(result)} results")
         
         # Log the results with query to verify we're getting different results for different queries
@@ -100,8 +102,7 @@ async def search_instagram_influencers(query: str, limit: int = 10) -> Dict[str,
             "followers": metadata.get("followers") or metadata.get("follower_count") or metadata.get("edge_followed_by", {}).get("count", 0),
             "engagement_rate": engagement_rate,
             "pic": metadata.get("pic") or metadata.get("profile_pic_url") or metadata.get("profile_pic_url_hd", ""),
-            "external_link": external_link or (f"https://www.instagram.com/{username}" if username else ""),
-            "similarity": doc.get("similarity") if isinstance(doc, dict) and "similarity" in doc else None
+            "external_link": external_link or (f"https://www.instagram.com/{username}" if username else "")
         }
         instagram_influencers.append(influencer)
     

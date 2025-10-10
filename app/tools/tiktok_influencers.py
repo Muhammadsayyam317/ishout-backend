@@ -7,22 +7,24 @@ logger = logging.getLogger(__name__)
 
 
 
-async def search_tiktok_influencers(query: str, limit: int = 10) -> Dict[str, Any]:
+async def search_tiktok_influencers(query: str, limit: int = 10, category: str = None, min_followers: int = None) -> Dict[str, Any]:
     """
     Search for TikTok influencers based on a query
     
     Args:
         query: The search query
         limit: Maximum number of influencers to return
+        category: Optional category filter for content
+        min_followers: Optional minimum follower count for proximity matching
         
     Returns:
         Dictionary containing platform and influencer data
     """
     # Log the search parameters
-    logger.info(f"TikTok search with query: '{query}', limit: {limit}")
+    logger.info(f"TikTok search with query: '{query}', limit: {limit}, category: {category}, min_followers: {min_followers}")
     
     # Directly call the vector store search - let errors propagate
-    result = await query_vector_store(query, "tiktok", limit)
+    result = await query_vector_store(query, "tiktok", limit, category=category, min_followers=min_followers)
     
     # Log the results with query to verify we're getting different results for different queries
     logger.info(f"TikTok Results for query '{query}': {len(result)} influencers found")
@@ -90,8 +92,7 @@ async def search_tiktok_influencers(query: str, limit: int = 10) -> Dict[str, An
             "engagement_rate": engagement_rate,
             "country": metadata.get("country") or metadata.get("region") or "",
             "pic": metadata.get("pic") or metadata.get("avatarMedium") or metadata.get("coversMedium", ""),
-            "external_link": external_link or (f"https://www.tiktok.com/@{username}" if username else ""),
-            "similarity": doc.get("similarity") if isinstance(doc, dict) and "similarity" in doc else None
+            "external_link": external_link or (f"https://www.tiktok.com/@{username}" if username else "")
         }
         tiktok_influencers.append(influencer)
     

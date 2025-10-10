@@ -7,22 +7,24 @@ from app.services.embedding_service import query_vector_store
 logger = logging.getLogger(__name__)
 
 
-async def search_youtube_influencers(query: str, limit: int = 10) -> Dict[str, Any]:
+async def search_youtube_influencers(query: str, limit: int = 10, category: str = None, min_followers: int = None) -> Dict[str, Any]:
     """
     Search for YouTube influencers based on a query
     
     Args:
         query: The search query
         limit: Maximum number of influencers to return
+        category: Optional category filter for content
+        min_followers: Optional minimum follower count for proximity matching
         
     Returns:
         Dictionary containing platform and influencer data
     """
     # Log the search parameters
-    logger.info(f"YouTube search with query: '{query}', limit: {limit}")
+    logger.info(f"YouTube search with query: '{query}', limit: {limit}, category: {category}, min_followers: {min_followers}")
     
     # Directly call the vector store search - let errors propagate
-    result = await query_vector_store(query, "youtube", limit)
+    result = await query_vector_store(query, "youtube", limit, category=category, min_followers=min_followers)
     
     # Log the search results with query to verify we're getting different results for different queries
     logger.info(f"YouTube Results for query '{query}': {len(result)} influencers found")
@@ -87,8 +89,7 @@ async def search_youtube_influencers(query: str, limit: int = 10) -> Dict[str, A
             "engagement_rate": engagement_rate,
             "country": metadata.get("country") or metadata.get("snippet", {}).get("country", ""),
             "pic": metadata.get("pic") or metadata.get("thumbnail") or metadata.get("snippet", {}).get("thumbnails", {}).get("high", {}).get("url", ""),
-            "external_link": external_link,
-            "similarity": doc.get("similarity") if isinstance(doc, dict) and "similarity" in doc else None
+            "external_link": external_link
         }
         youtube_influencers.append(influencer)
     

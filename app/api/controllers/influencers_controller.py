@@ -206,8 +206,8 @@ async def find_influencers(request_data: Dict[str, Any]):
             else:
                 tool = search_instagram_influencers
             try:
-                # Make the API call with the api_limit
-                result = await tool(query=query, limit=api_limit)
+                # Make the API call with the api_limit and additional parameters
+                result = await tool(query=query, limit=api_limit, category=category, min_followers=followers)
                 
                 # Get the influencers from the result
                 influencers = result.get("influencers", result)

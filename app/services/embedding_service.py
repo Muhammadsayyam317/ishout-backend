@@ -147,17 +147,19 @@ def get_vector_store(collection, platform=None):
             logger.error(f"All attempts to create vector store failed: {str(e2)}")
             raise
 
-async def query_vector_store(query: str, platform: str, limit: int = 10) -> List[dict]:
+async def query_vector_store(query: str, platform: str, limit: int = 10, category: str = None, min_followers: int = None) -> List[dict]:
     """
-    Query the vector store for similar documents
+    Query the vector store for similar documents with filtering
     
     Args:
         query: The search query
         platform: The platform to search (instagram, tiktok, youtube)
         limit: Maximum number of results to return
+        category: Category filter for content matching
+        min_followers: Minimum follower count filter
         
     Returns:
-        List of similar documents with similarity scores
+        List of documents filtered and sorted by follower proximity
     """
     try:
         # Initialize embeddings first
@@ -216,39 +218,70 @@ async def query_vector_store(query: str, platform: str, limit: int = 10) -> List
         logger.info(f"Vector store created successfully for collection {collection_name}")
         
         # Log the query to help debug
-        logger.info(f"Searching with query: '{query}'")
-        logger.info(f"Performing vector search without explicit filter (platform handled by collection)")
-        docs_with_scores = store.similarity_search_with_score(
+        logger.info(f"Searching with query: '{query}', category: '{category}', min_followers: {min_followers}")
+        
+        # Get more results initially if we need to filter by followers (to have a good pool)
+        search_limit = limit * 10 if min_followers else limit
+        
+        logger.info(f"Performing vector search with search_limit: {search_limit}")
+        docs = store.similarity_search(
             query, 
-            k=limit
+            k=search_limit
         )
-        logger.info(f"Vector search with scores found {len(docs_with_scores)} results")
+        logger.info(f"Vector search found {len(docs)} results")
         
-        # Define score scaling function for better readability
-        def scale_score(score):
-            # Map from cosine similarity (-1 to 1) to a 0-100% relevance score
-            return float((score + 1.0) / 2.0 * 100.0)
-        
-        # Convert all results to a consistent dictionary format with similarity scores
-        formatted_results = []
-        for doc, score in docs_with_scores:
+        # Convert all results to a consistent dictionary format
+        all_results = []
+        for doc in docs:
             # It's a Document object with metadata, convert to dict
             doc_dict = doc.metadata.copy() if hasattr(doc, "metadata") else {}
             # Add the document content
             doc_dict["page_content"] = getattr(doc, "page_content", "No content")
-            # Add the similarity score (scaled for readability)
-            doc_dict["similarity"] = scale_score(score)
-            formatted_results.append(doc_dict)
+            all_results.append(doc_dict)
+        
+        # Apply follower filtering and sorting if min_followers is specified
+        formatted_results = all_results
+        if min_followers is not None:
+            print(f"DEBUG: Filtering by followers >= {min_followers}")
+            
+            # Filter by minimum followers
+            filtered_results = []
+            for doc in all_results:
+                doc_followers = doc.get("followers", 0)
+                if isinstance(doc_followers, str):
+                    try:
+                        doc_followers = int(doc_followers.replace(',', ''))
+                    except:
+                        doc_followers = 0
+                
+                if doc_followers >= min_followers:
+                    # Add follower proximity score (closer to target = better)
+                    follower_diff = abs(doc_followers - min_followers)
+                    doc["follower_proximity"] = 1 / (1 + follower_diff / min_followers) if min_followers > 0 else 1
+                    filtered_results.append(doc)
+            
+            print(f"DEBUG: After follower filtering: {len(filtered_results)} results")
+            
+            # Sort by follower proximity (closest to target first)
+            filtered_results.sort(key=lambda x: -x.get("follower_proximity", 0))
+            
+            # Take only the requested limit
+            formatted_results = filtered_results[:limit]
+            
+            print(f"DEBUG: Final results after sorting and limiting: {len(formatted_results)}")
+        else:
+            # If no follower filter, just take the top results
+            formatted_results = all_results[:limit]
         
         # Log results
         logger.info(f"Vector search found {len(formatted_results)} results.")
         
-        # Log sample document data with scores to verify different results
+        # Log sample document data to verify different results
         if formatted_results:
             for i, doc in enumerate(formatted_results[:2]):  # Log first two for brevity
-                similarity = doc.get("similarity", 0)
                 content = doc.get("page_content", "")[:50] + "..." if doc.get("page_content") else ""
-                logger.info(f"Result {i+1}: Similarity: {similarity:.2f}% | {content}")
+                followers = doc.get("followers", "N/A")
+                logger.info(f"Result {i+1}: Followers: {followers} | {content}")
         
         return formatted_results
         
