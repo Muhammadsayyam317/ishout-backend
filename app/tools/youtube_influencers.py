@@ -1,31 +1,11 @@
 import logging
-from typing import Dict, Any, List, Optional
-from pydantic import BaseModel, Field
+from typing import Dict, Any
 from app.services.embedding_service import query_vector_store
+
 
 # Setup logging
 logger = logging.getLogger(__name__)
 
-class YouTubeInfluencerQueryParams(BaseModel):
-    """Parameters for YouTube influencer search"""
-    query: str = Field(..., description="The query to search YouTube influencers for")
-    limit: Optional[int] = Field(10, description="The maximum number of influencers to return")
-
-class YouTubeInfluencer(BaseModel):
-    """Model for YouTube influencer data"""
-    bio: Optional[str] = None
-    name: Optional[str] = None
-    influencer_username: Optional[str] = None
-    followers: Optional[int] = None
-    engagement_rate: Optional[str] = None
-    country: Optional[str] = None
-    pic: Optional[str] = None
-    external_link: Optional[str] = None
-
-class YouTubeInfluencerResponse(BaseModel):
-    """Response model for YouTube influencer search"""
-    platform: str = "youtube"
-    influencers: List[YouTubeInfluencer]
 
 async def search_youtube_influencers(query: str, limit: int = 10) -> Dict[str, Any]:
     """
