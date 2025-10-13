@@ -99,8 +99,15 @@ def get_vector_store(collection, platform=None):
     print(f"get_vector_store() - platform={platform}, collection_type={type(collection)}")
     emb = initialize_embeddings()
     
-    # Get the index name from environment or use default
-    index_name = os.getenv("MONGODB_VECTOR_INDEX_NAME", "vector_index")
+    # Get the index name from environment based on platform
+    if platform == "instagram":
+        index_name = os.getenv("MONGODB_VECTOR_INDEX_NAME_INSTAGRAM", "vector_index_1")
+    elif platform == "tiktok": 
+        index_name = os.getenv("MONGODB_VECTOR_INDEX_NAME_TIKTOK", "vector_index")
+    elif platform == "youtube":
+        index_name = os.getenv("MONGODB_VECTOR_INDEX_NAME_YOUTUBE", "vector_index")
+    else:
+        index_name = os.getenv("MONGODB_VECTOR_INDEX_NAME", "vector_index")
     
     # Configure text_key based on platform - Instagram and TikTok use 'pageContent', YouTube uses 'text'
     if platform == "instagram":
@@ -211,17 +218,26 @@ def parse_followers_value(followers) -> int:
     print(f"Unsupported followers type: {type(followers)}")
     return 0
 
-async def query_vector_store(query: str, platform: str, limit: int = 10) -> List[dict]:
+async def query_vector_store(query: str, platform: str, limit: int = 10, min_followers: Optional[int] = None, max_followers: Optional[int] = None) -> List[dict]:
     """Query the vector store for similar documents and return top-k results.
 
-    This function is intentionally lightweight: it relies on the vector index
-    (and any pre-filtering defined there) to return documents matching
-    metadata constraints. It is instrumented with detailed debug logs to
-    help trace problems during development.
+    This function supports pre-filtering based on follower counts using MongoDB Atlas
+    vector search pre_filter parameter.
+    
+    Args:
+        query: Search query text
+        platform: Platform name (instagram, tiktok, youtube)
+        limit: Maximum number of results to return
+        min_followers: Minimum follower count for filtering (optional)
+        max_followers: Maximum follower count for filtering (optional)
+    
+    Returns:
+        List of documents matching the query and filters
     """
     try:
         print("query_vector_store() - start")
         print(f"query_vector_store() - query={query}, platform={platform}, limit={limit}")
+        print(f"query_vector_store() - min_followers={min_followers}, max_followers={max_followers}")
 
         # Ensure embeddings and DB connection are ready
         emb = initialize_embeddings()
@@ -257,14 +273,123 @@ async def query_vector_store(query: str, platform: str, limit: int = 10) -> List
             print(f"Invalid limit value provided: {limit}, falling back to 10")
             limit = 10
 
-        # Perform the similarity search without pre_filter
-        print(f"query_vector_store() - Performing vector search with k={limit} (no pre_filter)")
-        try:
-            docs = store.similarity_search(query, k=limit)
-            print(f"query_vector_store() - Vector search returned {len(docs)} docs")
-        except Exception:
-            print("query_vector_store() - similarity_search failed")
-            raise
+        # Build pre_filter based on follower requirements
+        pre_filter = {}
+        if min_followers is not None or max_followers is not None:
+            follower_filter = {}
+            
+            if min_followers is not None and max_followers is not None:
+                # Range filter: both min and max specified
+                follower_filter = {
+                    "$gte": min_followers,
+                    "$lte": max_followers
+                }
+                print(f"query_vector_store() - Using follower range filter: {min_followers} - {max_followers}")
+            elif min_followers is not None:
+                # Only minimum specified
+                follower_filter = {"$gte": min_followers}
+                print(f"query_vector_store() - Using minimum follower filter: >= {min_followers}")
+            elif max_followers is not None:
+                # Only maximum specified
+                follower_filter = {"$lte": max_followers}
+                print(f"query_vector_store() - Using maximum follower filter: <= {max_followers}")
+            
+            # Filter on the followers field at root level (based on actual data structure)
+            pre_filter = {"followers": follower_filter}
+
+        # DEBUG: Before performing search, let's check what data exists in the follower range
+        if pre_filter and min_followers is not None:
+            print(f"query_vector_store() - DEBUG: Checking data in follower range {min_followers}-{max_followers or 'unlimited'}")
+            try:
+                # Check total documents in collection
+                total_docs = sync_collection.count_documents({})
+                print(f"query_vector_store() - DEBUG: Total documents in collection: {total_docs}")
+                
+                # Check documents with followers field
+                docs_with_followers = sync_collection.count_documents({"followers": {"$exists": True}})
+                print(f"query_vector_store() - DEBUG: Documents with 'followers' field: {docs_with_followers}")
+                
+                # Check follower range distribution
+                if max_followers:
+                    matching_docs = sync_collection.count_documents({
+                        "followers": {"$gte": min_followers, "$lte": max_followers}
+                    })
+                    print(f"query_vector_store() - DEBUG: Documents with followers {min_followers}-{max_followers}: {matching_docs}")
+                else:
+                    matching_docs = sync_collection.count_documents({
+                        "followers": {"$gte": min_followers}
+                    })
+                    print(f"query_vector_store() - DEBUG: Documents with followers >= {min_followers}: {matching_docs}")
+                
+                # Show some sample follower values around our range
+                pipeline = [
+                    {"$match": {"followers": {"$exists": True}}},
+                    {"$group": {
+                        "_id": None,
+                        "min_followers": {"$min": "$followers"},
+                        "max_followers": {"$max": "$followers"},
+                        "avg_followers": {"$avg": "$followers"}
+                    }}
+                ]
+                stats = list(sync_collection.aggregate(pipeline))
+                if stats:
+                    stat = stats[0]
+                    print(f"query_vector_store() - DEBUG: Follower stats - Min: {stat['min_followers']}, Max: {stat['max_followers']}, Avg: {stat['avg_followers']:.0f}")
+                
+                # Show a few samples near our target range
+                sample_docs = list(sync_collection.find(
+                    {"followers": {"$gte": min_followers * 0.8, "$lte": max_followers * 1.2 if max_followers else min_followers * 2}},
+                    {"followers": 1, "name": 1, "_id": 0}
+                ).limit(5))
+                print(f"query_vector_store() - DEBUG: Sample docs near range: {sample_docs}")
+                
+            except Exception as debug_e:
+                print(f"query_vector_store() - DEBUG: Error during data analysis: {str(debug_e)}")
+
+        # Perform the similarity search with or without pre_filter
+        if pre_filter:
+            print(f"query_vector_store() - Performing vector search with k={limit} and pre_filter={pre_filter}")
+            try:
+                docs = store.similarity_search(query, k=limit, pre_filter=pre_filter)
+                print(f"query_vector_store() - Vector search with filter returned {len(docs)} docs")
+                
+                # DEBUG: If we got 0 results, try a broader range to see if data exists
+                if len(docs) == 0:
+                    print(f"query_vector_store() - DEBUG: Got 0 results with pre_filter!")
+                    print(f"query_vector_store() - DEBUG: This indicates the MongoDB Atlas Vector Search Index")
+                    print(f"query_vector_store() - DEBUG: does NOT have 'followers' configured as a filter field.")
+                    print(f"query_vector_store() - DEBUG: You need to update your Atlas Search Index configuration.")
+                    
+                    broader_filter = {"followers": {"$gte": min_followers * 0.5, "$lte": (max_followers or min_followers) * 2}}
+                    print(f"query_vector_store() - DEBUG: Trying broader filter: {broader_filter}")
+                    try:
+                        broader_docs = store.similarity_search(query, k=limit, pre_filter=broader_filter)
+                        print(f"query_vector_store() - DEBUG: Broader search returned {len(broader_docs)} docs")
+                        if broader_docs:
+                            for i, doc in enumerate(broader_docs[:3]):
+                                followers = getattr(doc, 'metadata', {}).get('followers', 'N/A')
+                                print(f"query_vector_store() - DEBUG: Broader result {i}: {followers} followers")
+                        else:
+                            print(f"query_vector_store() - DEBUG: Even broader search returned 0 results")
+                            print(f"query_vector_store() - DEBUG: This CONFIRMS the index is missing filter configuration")
+                    except Exception as broader_e:
+                        print(f"query_vector_store() - DEBUG: Broader search also failed: {str(broader_e)}")
+                        print(f"query_vector_store() - DEBUG: Error confirms index configuration issue")
+                
+            except Exception as e:
+                print(f"query_vector_store() - similarity_search with pre_filter failed: {str(e)}")
+                # Fallback to search without filter
+                print("query_vector_store() - Falling back to search without pre_filter")
+                docs = store.similarity_search(query, k=limit)
+                print(f"query_vector_store() - Fallback search returned {len(docs)} docs")
+        else:
+            print(f"query_vector_store() - Performing vector search with k={limit} (no pre_filter)")
+            try:
+                docs = store.similarity_search(query, k=limit)
+                print(f"query_vector_store() - Vector search returned {len(docs)} docs")
+            except Exception:
+                print("query_vector_store() - similarity_search failed")
+                raise
 
         # Convert Document objects to plain dicts and return top-k results.
         formatted_results = []
@@ -276,10 +401,12 @@ async def query_vector_store(query: str, platform: str, limit: int = 10) -> List
         # Debug: show metadata keys for returned docs (up to 3)
         for i, d in enumerate(formatted_results[:3]):
             print(f"query_vector_store() - result[{i}] keys={list(d.keys())}")
+            if "followers" in d:
+                print(f"query_vector_store() - result[{i}] followers={d['followers']}")
 
         print(f"Vector search returning {len(formatted_results)} results")
         return formatted_results
 
-    except Exception:
-        print("query_vector_store() - Error in vector search")
+    except Exception as e:
+        print(f"query_vector_store() - Error in vector search: {str(e)}")
         return []  # Return empty list instead of falling back to random docs

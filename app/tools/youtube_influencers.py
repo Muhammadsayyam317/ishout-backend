@@ -2,22 +2,24 @@ from typing import Dict, Any
 from app.services.embedding_service import query_vector_store
 
 
-async def search_youtube_influencers(query: str, limit: int = 10) -> Dict[str, Any]:
+async def search_youtube_influencers(query: str, limit: int = 10, min_followers: int = None, max_followers: int = None) -> Dict[str, Any]:
     """
     Search for YouTube influencers based on a query
     
     Args:
         query: The search query
         limit: Maximum number of influencers to return
+        min_followers: Minimum follower count for filtering (optional)
+        max_followers: Maximum follower count for filtering (optional)
         
     Returns:
         Dictionary containing platform and influencer data
     """
     # Print the search parameters
-    print(f"YouTube search with query: '{query}', limit: {limit}")
+    print(f"YouTube search with query: '{query}', limit: {limit}, min_followers: {min_followers}, max_followers: {max_followers}")
     
-    # Directly call the vector store search - let errors propagate
-    result = await query_vector_store(query, "youtube", limit)
+    # Directly call the vector store search with follower filters - let errors propagate
+    result = await query_vector_store(query, "youtube", limit, min_followers, max_followers)
     
     # Print the search results with query to verify we're getting different results for different queries
     print(f"YouTube Results for query '{query}': {len(result)} influencers found")

@@ -2,24 +2,26 @@ from typing import Dict, Any
 from app.services.embedding_service import query_vector_store
 
 
-async def search_instagram_influencers(query: str, limit: int = 10) -> Dict[str, Any]:
+async def search_instagram_influencers(query: str, limit: int = 10, min_followers: int = None, max_followers: int = None) -> Dict[str, Any]:
     """
     Search for Instagram influencers based on query
     
     Args:
         query: The search query
         limit: Maximum number of influencers to return
+        min_followers: Minimum follower count for filtering (optional)
+        max_followers: Maximum follower count for filtering (optional)
         
     Returns:
         Dictionary containing platform and influencer data
     """
     # Print the search parameters
-    print(f"Instagram search with query: '{query}', limit: {limit}")
+    print(f"Instagram search with query: '{query}', limit: {limit}, min_followers: {min_followers}, max_followers: {max_followers}")
     
     try:
         print(f"DEBUG: About to call query_vector_store for Instagram with query: {query}")
-        # Call the vector store search with error handling and new parameters
-        result = await query_vector_store(query, "instagram", limit)
+        # Directly call the vector store search with follower filters - let errors propagate
+        result = await query_vector_store(query, "instagram", limit, min_followers, max_followers)
         print(f"DEBUG: Instagram vector search returned {len(result)} results")
         
         # Print the results with query to verify we're getting different results for different queries

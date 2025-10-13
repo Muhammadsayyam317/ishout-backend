@@ -90,19 +90,25 @@ async def find_influencers(request_data: Dict[str, Any]):
             return {"error": f"Unsupported platform: {platform}"}
         
         # Print the search
-        print(f"Searching for {category} influencers on {platform} with min_followers: {min_followers}, limit: {api_limit}")
+        print(f"Searching for {category} influencers on {platform} with min_followers: {min_followers}, max_followers: {max_followers}, limit: {api_limit}")
         
-        # Make the API call
-        result = await tool(query=query, limit=api_limit)
+        # Make the API call with follower filters
+        result = await tool(query=query, limit=api_limit, min_followers=min_followers, max_followers=max_followers)
         
         # Get the influencers from the result
         influencers = result.get("influencers", [])
         
-        # Return simplified response
+        # Return simplified response with follower filter info
+        follower_info = {}
+        if min_followers is not None and max_followers is not None:
+            follower_info = {"min": min_followers, "max": max_followers, "range": raw_followers}
+        elif min_followers is not None:
+            follower_info = {"min": min_followers}
+        
         return {
             "category": category,
             "platform": platform,
-            "followers": min_followers,
+            "followers": follower_info,
             "limit": api_limit,
             "count": len(influencers),
             "influencers": influencers
