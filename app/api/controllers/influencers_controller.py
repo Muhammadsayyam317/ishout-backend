@@ -41,11 +41,10 @@ async def find_influencers(request_data: Dict[str, Any]):
                 min_val, max_val, original = parse_follower_range(raw_followers)
                 min_followers = min_val
                 max_followers = max_val
-                print(f"Parsed follower range '{raw_followers}': min={min_val}, max={max_val}")
+                pass
             else:
                 # It's a single value, use parse_follower_count
                 min_followers = parse_follower_count(raw_followers)
-                print(f"Parsed single follower count '{raw_followers}': {min_followers}")
         
         # Parse limit to integer
         try:
@@ -89,10 +88,8 @@ async def find_influencers(request_data: Dict[str, Any]):
         else:
             return {"error": f"Unsupported platform: {platform}"}
         
-        # Print the search
-        print(f"Searching for {category} influencers on {platform} with min_followers: {min_followers}, max_followers: {max_followers}, limit: {api_limit}")
-        
         # Make the API call with follower filters
+        print(f"Searching {platform} for {category} influencers...")
         result = await tool(query=query, limit=api_limit, min_followers=min_followers, max_followers=max_followers)
         
         # Get the influencers from the result

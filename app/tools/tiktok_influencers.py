@@ -15,14 +15,11 @@ async def search_tiktok_influencers(query: str, limit: int = 10, min_followers: 
     Returns:
         Dictionary containing platform and influencer data
     """
-    # Print the search parameters
-    print(f"TikTok search with query: '{query}', limit: {limit}, min_followers: {min_followers}, max_followers: {max_followers}")
+    # Search for TikTok influencers
+    print(f"TikTok search: '{query}' (limit: {limit})")
     
-    # Directly call the vector store search with follower filters - let errors propagate
     result = await query_vector_store(query, "tiktok", limit, min_followers, max_followers)
-    
-    # Print the results with query to verify we're getting different results for different queries
-    print(f"TikTok Results for query '{query}': {len(result)} influencers found")
+    print(f"Found {len(result)} TikTok influencers")
     
     tiktok_influencers = []
     for doc in result:
@@ -30,9 +27,6 @@ async def search_tiktok_influencers(query: str, limit: int = 10, min_followers: 
         if isinstance(doc, dict):
             page_content = doc.get("page_content", "No content available")
             metadata = doc.get("metadata", {})
-            
-            # Print the original document structure to see what we're getting
-            print(f"TikTok document structure: {list(doc.keys()) if doc else []}")
             
             # If we have a direct MongoDB document
             if "metadata" not in doc and not metadata:
@@ -43,9 +37,6 @@ async def search_tiktok_influencers(query: str, limit: int = 10, min_followers: 
             page_content = getattr(doc, "page_content", "No content available")
             metadata = getattr(doc, "metadata", {})
         
-        # Print the metadata to see what fields are available
-        print(f"TikTok metadata keys: {list(metadata.keys()) if metadata else 'No metadata'}")
-        
         # Calculate engagement rate string if available
         engagement_rate = "N/A"
         eng_rate = metadata.get("engagementRate", 0)
@@ -53,7 +44,7 @@ async def search_tiktok_influencers(query: str, limit: int = 10, min_followers: 
             try:
                 engagement_rate = f"{float(eng_rate) * 100:.2f}%"
             except (ValueError, TypeError):
-                print(f"Invalid engagement rate value: {eng_rate}")
+                engagement_rate = "N/A"
         
         # Try to find username from various possible fields
         username = None

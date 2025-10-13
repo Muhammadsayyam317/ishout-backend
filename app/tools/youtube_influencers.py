@@ -15,14 +15,11 @@ async def search_youtube_influencers(query: str, limit: int = 10, min_followers:
     Returns:
         Dictionary containing platform and influencer data
     """
-    # Print the search parameters
-    print(f"YouTube search with query: '{query}', limit: {limit}, min_followers: {min_followers}, max_followers: {max_followers}")
+    # Search for YouTube influencers
+    print(f"YouTube search: '{query}' (limit: {limit})")
     
-    # Directly call the vector store search with follower filters - let errors propagate
     result = await query_vector_store(query, "youtube", limit, min_followers, max_followers)
-    
-    # Print the search results with query to verify we're getting different results for different queries
-    print(f"YouTube Results for query '{query}': {len(result)} influencers found")
+    print(f"Found {len(result)} YouTube influencers")
     
     youtube_influencers = []
     for doc in result:

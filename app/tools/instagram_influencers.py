@@ -15,21 +15,14 @@ async def search_instagram_influencers(query: str, limit: int = 10, min_follower
     Returns:
         Dictionary containing platform and influencer data
     """
-    # Print the search parameters
-    print(f"Instagram search with query: '{query}', limit: {limit}, min_followers: {min_followers}, max_followers: {max_followers}")
+    # Search for Instagram influencers
+    print(f"Instagram search: '{query}' (limit: {limit})")
     
     try:
-        print(f"DEBUG: About to call query_vector_store for Instagram with query: {query}")
-        # Directly call the vector store search with follower filters - let errors propagate
         result = await query_vector_store(query, "instagram", limit, min_followers, max_followers)
-        print(f"DEBUG: Instagram vector search returned {len(result)} results")
-        
-        # Print the results with query to verify we're getting different results for different queries
-        print(f"Instagram Results for query '{query}': {len(result)} influencers found")
+        print(f"Found {len(result)} Instagram influencers")
     except Exception as e:
-        print(f"DEBUG: Error in Instagram vector search: {str(e)}")
-        print("Full exception details:")
-        # Return empty result instead of letting it crash
+        print(f"Instagram search error: {str(e)}")
         result = []
     
     instagram_influencers = []
@@ -38,9 +31,6 @@ async def search_instagram_influencers(query: str, limit: int = 10, min_follower
         if isinstance(doc, dict):
             page_content = doc.get("page_content", "No content available")
             metadata = doc.get("metadata", {})
-            
-            # Print the original document structure to see what we're getting
-            print(f"Instagram document structure: {list(doc.keys()) if doc else []}")
             
             # If we have a direct MongoDB document
             if "metadata" not in doc and not metadata:
@@ -51,9 +41,6 @@ async def search_instagram_influencers(query: str, limit: int = 10, min_follower
             page_content = getattr(doc, "page_content", "No content available")
             metadata = getattr(doc, "metadata", {})
         
-        # Print the metadata to see what fields are available
-        print(f"Instagram metadata keys: {list(metadata.keys()) if metadata else 'No metadata'}")
-        
         # Calculate engagement rate string if available
         engagement_rate = "N/A"
         eng_rate = metadata.get("engagementRate", 0)
@@ -61,7 +48,7 @@ async def search_instagram_influencers(query: str, limit: int = 10, min_follower
             try:
                 engagement_rate = f"{float(eng_rate) * 100:.2f}%"
             except (ValueError, TypeError):
-                print(f"Invalid engagement rate value: {eng_rate}")
+                engagement_rate = "N/A"
         
         # Try to find username from various possible fields
         username = None
