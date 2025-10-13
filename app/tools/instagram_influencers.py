@@ -1,40 +1,32 @@
-import logging
 from typing import Dict, Any
 from app.services.embedding_service import query_vector_store
 
-# Setup logging
-logger = logging.getLogger(__name__)
 
-
-
-async def search_instagram_influencers(query: str, limit: int = 10, category: str = None, min_followers: int = None) -> Dict[str, Any]:
+async def search_instagram_influencers(query: str, limit: int = 10) -> Dict[str, Any]:
     """
-    Search for Instagram influencers based on query, category, and follower count
+    Search for Instagram influencers based on query
     
     Args:
         query: The search query
         limit: Maximum number of influencers to return
-        category: Category filter (e.g., "beauty", "fitness")
-        min_followers: Minimum follower count filter
         
     Returns:
         Dictionary containing platform and influencer data
     """
-    # Log the search parameters
-    logger.info(f"Instagram search with query: '{query}', limit: {limit}")
+    # Print the search parameters
+    print(f"Instagram search with query: '{query}', limit: {limit}")
     
     try:
-        print(f"DEBUG: About to call query_vector_store for Instagram with query: {query}, category: {category}, min_followers: {min_followers}")
+        print(f"DEBUG: About to call query_vector_store for Instagram with query: {query}")
         # Call the vector store search with error handling and new parameters
-        result = await query_vector_store(query, "instagram", limit, category, min_followers)
+        result = await query_vector_store(query, "instagram", limit)
         print(f"DEBUG: Instagram vector search returned {len(result)} results")
         
-        # Log the results with query to verify we're getting different results for different queries
-        logger.info(f"Instagram Results for query '{query}': {len(result)} influencers found")
+        # Print the results with query to verify we're getting different results for different queries
+        print(f"Instagram Results for query '{query}': {len(result)} influencers found")
     except Exception as e:
         print(f"DEBUG: Error in Instagram vector search: {str(e)}")
-        logger.error(f"Error in Instagram vector search: {str(e)}")
-        logger.exception("Full exception details:")
+        print("Full exception details:")
         # Return empty result instead of letting it crash
         result = []
     
@@ -45,8 +37,8 @@ async def search_instagram_influencers(query: str, limit: int = 10, category: st
             page_content = doc.get("page_content", "No content available")
             metadata = doc.get("metadata", {})
             
-            # Log the original document structure to see what we're getting
-            logger.info(f"Instagram document structure: {list(doc.keys()) if doc else []}")
+            # Print the original document structure to see what we're getting
+            print(f"Instagram document structure: {list(doc.keys()) if doc else []}")
             
             # If we have a direct MongoDB document
             if "metadata" not in doc and not metadata:
@@ -57,8 +49,8 @@ async def search_instagram_influencers(query: str, limit: int = 10, category: st
             page_content = getattr(doc, "page_content", "No content available")
             metadata = getattr(doc, "metadata", {})
         
-        # Log the metadata to see what fields are available
-        logger.info(f"Instagram metadata keys: {list(metadata.keys()) if metadata else 'No metadata'}")
+        # Print the metadata to see what fields are available
+        print(f"Instagram metadata keys: {list(metadata.keys()) if metadata else 'No metadata'}")
         
         # Calculate engagement rate string if available
         engagement_rate = "N/A"
@@ -67,7 +59,7 @@ async def search_instagram_influencers(query: str, limit: int = 10, category: st
             try:
                 engagement_rate = f"{float(eng_rate) * 100:.2f}%"
             except (ValueError, TypeError):
-                logger.warning(f"Invalid engagement rate value: {eng_rate}")
+                print(f"Invalid engagement rate value: {eng_rate}")
         
         # Try to find username from various possible fields
         username = None

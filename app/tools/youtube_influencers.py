@@ -1,33 +1,26 @@
-import logging
 from typing import Dict, Any
 from app.services.embedding_service import query_vector_store
 
 
-# Setup logging
-logger = logging.getLogger(__name__)
-
-
-async def search_youtube_influencers(query: str, limit: int = 10, category: str = None, min_followers: int = None) -> Dict[str, Any]:
+async def search_youtube_influencers(query: str, limit: int = 10) -> Dict[str, Any]:
     """
     Search for YouTube influencers based on a query
     
     Args:
         query: The search query
         limit: Maximum number of influencers to return
-        category: Optional category filter for content
-        min_followers: Optional minimum follower count for proximity matching
         
     Returns:
         Dictionary containing platform and influencer data
     """
-    # Log the search parameters
-    logger.info(f"YouTube search with query: '{query}', limit: {limit}, category: {category}, min_followers: {min_followers}")
+    # Print the search parameters
+    print(f"YouTube search with query: '{query}', limit: {limit}")
     
     # Directly call the vector store search - let errors propagate
-    result = await query_vector_store(query, "youtube", limit, category=category, min_followers=min_followers)
+    result = await query_vector_store(query, "youtube", limit)
     
-    # Log the search results with query to verify we're getting different results for different queries
-    logger.info(f"YouTube Results for query '{query}': {len(result)} influencers found")
+    # Print the search results with query to verify we're getting different results for different queries
+    print(f"YouTube Results for query '{query}': {len(result)} influencers found")
     
     youtube_influencers = []
     for doc in result:
@@ -36,8 +29,8 @@ async def search_youtube_influencers(query: str, limit: int = 10, category: str 
             page_content = doc.get("page_content", "No content")
             metadata = doc.get("metadata", {})
             
-            # Log the document structure for debugging
-            logger.info(f"YouTube doc structure: {list(doc.keys()) if doc else []}")
+            # Print the document structure for debugging
+            print(f"YouTube doc structure: {list(doc.keys()) if doc else []}")
             
             # If we have a direct MongoDB document
             if "metadata" not in doc and not metadata:
@@ -48,8 +41,8 @@ async def search_youtube_influencers(query: str, limit: int = 10, category: str 
             page_content = getattr(doc, "page_content", "No content")
             metadata = getattr(doc, "metadata", {})
         
-        # Log what metadata we're working with
-        logger.info(f"YouTube metadata keys: {list(metadata.keys()) if metadata else 'No metadata'}")
+        # Print what metadata we're working with
+        print(f"YouTube metadata keys: {list(metadata.keys()) if metadata else 'No metadata'}")
         
         # Calculate engagement rate string if available
         engagement_rate = "N/A"
@@ -58,7 +51,7 @@ async def search_youtube_influencers(query: str, limit: int = 10, category: str 
             try:
                 engagement_rate = f"{float(eng_rate) * 100:.2f}%"
             except (ValueError, TypeError):
-                logger.warning(f"Invalid engagement rate value: {eng_rate}")
+                print(f"Invalid engagement rate value: {eng_rate}")
         
         # Try to extract username from various fields
         username = None

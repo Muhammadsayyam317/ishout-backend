@@ -1,14 +1,10 @@
 from typing import Dict, Any
-import logging
 from app.tools.instagram_influencers import search_instagram_influencers
 from app.tools.tiktok_influencers import search_tiktok_influencers
 from app.tools.youtube_influencers import search_youtube_influencers
 from app.services.guardrails_service import check_input_guard_rail
 from app.utils.prompts import FIND_INFLUENCER_PROMPT
 from app.utils.helpers import parse_follower_count
-
-# Setup logging
-logger = logging.getLogger(__name__)
 
 
 
@@ -21,17 +17,7 @@ class Agent:
         self.input_guardrails = input_guardrails or []
         
 
-# Create the agent instance
-find_influencer_agent = Agent(
-    name="Find Influencer Agent",
-    tools=[
-        search_instagram_influencers,
-        search_tiktok_influencers,
-        search_youtube_influencers,
-    ],
-    instructions=FIND_INFLUENCER_PROMPT,
-    input_guardrails=[check_input_guard_rail],
-)
+
 
 async def find_influencers(request_data: Dict[str, Any]):
     """Handler for the find-influencer endpoint for single queries"""
@@ -40,7 +26,7 @@ async def find_influencers(request_data: Dict[str, Any]):
         category = str(request_data.get("category", "")).strip()
         platform = str(request_data.get("platform", "")).strip()
         raw_followers = str(request_data.get("followers", "")).strip()
-        limit = str(request_data.get("limit", "5")).strip()
+        limit = str(request_data.get("limit")).strip()
         
         # Validate required fields
         if not category or not platform:
@@ -58,9 +44,7 @@ async def find_influencers(request_data: Dict[str, Any]):
             api_limit = 5
         
         # Build query
-        query = f"find {category} influencers on {platform}"
-        if raw_followers:
-            query += f" with {raw_followers} or more followers"
+        query = f"find influencers with at least {min_followers} followers"
         
         # Select tool based on platform
         if platform.lower() == "instagram":
@@ -72,11 +56,11 @@ async def find_influencers(request_data: Dict[str, Any]):
         else:
             return {"error": f"Unsupported platform: {platform}"}
         
-        # Log the search
-        logger.info(f"Searching for {category} influencers on {platform} with min_followers: {min_followers}, limit: {api_limit}")
+        # Print the search
+        print(f"Searching for {category} influencers on {platform} with min_followers: {min_followers}, limit: {api_limit}")
         
         # Make the API call
-        result = await tool(query=query, limit=api_limit, category=category, min_followers=min_followers)
+        result = await tool(query=query, limit=api_limit)
         
         # Get the influencers from the result
         influencers = result.get("influencers", [])
@@ -92,5 +76,5 @@ async def find_influencers(request_data: Dict[str, Any]):
         }
         
     except Exception as e:
-        logger.error(f"Error in find_influencers: {str(e)}")
+        print(f"Error in find_influencers: {str(e)}")
         return {"error": str(e)}

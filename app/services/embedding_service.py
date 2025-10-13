@@ -1,5 +1,4 @@
 import os
-import logging
 from typing import List, Optional
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import MongoClient
@@ -14,7 +13,18 @@ db = None
 sync_db = None
 embeddings = None
 
-logger = logging.getLogger(__name__)
+
+def _mask_value(v: Optional[str]) -> str:
+    """Mask long secret-like values for logging (don't print full URIs or keys)."""
+    if v is None:
+        return "<None>"
+    try:
+        s = str(v)
+        if len(s) <= 12:
+            return s
+        return s[:6] + "..." + s[-6:]
+    except Exception:
+        return "<unrepresentable>"
 
 
 async def connect_to_mongodb():
@@ -28,18 +38,22 @@ async def connect_to_mongodb():
     
     if not async_client:
         mongo_uri = os.getenv("MONGODB_ATLAS_URI")
+        print(f"connect_to_mongodb() - MONGODB_ATLAS_URI={_mask_value(mongo_uri)}")
         if not mongo_uri:
+            print("connect_to_mongodb() - MongoDB URI not found in environment variables")
             raise ValueError("MongoDB URI not found in environment variables")
-        
+
         # Create both async and sync clients
+        print("connect_to_mongodb() - creating AsyncIOMotorClient and MongoClient")
         async_client = AsyncIOMotorClient(mongo_uri)
         sync_client = MongoClient(mongo_uri)
-        
+
         db_name = os.getenv("MONGODB_ATLAS_DB_NAME")
+        print(f"connect_to_mongodb() - DB name: {db_name}")
         db = async_client[db_name]
         sync_db = sync_client[db_name]
-        
-        logger.info("MongoDB connected (async and sync clients) ✅")
+
+        print("MongoDB connected (async and sync clients) ✅")
     
     return db
 
@@ -50,20 +64,23 @@ def initialize_embeddings():
     global embeddings
     if embeddings is None:
         api_key = os.getenv("OPENAI_API_KEY")
+        print(f"initialize_embeddings() - OPENAI_API_KEY present: {bool(api_key)}")
         if not api_key:
+            print("initialize_embeddings() - OpenAI API Key not found in environment variables")
             raise ValueError("OpenAI API Key not found in environment variables")
-        
+
         model = os.getenv("EMBEDDING_MODEL", "text-embedding-ada-002")
-        
+        print(f"initialize_embeddings() - model={model}")
+
         # Create the embeddings client - no fallback
         embeddings = OpenAIEmbeddings(
             api_key=api_key,
             model=model
         )
-        
+
         # Simple test to ensure embeddings work
         test_embedding = embeddings.embed_query("test query")
-        logger.info(f"Embedding initialized with model {model}, dimension: {len(test_embedding)} ✅")
+        print(f"Embedding initialized with model {model}, dimension: {len(test_embedding)} ✅")
             
     return embeddings
 
@@ -79,22 +96,26 @@ def get_vector_store(collection, platform=None):
         MongoDBAtlasVectorSearch instance
     """
     # Make sure embeddings are initialized
+    print(f"get_vector_store() - platform={platform}, collection_type={type(collection)}")
     emb = initialize_embeddings()
     
     # Get the index name from environment or use default
     index_name = os.getenv("MONGODB_VECTOR_INDEX_NAME", "vector_index")
     
-    # Configure text_key based on platform - Instagram uses 'pageContent', others use 'text'
+    # Configure text_key based on platform - Instagram and TikTok use 'pageContent', YouTube uses 'text'
     if platform == "instagram":
         text_key = "pageContent"  # Instagram collection uses camelCase
-        print(f"DEBUG: Using text_key='{text_key}' for Instagram")
+        print(f"get_vector_store() - Using text_key='{text_key}' for Instagram")
+    elif platform == "tiktok":
+        text_key = "pageContent"  # TikTok also uses pageContent like Instagram
+        print(f"get_vector_store() - Using text_key='{text_key}' for TikTok")
     else:
-        text_key = os.getenv("MONGODB_TEXT_KEY", "text")  # Default for TikTok/YouTube
-        print(f"DEBUG: Using text_key='{text_key}' for platform {platform}")
+        text_key = os.getenv("MONGODB_TEXT_KEY", "text")  # Default for YouTube
+        print(f"get_vector_store() - Using text_key='{text_key}' for platform {platform}")
     
     embedding_key = os.getenv("MONGODB_EMBEDDING_KEY", "embedding")
-    
-    logger.info(f"Creating vector store with index: {index_name}, text_key: {text_key}, embedding_key: {embedding_key}")
+    print(f"get_vector_store() - embedding_key={embedding_key}")
+    print(f"Creating vector store with index: {index_name}, text_key: {text_key}, embedding_key: {embedding_key}")
     
     # Following the exact format from the LangChain MongoDB docs example:
     # vector_store = MongoDBAtlasVectorSearch(
@@ -105,8 +126,8 @@ def get_vector_store(collection, platform=None):
     # )
     
     try:
-        logger.info(f"Creating vector store with collection type: {type(collection)}")
-        
+        print(f"get_vector_store() - Creating vector store with collection type: {type(collection)}")
+
         # Use the exact parameter order from the docs example
         vector_store = MongoDBAtlasVectorSearch(
             collection=collection,
@@ -115,170 +136,150 @@ def get_vector_store(collection, platform=None):
             text_key=text_key,
             embedding_key=embedding_key
         )
-        
-        logger.info("Successfully created MongoDBAtlasVectorSearch instance")
+
+        print("Successfully created MongoDBAtlasVectorSearch instance")
         return vector_store
-        
+
     except Exception as e:
-        logger.error(f"Error creating vector store: {str(e)}")
-        
+        print(f"Error creating vector store: {str(e)}")
+
         # Try minimal parameters
         try:
-            logger.info("Trying minimal parameters")
-            
+            print("Trying minimal parameters")
+
             # Create with just the required parameters
             vector_store = MongoDBAtlasVectorSearch(
                 collection=collection,
                 embedding=emb,
                 index_name=index_name
             )
-            
-            logger.info("Successfully created vector store with minimal parameters")
+
+            print("Successfully created vector store with minimal parameters")
             return vector_store
-            
+
         except Exception as e2:
-            logger.error(f"All attempts to create vector store failed: {str(e2)}")
+            print(f"All attempts to create vector store failed: {str(e2)}")
             raise
 
-async def query_vector_store(query: str, platform: str, limit: int = 10, category: str = None, min_followers: int = None) -> List[dict]:
+
+def parse_followers_value(followers) -> int:
     """
-    Query the vector store for similar documents with filtering
-    
-    Args:
-        query: The search query
-        platform: The platform to search (instagram, tiktok, youtube)
-        limit: Maximum number of results to return
-        category: Category filter for content matching
-        min_followers: Minimum follower count filter
-        
-    Returns:
-        List of documents filtered and sorted by follower proximity
+    Parse follower count values that may come as strings like '10K', '1.2M', '10,000'
+
+    Returns integer follower count or 0 if it cannot be parsed.
+    """
+    print(f"parse_followers_value() - input={followers}")
+    if followers is None:
+        print("parse_followers_value() - input is None, returning 0")
+        return 0
+
+    # If already an int, return directly
+    try:
+        if isinstance(followers, int):
+            return followers
+        if isinstance(followers, float):
+            return int(followers)
+    except Exception:
+        pass
+
+    if isinstance(followers, str):
+        s = followers.strip().replace(',', '').lower()
+        try:
+            # Handle values like '10k', '1.2m'
+            if s.endswith('k'):
+                val = int(float(s[:-1]) * 1_000)
+                print(f"parse_followers_value() - parsed {followers} -> {val}")
+                return val
+            if s.endswith('m'):
+                val = int(float(s[:-1]) * 1_000_000)
+                print(f"parse_followers_value() - parsed {followers} -> {val}")
+                return val
+            if s.endswith('b'):
+                val = int(float(s[:-1]) * 1_000_000_000)
+                print(f"parse_followers_value() - parsed {followers} -> {val}")
+                return val
+
+            # Plain numeric strings
+            val = int(float(s))
+            print(f"parse_followers_value() - parsed {followers} -> {val}")
+            return val
+        except Exception:
+            print(f"parse_followers_value() - Could not parse followers value: {followers}")
+            return 0
+
+    # Unknown type
+    print(f"Unsupported followers type: {type(followers)}")
+    return 0
+
+async def query_vector_store(query: str, platform: str, limit: int = 10) -> List[dict]:
+    """Query the vector store for similar documents and return top-k results.
+
+    This function is intentionally lightweight: it relies on the vector index
+    (and any pre-filtering defined there) to return documents matching
+    metadata constraints. It is instrumented with detailed debug logs to
+    help trace problems during development.
     """
     try:
-        # Initialize embeddings first
+        print("query_vector_store() - start")
+        print(f"query_vector_store() - query={query}, platform={platform}, limit={limit}")
+
+        # Ensure embeddings and DB connection are ready
         emb = initialize_embeddings()
-        
-        # Then connect to MongoDB (this initializes both async and sync clients)
         await connect_to_mongodb()
-        
-        # Get the appropriate collection based on platform
+
+        # Choose collection by platform
         collection_name = None
         if platform == "instagram":
-            collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_INFLUENCERS")
+            collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_INSTGRAM")
         elif platform == "tiktok":
             collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_TIKTOK")
         elif platform == "youtube":
             collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_YOUTUBE")
         else:
             raise ValueError(f"Invalid platform specified: {platform}")
-        
-        # Debug collection name
-        logger.info(f"Using collection: {collection_name} for platform: {platform}")
-        
+
+        print(f"query_vector_store() - Using collection: {collection_name} for platform: {platform}")
         if not collection_name:
             raise ValueError(f"Collection name is empty for platform {platform}. Check your environment variables.")
-        
-        # Use both async and sync collections
-        async_collection = db[collection_name]
+
         sync_collection = sync_db[collection_name]
-        
-        # Count documents in collection using async client
-        doc_count = await async_collection.count_documents({})
-        print(f"DEBUG: Found {doc_count} documents in collection {collection_name} for platform {platform}")
-        logger.info(f"Found {doc_count} documents in collection {collection_name}")
-        
-        # If collection exists but has no documents, return a more specific message
-        if doc_count == 0:
-            print(f"DEBUG: Collection {collection_name} is empty!")
-            raise ValueError(f"Collection {collection_name} exists but is empty")
-        
-        # DEBUG: Check if documents have embedding field
-        sample_doc = await async_collection.find_one({})
-        if sample_doc:
-            has_embedding = "embedding" in sample_doc
-            print(f"DEBUG: Sample document keys: {list(sample_doc.keys())}")
-            print(f"DEBUG: Has 'embedding' field: {has_embedding}")
-            if has_embedding:
-                embedding_type = type(sample_doc["embedding"])
-                embedding_length = len(sample_doc["embedding"]) if isinstance(sample_doc["embedding"], list) else "N/A"
-                print(f"DEBUG: Embedding type: {embedding_type}, length: {embedding_length}")
-        else:
-            print(f"DEBUG: Could not retrieve sample document")
-        
-        # Create vector store with the synchronous collection
-        # This should avoid the "MotorDatabase object is not callable" error
+        print(f"query_vector_store() - sync_collection: {getattr(sync_collection, 'name', str(sync_collection))}")
+
+        # Create vector store
+        print("query_vector_store() - creating vector store")
         store = get_vector_store(sync_collection, platform)
-        logger.info(f"Vector store created successfully for collection {collection_name}")
-        
-        # Log the query to help debug
-        logger.info(f"Searching with query: '{query}', category: '{category}', min_followers: {min_followers}")
-        
-        # Get more results initially if we need to filter by followers (to have a good pool)
-        search_limit = limit * 10 if min_followers else limit
-        
-        logger.info(f"Performing vector search with search_limit: {search_limit}")
-        docs = store.similarity_search(
-            query, 
-            k=search_limit
-        )
-        logger.info(f"Vector search found {len(docs)} results")
-        
-        # Convert all results to a consistent dictionary format
-        all_results = []
-        for doc in docs:
-            # It's a Document object with metadata, convert to dict
-            doc_dict = doc.metadata.copy() if hasattr(doc, "metadata") else {}
-            # Add the document content
-            doc_dict["page_content"] = getattr(doc, "page_content", "No content")
-            all_results.append(doc_dict)
-        
-        # Apply follower filtering and sorting if min_followers is specified
-        formatted_results = all_results
-        if min_followers is not None:
-            print(f"DEBUG: Filtering by followers >= {min_followers}")
-            
-            # Filter by minimum followers
-            filtered_results = []
-            for doc in all_results:
-                doc_followers = doc.get("followers", 0)
-                if isinstance(doc_followers, str):
-                    try:
-                        doc_followers = int(doc_followers.replace(',', ''))
-                    except:
-                        doc_followers = 0
-                
-                if doc_followers >= min_followers:
-                    # Add follower proximity score (closer to target = better)
-                    follower_diff = abs(doc_followers - min_followers)
-                    doc["follower_proximity"] = 1 / (1 + follower_diff / min_followers) if min_followers > 0 else 1
-                    filtered_results.append(doc)
-            
-            print(f"DEBUG: After follower filtering: {len(filtered_results)} results")
-            
-            # Sort by follower proximity (closest to target first)
-            filtered_results.sort(key=lambda x: -x.get("follower_proximity", 0))
-            
-            # Take only the requested limit
-            formatted_results = filtered_results[:limit]
-            
-            print(f"DEBUG: Final results after sorting and limiting: {len(formatted_results)}")
-        else:
-            # If no follower filter, just take the top results
-            formatted_results = all_results[:limit]
-        
-        # Log results
-        logger.info(f"Vector search found {len(formatted_results)} results.")
-        
-        # Log sample document data to verify different results
-        if formatted_results:
-            for i, doc in enumerate(formatted_results[:2]):  # Log first two for brevity
-                content = doc.get("page_content", "")[:50] + "..." if doc.get("page_content") else ""
-                followers = doc.get("followers", "N/A")
-                logger.info(f"Result {i+1}: Followers: {followers} | {content}")
-        
+        print(f"query_vector_store() - Vector store created successfully for collection {collection_name}")
+
+        # Ensure limit is integer and use it directly as k for similarity search.
+        try:
+            limit = int(limit)
+        except Exception:
+            print(f"Invalid limit value provided: {limit}, falling back to 10")
+            limit = 10
+
+        # Perform the similarity search without pre_filter
+        print(f"query_vector_store() - Performing vector search with k={limit} (no pre_filter)")
+        try:
+            docs = store.similarity_search(query, k=limit)
+            print(f"query_vector_store() - Vector search returned {len(docs)} docs")
+        except Exception:
+            print("query_vector_store() - similarity_search failed")
+            raise
+
+        # Convert Document objects to plain dicts and return top-k results.
+        formatted_results = []
+        for doc in docs[:limit]:
+            meta = doc.metadata.copy() if hasattr(doc, "metadata") and doc.metadata else {}
+            meta["page_content"] = getattr(doc, "page_content", "")
+            formatted_results.append(meta)
+
+        # Debug: show metadata keys for returned docs (up to 3)
+        for i, d in enumerate(formatted_results[:3]):
+            print(f"query_vector_store() - result[{i}] keys={list(d.keys())}")
+
+        print(f"Vector search returning {len(formatted_results)} results")
         return formatted_results
-        
-    except Exception as e:
-        logger.error(f"Error in vector search: {str(e)}")
-        logger.exception("Full exception details:")
+
+    except Exception:
+        print("query_vector_store() - Error in vector search")
         return []  # Return empty list instead of falling back to random docs
