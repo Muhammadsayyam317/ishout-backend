@@ -1,8 +1,5 @@
 
-import logging
 from typing import Tuple
-
-logger = logging.getLogger(__name__)
 
 def parse_follower_count(value: str) -> int:
     """
@@ -33,7 +30,7 @@ def parse_follower_count(value: str) -> int:
             return int(float(value))
     except (ValueError, TypeError):
         # Default to 0 if we can't parse
-        logger.warning(f"Could not parse follower count: {value}")
+        print(f"Could not parse follower count: {value}")
         return 0
 
 def parse_follower_range(value: str) -> Tuple[int, int, str]:
@@ -59,6 +56,6 @@ def parse_follower_range(value: str) -> Tuple[int, int, str]:
         
         return start_count, end_count, value
     except Exception as e:
-        logger.warning(f"Error parsing follower range '{value}': {str(e)}")
+        print(f"Error parsing follower range '{value}': {str(e)}")
         # Return default values
         return 0, 0, str(value)
