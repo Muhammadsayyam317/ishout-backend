@@ -26,6 +26,7 @@ async def find_influencers(request_data: Dict[str, Any]):
         category = str(request_data.get("category", "")).strip()
         platform = str(request_data.get("platform", "")).strip()
         raw_followers = str(request_data.get("followers", "")).strip()
+        country = str(request_data.get("country", "")).strip() if request_data.get("country") else None
         limit = str(request_data.get("limit")).strip()
         
         # Validate required fields
@@ -88,9 +89,9 @@ async def find_influencers(request_data: Dict[str, Any]):
         else:
             return {"error": f"Unsupported platform: {platform}"}
         
-        # Make the API call with follower filters
-        print(f"Searching {platform} for {category} influencers...")
-        result = await tool(query=query, limit=api_limit, min_followers=min_followers, max_followers=max_followers)
+        # Make the API call with follower and country filters
+        print(f"Searching {platform} for {category} influencers" + (f" in {country}" if country else "") + "...")
+        result = await tool(query=query, limit=api_limit, min_followers=min_followers, max_followers=max_followers, country=country)
         
         # Get the influencers from the result
         influencers = result.get("influencers", [])
@@ -105,6 +106,7 @@ async def find_influencers(request_data: Dict[str, Any]):
         return {
             "category": category,
             "platform": platform,
+            "country": country,
             "followers": follower_info,
             "limit": api_limit,
             "count": len(influencers),

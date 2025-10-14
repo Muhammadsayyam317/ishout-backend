@@ -126,10 +126,10 @@ def get_vector_store(collection, platform=None):
 
 
 
-async def query_vector_store(query: str, platform: str, limit: int = 10, min_followers: Optional[int] = None, max_followers: Optional[int] = None) -> List[dict]:
+async def query_vector_store(query: str, platform: str, limit: int = 10, min_followers: Optional[int] = None, max_followers: Optional[int] = None, country: Optional[str] = None) -> List[dict]:
     """Query the vector store for similar documents and return top-k results.
 
-    This function supports pre-filtering based on follower counts using MongoDB Atlas
+    This function supports pre-filtering based on follower counts and country using MongoDB Atlas
     vector search pre_filter parameter.
     
     Args:
@@ -138,6 +138,7 @@ async def query_vector_store(query: str, platform: str, limit: int = 10, min_fol
         limit: Maximum number of results to return
         min_followers: Minimum follower count for filtering (optional)
         max_followers: Maximum follower count for filtering (optional)
+        country: Country name for filtering (optional)
     
     Returns:
         List of documents matching the query and filters
@@ -174,8 +175,11 @@ async def query_vector_store(query: str, platform: str, limit: int = 10, min_fol
             print(f"Invalid limit value provided: {limit}, falling back to 10")
             limit = 10
 
-        # Build pre_filter based on follower requirements
+        # Build pre_filter based on follower and country requirements
         pre_filter = {}
+        filter_conditions = []
+        
+        # Add follower filter if specified
         if min_followers is not None or max_followers is not None:
             follower_filter = {}
             
@@ -185,40 +189,40 @@ async def query_vector_store(query: str, platform: str, limit: int = 10, min_fol
                     "$gte": min_followers,
                     "$lte": max_followers
                 }
-                print(f"query_vector_store() - Using follower range filter: {min_followers} - {max_followers}")
+                print(f"Using follower range filter: {min_followers} - {max_followers}")
             elif min_followers is not None:
                 # Only minimum specified
                 follower_filter = {"$gte": min_followers}
-                print(f"query_vector_store() - Using minimum follower filter: >= {min_followers}")
+                print(f"Using minimum follower filter: >= {min_followers}")
             elif max_followers is not None:
                 # Only maximum specified
                 follower_filter = {"$lte": max_followers}
-                print(f"query_vector_store() - Using maximum follower filter: <= {max_followers}")
+                print(f"Using maximum follower filter: <= {max_followers}")
             
-            # Filter on the followers field at root level (based on actual data structure)
-            pre_filter = {"followers": follower_filter}
+            filter_conditions.append({"followers": follower_filter})
+        
+        # Add country filter if specified
+        if country:
+            print(f"Using country filter: {country}")
+            filter_conditions.append({"country": country})
+        
+        # Combine filters using $and if multiple conditions exist
+        if len(filter_conditions) > 1:
+            pre_filter = {"$and": filter_conditions}
+        elif len(filter_conditions) == 1:
+            pre_filter = filter_conditions[0]
 
 
 
-        # Perform the similarity search with or without pre_filter
+        # Perform the similarity search with pre_filter
         if pre_filter:
-            print(f"Searching with follower filter: {min_followers}-{max_followers or 'unlimited'}")
-            try:
-                docs = store.similarity_search(query, k=limit, pre_filter=pre_filter)
-                print(f"Found {len(docs)} filtered results")
-            except Exception as e:
-                print(f"Filtered search failed: {str(e)}")
-                print("Falling back to unfiltered search")
-                docs = store.similarity_search(query, k=limit)
-                print(f"Fallback search returned {len(docs)} results")
+            print(f"Searching with filters applied")
+            docs = store.similarity_search(query, k=limit, pre_filter=pre_filter)
+            print(f"Found {len(docs)} filtered results")
         else:
-            print(f"Searching without filter")
-            try:
-                docs = store.similarity_search(query, k=limit)
-                print(f"Found {len(docs)} results")
-            except Exception:
-                print("Search failed")
-                raise
+            print(f"Searching without filters")
+            docs = store.similarity_search(query, k=limit)
+            print(f"Found {len(docs)} results")
 
         # Convert Document objects to plain dicts and return top-k results.
         formatted_results = []

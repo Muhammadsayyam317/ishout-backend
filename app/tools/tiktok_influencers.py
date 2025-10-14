@@ -2,7 +2,7 @@ from typing import Dict, Any
 from app.services.embedding_service import query_vector_store
 
 
-async def search_tiktok_influencers(query: str, limit: int = 10, min_followers: int = None, max_followers: int = None) -> Dict[str, Any]:
+async def search_tiktok_influencers(query: str, limit: int = 10, min_followers: int = None, max_followers: int = None, country: str = None) -> Dict[str, Any]:
     """
     Search for TikTok influencers based on a query
     
@@ -18,7 +18,7 @@ async def search_tiktok_influencers(query: str, limit: int = 10, min_followers: 
     # Search for TikTok influencers
     print(f"TikTok search: '{query}' (limit: {limit})")
     
-    result = await query_vector_store(query, "tiktok", limit, min_followers, max_followers)
+    result = await query_vector_store(query, "tiktok", limit, min_followers, max_followers, country)
     print(f"Found {len(result)} TikTok influencers")
     
     tiktok_influencers = []
