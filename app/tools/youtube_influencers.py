@@ -72,14 +72,15 @@ async def search_youtube_influencers(query: str, limit: int = 10, min_followers:
         if username and not external_link:
             external_link = f"https://www.youtube.com/channel/{username}"
         
-        # Create influencer object with thorough field checking
+        # Create influencer object with standardized format
         influencer = {
-            "bio": metadata.get("bio") or metadata.get("description") or metadata.get("snippet", {}).get("description", ""),
-            "name": metadata.get("name") or metadata.get("title") or metadata.get("snippet", {}).get("title", ""),
+            "content": page_content,
             "influencer_username": username,
+            "name": metadata.get("name") or metadata.get("title") or metadata.get("snippet", {}).get("title", ""),
+            "bio": metadata.get("bio") or metadata.get("description") or metadata.get("snippet", {}).get("description", ""),
+            "country": metadata.get("country") or metadata.get("snippet", {}).get("country", ""),
             "followers": metadata.get("followers") or metadata.get("subscriberCount") or metadata.get("statistics", {}).get("subscriberCount", 0),
             "engagement_rate": engagement_rate,
-            "country": metadata.get("country") or metadata.get("snippet", {}).get("country", ""),
             "pic": metadata.get("pic") or metadata.get("thumbnail") or metadata.get("snippet", {}).get("thumbnails", {}).get("high", {}).get("url", ""),
             "external_link": external_link
         }

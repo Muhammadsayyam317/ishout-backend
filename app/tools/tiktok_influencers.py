@@ -69,14 +69,15 @@ async def search_tiktok_influencers(query: str, limit: int = 10, min_followers: 
             if username_match:
                 username = username_match.group(1)
         
-        # Create influencer object with thorough field checking
+        # Create influencer object with standardized format
         influencer = {
-            "bio": metadata.get("bio") or metadata.get("signature") or metadata.get("description", ""),
-            "name": metadata.get("name") or metadata.get("nickname") or metadata.get("title", ""),
+            "content": page_content,
             "influencer_username": username,
+            "name": metadata.get("name") or metadata.get("nickname") or metadata.get("title", ""),
+            "bio": metadata.get("bio") or metadata.get("signature") or metadata.get("description", ""),
+            "country": metadata.get("country") or metadata.get("region") or "",
             "followers": metadata.get("followers") or metadata.get("followerCount") or 0,
             "engagement_rate": engagement_rate,
-            "country": metadata.get("country") or metadata.get("region") or "",
             "pic": metadata.get("pic") or metadata.get("avatarMedium") or metadata.get("coversMedium", ""),
             "external_link": external_link or (f"https://www.tiktok.com/@{username}" if username else "")
         }
