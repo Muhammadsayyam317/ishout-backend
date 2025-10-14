@@ -87,7 +87,10 @@ async def search_instagram_influencers(query: str, limit: int = 10, min_follower
         }
         instagram_influencers.append(influencer)
     
-    return {
+    result_dict = {
         "platform": "instagram",
         "influencers": instagram_influencers
     }
+    if not instagram_influencers:
+        result_dict["message"] = "No data available for this selection"
+    return result_dict
