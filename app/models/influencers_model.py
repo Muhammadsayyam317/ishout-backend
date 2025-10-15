@@ -1,9 +1,8 @@
 from pydantic import BaseModel
-from typing import Optional
 
 class FindInfluencerRequest(BaseModel):
     category: str
-    platform: str
-    followers: Optional[str] = None
-    country: Optional[str] = None
-    limit: Optional[int] = 10
+    platform: str = None
+    country: str = None
+    limit: int= 10
+    followers: str = None
