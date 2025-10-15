@@ -1,10 +1,11 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
 from app.tools.instagram_influencers import search_instagram_influencers
 from app.tools.tiktok_influencers import search_tiktok_influencers
 from app.tools.youtube_influencers import search_youtube_influencers
 from app.services.guardrails_service import check_input_guard_rail
 from app.utils.prompts import FIND_INFLUENCER_PROMPT
 from app.utils.helpers import parse_follower_count, parse_follower_range
+from app.models.influencers_model import FindInfluencerRequest
 
 
 
@@ -18,101 +19,94 @@ class Agent:
         
 
 
-
-async def find_influencers(request_data: Dict[str, Any]):
-    """Handler for the find-influencer endpoint for single queries"""
+async def find_influencers(request_data: List[FindInfluencerRequest]):
+    """
+    Handler for the find-influencer endpoint supporting multiple payloads
+    """
     try:
-        # Extract single values from request
-        category = str(request_data.get("category", "")).strip()
-        platform = str(request_data.get("platform", "")).strip()
-        raw_followers = str(request_data.get("followers", "")).strip()
-        country = str(request_data.get("country", "")).strip() if request_data.get("country") else None
-        limit = str(request_data.get("limit")).strip()
-        
-        # Validate required fields
-        if not category or not platform:
-            return {"error": "Category and platform are required"}
-        
-        # Parse followers if provided - handle both single values and ranges
-        min_followers = None
-        max_followers = None
-        if raw_followers:
-            if "-" in raw_followers:
-                # It's a range like "15K-25K", use parse_follower_range to get min value
-                min_val, max_val, original = parse_follower_range(raw_followers)
-                min_followers = min_val
-                max_followers = max_val
-                pass
-            else:
-                # It's a single value, use parse_follower_count
-                min_followers = parse_follower_count(raw_followers)
-        
-        # Parse limit to integer
-        try:
-            api_limit = int(limit)
-        except ValueError:
-            api_limit = 5
-        
-        # Build query with proper follower formatting
-        if min_followers is not None:
-            if max_followers is not None:
-                # Range query - make it more descriptive
-                if min_followers >= 1000000:
-                    min_str = f"{min_followers//1000000}M"
-                    max_str = f"{max_followers//1000000}M"
-                elif min_followers >= 1000:
-                    min_str = f"{min_followers//1000}K"
-                    max_str = f"{max_followers//1000}K"
+        all_results = []  # ✅ Step 3: Collect all responses
+
+        for req in request_data:
+            # Extract single values from request
+            category = req.category.strip()
+            platform = req.platform.strip()
+            raw_followers = (req.followers or "").strip()
+            country = (req.country or "").strip() if req.country else None
+            limit = req.limit
+
+            # Validate required fields
+            if not category or not platform:
+                all_results.append({"error": "Category and platform are required"})
+                continue
+
+            # Parse followers (range or single)
+            min_followers = max_followers = None
+            if raw_followers:
+                if "-" in raw_followers:
+                    min_val, max_val, original = parse_follower_range(raw_followers)
+                    min_followers, max_followers = min_val, max_val
                 else:
-                    min_str = str(min_followers)
-                    max_str = str(max_followers)
-                query = f"find {category} influencers with {min_str} to {max_str} followers"
-            else:
-                # Single value query
-                if min_followers >= 1000000:
-                    follower_str = f"{min_followers//1000000}M"
-                elif min_followers >= 1000:
-                    follower_str = f"{min_followers//1000}K"
+                    min_followers = parse_follower_count(raw_followers)
+
+            # Determine API limit
+            try:
+                api_limit = int(limit)
+            except ValueError:
+                api_limit = 5
+
+            # Build descriptive query
+            if min_followers is not None:
+                if max_followers is not None:
+                    query = f"find {category} influencers with {min_followers}-{max_followers} followers"
                 else:
-                    follower_str = str(min_followers)
-                query = f"find {category} influencers with at least {follower_str} followers"
-        else:
-            query = f"find {category} influencers"
-        
-        # Select tool based on platform
-        if platform.lower() == "instagram":
-            tool = search_instagram_influencers
-        elif platform.lower() == "tiktok":
-            tool = search_tiktok_influencers
-        elif platform.lower() == "youtube":
-            tool = search_youtube_influencers
-        else:
-            return {"error": f"Unsupported platform: {platform}"}
-        
-        # Make the API call with follower and country filters
-        print(f"Searching {platform} for {category} influencers" + (f" in {country}" if country else "") + "...")
-        result = await tool(query=query, limit=api_limit, min_followers=min_followers, max_followers=max_followers, country=country)
-        
-        # Get the influencers from the result
-        influencers = result.get("influencers", [])
-        
-        # Return simplified response with follower filter info
-        follower_info = {}
-        if min_followers is not None and max_followers is not None:
-            follower_info = {"min": min_followers, "max": max_followers, "range": raw_followers}
-        elif min_followers is not None:
-            follower_info = {"min": min_followers}
-        
-        return {
-            "category": category,
-            "platform": platform,
-            "country": country,
-            "followers": follower_info,
-            "limit": api_limit,
-            "count": len(influencers),
-            "influencers": influencers
-        }
-        
+                    query = f"find {category} influencers with at least {min_followers} followers"
+            else:
+                query = f"find {category} influencers"
+
+            # Choose platform tool
+            if platform.lower() == "instagram":
+                tool = search_instagram_influencers
+            elif platform.lower() == "tiktok":
+                tool = search_tiktok_influencers
+            elif platform.lower() == "youtube":
+                tool = search_youtube_influencers
+            else:
+                all_results.append({"error": f"Unsupported platform: {platform}"})
+                continue
+
+            # Make API call
+            print(f"Searching {platform} for {category} influencers" + (f" in {country}" if country else "") + "...")
+            result = await tool(
+                query=query,
+                limit=api_limit,
+                min_followers=min_followers,
+                max_followers=max_followers,
+                country=country
+            )
+
+            influencers = result.get("influencers", [])
+
+            follower_info = {}
+            if min_followers is not None and max_followers is not None:
+                follower_info = {"min": min_followers, "max": max_followers, "range": raw_followers}
+            elif min_followers is not None:
+                follower_info = {"min": min_followers}
+
+            # ✅ Step 4: Append each result to list
+            all_results.append({
+                "input": req.dict(),
+                "category": category,
+                "platform": platform,
+                "country": country,
+                "followers": follower_info,
+                "limit": api_limit,
+                "count": len(influencers),
+                "influencers": influencers
+            })
+
+        # ✅ Step 5: Return all results together
+        return {"results": all_results}
+
     except Exception as e:
         print(f"Error in find_influencers: {str(e)}")
         return {"error": str(e)}
