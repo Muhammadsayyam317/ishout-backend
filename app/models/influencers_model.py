@@ -1,8 +1,9 @@
 from pydantic import BaseModel
+from typing import List
 
 class FindInfluencerRequest(BaseModel):
-    category: str
-    platform: str = None
-    country: str = None
-    limit: int= 10
-    followers: str = None
+    platform: List[str]
+    category: List[str]
+    followers: List[str]
+    limit: str
+    country: List[str]
