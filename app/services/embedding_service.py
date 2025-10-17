@@ -215,21 +215,33 @@ async def query_vector_store(query: str, platform: str, limit: int = 10, min_fol
 
 
 
-        # Perform the similarity search with pre_filter
-        if pre_filter:
-            print(f"Searching with filters applied")
-            docs = store.similarity_search(query, k=limit, pre_filter=pre_filter)
-            print(f"Found {len(docs)} filtered results")
-        else:
-            print(f"Searching without filters")
-            docs = store.similarity_search(query, k=limit)
-            print(f"Found {len(docs)} results")
+        # Try to capture similarity scores where supported
+        docs_with_scores = []
+        try:
+            if pre_filter:
+                print(f"Searching with filters applied (with scores)")
+                docs_with_scores = store.similarity_search_with_score(query, k=limit, pre_filter=pre_filter)
+            else:
+                print(f"Searching without filters (with scores)")
+                docs_with_scores = store.similarity_search_with_score(query, k=limit)
+        except Exception as e_ws:
+            print(f"similarity_search_with_score not available ({str(e_ws)}), falling back without scores")
+            if pre_filter:
+                docs = store.similarity_search(query, k=limit, pre_filter=pre_filter)
+            else:
+                docs = store.similarity_search(query, k=limit)
+            docs_with_scores = [(d, None) for d in docs]
 
-        # Convert Document objects to plain dicts and return top-k results.
+        # Convert Document objects to plain dicts and return top-k results with optional scores
         formatted_results = []
-        for doc in docs[:limit]:
+        for doc, score in docs_with_scores[:limit]:
             meta = doc.metadata.copy() if hasattr(doc, "metadata") and doc.metadata else {}
             meta["page_content"] = getattr(doc, "page_content", "")
+            if score is not None:
+                try:
+                    meta["similarity_score"] = float(score)
+                except Exception:
+                    meta["similarity_score"] = score
             formatted_results.append(meta)
 
         print(f"Returning {len(formatted_results)} results")

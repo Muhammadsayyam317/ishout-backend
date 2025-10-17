@@ -1,4 +1,8 @@
 from typing import Dict, Any
+import math
+from app.services.agent_planner_service import plan_limits
+from app.services.rag_service import retrieve_with_rag_then_fallback
+from app.services.response_ranker_service import sort_and_diversify
 from app.tools.instagram_influencers import search_instagram_influencers
 from app.tools.tiktok_influencers import search_tiktok_influencers
 from app.tools.youtube_influencers import search_youtube_influencers
@@ -26,6 +30,8 @@ async def find_influencers(request_data: FindInfluencerRequest):
     """
     try:
         all_results = []  # Collect all responses
+        global_influencers: list = []  # Flattened, deduped influencer pool
+        seen_keys = set()
 
         # Extract arrays from request
         platforms = request_data.platform
@@ -38,11 +44,19 @@ async def find_influencers(request_data: FindInfluencerRequest):
         if not platforms or not categories:
             return {"error": "Platform and category are required"}
 
-        # Determine API limit
+        # Determine API limit (treat as global requested count), then adjust
         try:
             api_limit = int(limit)
         except ValueError:
             api_limit = 5
+
+        # Agentic planning for limits
+        adjusted_global_limit, per_call_limit = plan_limits(
+            user_limit=api_limit,
+            categories=categories,
+            followers_list=followers_list,
+            countries=countries,
+        )
 
         # Create cross-product search: each platform × each category × each follower count × each country
         for platform in platforms:
@@ -86,17 +100,21 @@ async def find_influencers(request_data: FindInfluencerRequest):
                         else:
                             query = f"find {category} influencers"
 
-                        # Make API call
-                        print(f"Searching {platform} for {category} influencers" + (f" in {country}" if country else "") + f" with {raw_followers} followers...")
-                        result = await tool(
-                            query=query,
-                            limit=api_limit,
+                        influencers = await retrieve_with_rag_then_fallback(
+                            platform=platform,
+                            category=category,
+                            country=country,
+                            raw_followers=raw_followers,
                             min_followers=min_followers,
                             max_followers=max_followers,
-                            country=country
+                            per_call_limit=per_call_limit,
+                            tool_call=tool,
+                            query=query,
+                            seen_keys=seen_keys,
                         )
 
-                        influencers = result.get("influencers", [])
+                        # collect into global pool for final flattening
+                        global_influencers.extend(influencers)
 
                         follower_info = {}
                         if min_followers is not None and max_followers is not None:
@@ -110,13 +128,24 @@ async def find_influencers(request_data: FindInfluencerRequest):
                             "platform": platform,
                             "country": country,
                             "followers": follower_info,
-                            "limit": api_limit,
+                            "limit": per_call_limit,
                             "count": len(influencers),
                             "influencers": influencers
                         })
 
-        # Return all results together
-        return {"results": all_results}
+        # Rank and diversify before applying cap
+        ranked = sort_and_diversify(global_influencers, diversify_by="platform")
+        flattened = ranked[:adjusted_global_limit]
+
+        # Add brief response notes
+        notes = {
+            "requested": api_limit,
+            "returned": len(flattened),
+            "global_cap": adjusted_global_limit,
+            "strategy": "RAG-first with fallback, similarity-ranked and platform-diversified",
+        }
+
+        return {"influencers": flattened, "notes": notes}
 
     except Exception as e:
         print(f"Error in find_influencers: {str(e)}")
