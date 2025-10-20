@@ -1,9 +1,10 @@
 import os
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import MongoClient
 from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain_openai import OpenAIEmbeddings
+from bson import ObjectId
 
 
 # MongoDB connection clients
@@ -214,21 +215,33 @@ async def query_vector_store(query: str, platform: str, limit: int = 10, min_fol
 
 
 
-        # Perform the similarity search with pre_filter
-        if pre_filter:
-            print(f"Searching with filters applied")
-            docs = store.similarity_search(query, k=limit, pre_filter=pre_filter)
-            print(f"Found {len(docs)} filtered results")
-        else:
-            print(f"Searching without filters")
-            docs = store.similarity_search(query, k=limit)
-            print(f"Found {len(docs)} results")
+        # Try to capture similarity scores where supported
+        docs_with_scores = []
+        try:
+            if pre_filter:
+                print(f"Searching with filters applied (with scores)")
+                docs_with_scores = store.similarity_search_with_score(query, k=limit, pre_filter=pre_filter)
+            else:
+                print(f"Searching without filters (with scores)")
+                docs_with_scores = store.similarity_search_with_score(query, k=limit)
+        except Exception as e_ws:
+            print(f"similarity_search_with_score not available ({str(e_ws)}), falling back without scores")
+            if pre_filter:
+                docs = store.similarity_search(query, k=limit, pre_filter=pre_filter)
+            else:
+                docs = store.similarity_search(query, k=limit)
+            docs_with_scores = [(d, None) for d in docs]
 
-        # Convert Document objects to plain dicts and return top-k results.
+        # Convert Document objects to plain dicts and return top-k results with optional scores
         formatted_results = []
-        for doc in docs[:limit]:
+        for doc, score in docs_with_scores[:limit]:
             meta = doc.metadata.copy() if hasattr(doc, "metadata") and doc.metadata else {}
             meta["page_content"] = getattr(doc, "page_content", "")
+            if score is not None:
+                try:
+                    meta["similarity_score"] = float(score)
+                except Exception:
+                    meta["similarity_score"] = score
             formatted_results.append(meta)
 
         print(f"Returning {len(formatted_results)} results")
@@ -237,3 +250,57 @@ async def query_vector_store(query: str, platform: str, limit: int = 10, min_fol
     except Exception as e:
         print(f"query_vector_store() - Error in vector search: {str(e)}")
         return []  # Return empty list instead of falling back to random docs
+
+
+async def delete_from_vector_store(platform: str, influencer_id: str) -> Dict[str, Any]:
+    """Delete one or more documents (and their embeddings) from the platform's collection.
+
+    Deleting the document(s) from the MongoDB collection also removes the corresponding
+    vector entries from the Atlas Vector Search index.
+
+    Args:
+        platform: Platform name (instagram, tiktok, youtube)
+        document_id: MongoDB document _id as a string (preferred when available)
+        username: Influencer username/handle to match against common username fields
+        url: External profile URL to match against common URL fields
+
+    Returns:
+        Dict with details about the deletion outcome
+    """
+    await connect_to_mongodb()
+
+    if platform == "instagram":
+        collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_INSTGRAM")
+    elif platform == "tiktok":
+        collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_TIKTOK")
+    elif platform == "youtube":
+        collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_YOUTUBE")
+    else:
+        raise ValueError(f"Invalid platform specified: {platform}")
+
+    if not collection_name:
+        raise ValueError(f"Collection name is empty for platform {platform}. Check your environment variables.")
+
+    collection = sync_db[collection_name]
+
+    # Build the deletion filter
+    delete_filter: Dict[str, Any] = {}
+
+    if influencer_id:
+        try:
+            delete_filter = {"_id": ObjectId(influencer_id)}
+        except Exception:
+            raise ValueError("Invalid influencer_id format. Must be a valid MongoDB ObjectId string.")
+
+    # Execute deletion
+    if "_id" in delete_filter:
+        result = collection.delete_one(delete_filter)
+        deleted_count = result.deleted_count
+    else:
+       raise ValueError(f"Invalid influencer_id format: {influencer_id}")
+
+    return {
+        "platform": platform,
+        "collection": collection_name,
+        "deleted_count": int(deleted_count)
+    }
