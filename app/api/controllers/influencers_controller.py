@@ -9,7 +9,7 @@ from app.tools.youtube_influencers import search_youtube_influencers
 from app.services.guardrails_service import check_input_guard_rail
 from app.utils.prompts import FIND_INFLUENCER_PROMPT
 from app.utils.helpers import parse_follower_count, parse_follower_range
-from app.models.influencers_model import FindInfluencerRequest
+from app.models.influencers_model import FindInfluencerRequest, MoreInfluencerRequest
 
 
 
@@ -39,6 +39,8 @@ async def find_influencers(request_data: FindInfluencerRequest):
         followers_list = request_data.followers
         countries = request_data.country
         limit = request_data.limit
+        more = getattr(request_data, "more", None)
+        exclude_ids = set(getattr(request_data, "exclude_ids", []) or [])
 
         # Validate required fields
         if not platforms or not categories:
@@ -50,9 +52,10 @@ async def find_influencers(request_data: FindInfluencerRequest):
         except ValueError:
             api_limit = 5
 
-        # Agentic planning for limits
+        # Agentic planning for limits (use `more` when present for follow-up requests)
+        effective_limit = int(more) if more else api_limit
         adjusted_global_limit, per_call_limit = plan_limits(
-            user_limit=api_limit,
+            user_limit=effective_limit,
             categories=categories,
             followers_list=followers_list,
             countries=countries,
@@ -111,6 +114,7 @@ async def find_influencers(request_data: FindInfluencerRequest):
                             tool_call=tool,
                             query=query,
                             seen_keys=seen_keys,
+                            exclude_keys=exclude_ids,
                         )
 
                         # collect into global pool for final flattening
@@ -150,3 +154,20 @@ async def find_influencers(request_data: FindInfluencerRequest):
     except Exception as e:
         print(f"Error in find_influencers: {str(e)}")
         return {"error": str(e)}
+
+
+async def more_influencers(request_data: MoreInfluencerRequest):
+    """Wrapper that reuses find_influencers with the 'more' count and exclusions.
+
+    This allows a separate, explicit endpoint for 'more' requests.
+    """
+    payload = FindInfluencerRequest(
+        platform=request_data.platform,
+        category=request_data.category,
+        followers=request_data.followers,
+        limit=str(request_data.more),  # base limit ignored by planner, but provided for shape
+        country=request_data.country,
+        more=request_data.more,
+        exclude_ids=request_data.exclude_ids,
+    )
+    return await find_influencers(payload)
