@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from typing import Dict, Any
-from app.api.controllers.influencers_controller import find_influencers
+from app.api.controllers.influencers_controller import find_influencers, more_influencers
 from app.api.controllers.twilio_controller import send_message
-from app.models.influencers_model import FindInfluencerRequest, DeleteInfluencerRequest
+from app.models.influencers_model import FindInfluencerRequest, DeleteInfluencerRequest, MoreInfluencerRequest
 from app.services.embedding_service import delete_from_vector_store
 
 router = APIRouter()
@@ -17,6 +17,14 @@ async def find_influencer_route(request_data: FindInfluencerRequest):
     """Endpoint to find influencers based on provided criteria"""
     try:
         return await find_influencers(request_data)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/find-influencer/more")
+async def more_influencer_route(request_data: MoreInfluencerRequest):
+    """Get a fresh batch of influencers excluding provided IDs."""
+    try:
+        return await more_influencers(request_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

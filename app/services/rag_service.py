@@ -27,6 +27,7 @@ async def retrieve_with_rag_then_fallback(
     tool_call: Callable[..., Any],
     query: str,
     seen_keys: set,
+    exclude_keys: Optional[set] = None,
 ) -> List[Dict[str, Any]]:
     """RAG-first retrieval with fallback to platform tool and enrichment.
 
@@ -45,7 +46,7 @@ async def retrieve_with_rag_then_fallback(
 
     for doc in rag_docs:
         key = _build_dedupe_key(doc)
-        if key and key not in seen_keys:
+        if key and key not in seen_keys and (not exclude_keys or key not in exclude_keys):
             seen_keys.add(key)
             enriched = dict(doc)
             enriched.setdefault("platform", platform)
@@ -66,7 +67,7 @@ async def retrieve_with_rag_then_fallback(
         api_influencers = api_result.get("influencers", [])
         for inf in api_influencers:
             key = _build_dedupe_key(inf)
-            if key and key not in seen_keys:
+            if key and key not in seen_keys and (not exclude_keys or key not in exclude_keys):
                 seen_keys.add(key)
                 enriched = dict(inf)
                 enriched.setdefault("platform", platform)
