@@ -3,6 +3,8 @@ import math
 from app.services.agent_planner_service import plan_limits
 from app.services.rag_service import retrieve_with_rag_then_fallback
 from app.services.response_ranker_service import sort_and_diversify
+from app.api.controllers.campaign_controller import create_campaign
+from app.models.campaign_model import CreateCampaignRequest
 from app.tools.instagram_influencers import search_instagram_influencers
 from app.tools.tiktok_influencers import search_tiktok_influencers
 from app.tools.youtube_influencers import search_youtube_influencers
@@ -41,6 +43,7 @@ async def find_influencers(request_data: FindInfluencerRequest):
         limit = request_data.limit
         more = getattr(request_data, "more", None)
         exclude_ids = set(getattr(request_data, "exclude_ids", []) or [])
+        is_campaign_create = request_data.is_campaign_create
 
         # Validate required fields
         if not platforms or not categories:
@@ -140,6 +143,24 @@ async def find_influencers(request_data: FindInfluencerRequest):
         # Rank and diversify before applying cap
         ranked = sort_and_diversify(global_influencers, diversify_by="platform")
         flattened = ranked[:adjusted_global_limit]
+
+        # Auto-create campaign if campaign details provided (silent creation)
+        if is_campaign_create:
+            campaign_name = request_data.campaign_name or f"Campaign - {', '.join(categories)}"
+            campaign_description = request_data.campaign_description or f"Auto-generated campaign for {', '.join(categories)} influencers on {', '.join(platforms)}"
+            
+            campaign_request = CreateCampaignRequest(
+                name=campaign_name,
+                description=campaign_description,
+                platform=platforms,
+                category=categories,
+                followers=followers_list,
+                country=countries,
+                influencer_ids=[]
+            )
+            
+            # Create campaign silently (don't include in response)
+            await create_campaign(campaign_request)
 
         # Add brief response notes
         notes = {

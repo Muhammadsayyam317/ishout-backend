@@ -11,6 +11,10 @@ class FindInfluencerRequest(BaseModel):
     more: Optional[int] = None
     # Optional: IDs/handles/urls already seen or accepted; ensure fresh results only
     exclude_ids: Optional[List[str]] = None
+    # Optional: campaign details for auto-creation
+    campaign_name: Optional[str] = None
+    campaign_description: Optional[str] = None
+    is_campaign_create: Optional[bool] = False
 
 
 class DeleteInfluencerRequest(BaseModel):
