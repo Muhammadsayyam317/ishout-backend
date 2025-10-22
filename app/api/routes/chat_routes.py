@@ -1,8 +1,10 @@
 from fastapi import APIRouter, HTTPException
 from typing import Dict, Any
 from app.api.controllers.influencers_controller import find_influencers, more_influencers
+from app.api.controllers.campaign_controller import create_campaign, get_all_campaigns, get_campaign_by_id, approve_single_influencer
 from app.api.controllers.twilio_controller import send_message
 from app.models.influencers_model import FindInfluencerRequest, DeleteInfluencerRequest, MoreInfluencerRequest
+from app.models.campaign_model import CreateCampaignRequest, ApproveSingleInfluencerRequest
 from app.services.embedding_service import delete_from_vector_store
 
 router = APIRouter()
@@ -56,3 +58,40 @@ async def delete_influencer_route(request: DeleteInfluencerRequest):
         raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# Campaign endpoints
+@router.post("/campaigns")
+async def create_campaign_route(request_data: CreateCampaignRequest):
+    """Create a new campaign"""
+    try:
+        return await create_campaign(request_data)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/campaigns")
+async def get_campaigns_route():
+    """Get all campaigns"""
+    try:
+        return await get_all_campaigns()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/campaigns/{campaign_id}")
+async def get_campaign_route(campaign_id: str):
+    """Get campaign details by ID with populated influencer data"""
+    try:
+        return await get_campaign_by_id(campaign_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/campaigns/approve-single-influencer")
+async def approve_single_influencer_route(request_data: ApproveSingleInfluencerRequest):
+    """Approve a single influencer and add to campaign"""
+    try:
+        return await approve_single_influencer(request_data)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
