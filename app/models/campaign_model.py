@@ -31,6 +31,7 @@ class CampaignResponse(BaseModel):
     country: List[str]
     influencer_ids: List[str]  # Legacy field for backward compatibility
     influencer_references: List[InfluencerReference] = []  # New field with platform info
+    rejected_ids: List[str] = []
     created_at: datetime
     updated_at: datetime
 
@@ -45,3 +46,9 @@ class CampaignListResponse(BaseModel):
     """Response model for campaign list"""
     campaigns: List[CampaignResponse]
     total: int
+
+
+class ApproveMultipleInfluencersRequest(BaseModel):
+    """Approve multiple influencers into a campaign at once"""
+    campaign_id: str
+    influencers: List[InfluencerReference]

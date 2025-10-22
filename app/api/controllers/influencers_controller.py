@@ -5,6 +5,7 @@ from app.services.rag_service import retrieve_with_rag_then_fallback
 from app.services.response_ranker_service import sort_and_diversify
 from app.api.controllers.campaign_controller import create_campaign
 from app.models.campaign_model import CreateCampaignRequest
+from app.api.controllers.campaign_controller import add_rejected_influencers
 from app.tools.instagram_influencers import search_instagram_influencers
 from app.tools.tiktok_influencers import search_tiktok_influencers
 from app.tools.youtube_influencers import search_youtube_influencers
@@ -144,6 +145,8 @@ async def find_influencers(request_data: FindInfluencerRequest):
         ranked = sort_and_diversify(global_influencers, diversify_by="platform")
         flattened = ranked[:adjusted_global_limit]
 
+        campaign_response = None
+
         # Auto-create campaign if campaign details provided (silent creation)
         if is_campaign_create:
             campaign_name = request_data.campaign_name or f"Campaign - {', '.join(categories)}"
@@ -159,8 +162,8 @@ async def find_influencers(request_data: FindInfluencerRequest):
                 influencer_ids=[]
             )
             
-            # Create campaign silently (don't include in response)
-            await create_campaign(campaign_request)
+            # Create campaign and capture response
+            campaign_response = await create_campaign(campaign_request)
 
         # Add brief response notes
         notes = {
@@ -170,7 +173,10 @@ async def find_influencers(request_data: FindInfluencerRequest):
             "strategy": "RAG-first with fallback, similarity-ranked and platform-diversified",
         }
 
-        return {"influencers": flattened, "notes": notes}
+        response: Dict[str, Any] = {"influencers": flattened, "notes": notes}
+        if campaign_response is not None:
+            response["campaign"] = campaign_response
+        return response
 
     except Exception as e:
         print(f"Error in find_influencers: {str(e)}")
@@ -182,6 +188,19 @@ async def more_influencers(request_data: MoreInfluencerRequest):
 
     This allows a separate, explicit endpoint for 'more' requests.
     """
+    # Use exclude_ids as the set of rejected/seen influencers
+    combined_exclude = list({*(request_data.exclude_ids or [])})
+
+    # Optionally record rejections to campaign (exclude_ids are considered rejected)
+    if request_data.campaign_id and request_data.exclude_ids:
+        try:
+            await add_rejected_influencers(
+                request_data.campaign_id,
+                combined_exclude
+            )
+        except Exception:
+            pass
+
     payload = FindInfluencerRequest(
         platform=request_data.platform,
         category=request_data.category,
@@ -189,6 +208,7 @@ async def more_influencers(request_data: MoreInfluencerRequest):
         limit=str(request_data.more),  # base limit ignored by planner, but provided for shape
         country=request_data.country,
         more=request_data.more,
-        exclude_ids=request_data.exclude_ids,
+        exclude_ids=combined_exclude,
+        campaign_id=request_data.campaign_id,
     )
     return await find_influencers(payload)

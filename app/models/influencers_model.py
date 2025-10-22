@@ -15,6 +15,8 @@ class FindInfluencerRequest(BaseModel):
     campaign_name: Optional[str] = None
     campaign_description: Optional[str] = None
     is_campaign_create: Optional[bool] = False
+    # Optional: link search context to an existing campaign
+    campaign_id: Optional[str] = None
 
 
 class DeleteInfluencerRequest(BaseModel):
@@ -40,3 +42,5 @@ class MoreInfluencerRequest(BaseModel):
     country: List[str]
     more: int
     exclude_ids: List[str]
+    # Optional: campaign context and newly rejected IDs from the last batch
+    campaign_id: Optional[str] = None

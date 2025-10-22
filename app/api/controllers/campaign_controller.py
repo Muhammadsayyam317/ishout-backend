@@ -1,7 +1,7 @@
 from typing import Dict, Any, List
 from datetime import datetime
 from bson import ObjectId
-from app.models.campaign_model import CreateCampaignRequest, CampaignResponse, ApproveSingleInfluencerRequest, CampaignListResponse
+from app.models.campaign_model import CreateCampaignRequest, CampaignResponse, ApproveSingleInfluencerRequest, CampaignListResponse, ApproveMultipleInfluencersRequest
 from app.services.embedding_service import connect_to_mongodb, sync_db
 
 
@@ -25,6 +25,7 @@ async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]
             "country": request_data.country,
             "influencer_ids": request_data.influencer_ids,  # Legacy field
             "influencer_references": [],  # New field with platform info
+            "rejected_ids": [],
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow()
         }
@@ -176,12 +177,57 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                 if not found:
                     missing_influencers.append({"id": influencer_id, "reason": "Influencer not found in any platform"})
         
+        # Get rejected influencer details
+        rejected_influencer_details = []
+        missing_rejected_influencers = []
+        rejected_ids = campaign.get("rejected_ids", [])
+        
+        for rejected_id in rejected_ids:
+            found = False
+            for platform in ["instagram", "tiktok", "youtube"]:
+                # Get collection name using environment variables
+                import os
+                if platform == "instagram":
+                    collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_INSTGRAM")
+                elif platform == "tiktok":
+                    collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_TIKTOK")
+                elif platform == "youtube":
+                    collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_YOUTUBE")
+                else:
+                    continue
+                
+                if not collection_name:
+                    continue
+                    
+                platform_collection = sync_db[collection_name]
+                
+                try:
+                    influencer = platform_collection.find_one({"_id": ObjectId(rejected_id)})
+                    if influencer:
+                        influencer["_id"] = str(influencer["_id"])
+                        influencer["platform"] = platform
+                        # Remove embedding field to reduce payload size
+                        if "embedding" in influencer:
+                            del influencer["embedding"]
+                        rejected_influencer_details.append(influencer)
+                        found = True
+                        break
+                except Exception as e:
+                    continue
+            
+            if not found:
+                missing_rejected_influencers.append({"id": rejected_id, "reason": "Rejected influencer not found in any platform"})
+        
         return {
             "campaign": campaign,
             "influencers": influencer_details,
             "missing_influencers": missing_influencers,
+            "rejected_influencers": rejected_influencer_details,
+            "missing_rejected_influencers": missing_rejected_influencers,
             "total_found": len(influencer_details),
-            "total_missing": len(missing_influencers)
+            "total_missing": len(missing_influencers),
+            "total_rejected": len(rejected_influencer_details),
+            "total_missing_rejected": len(missing_rejected_influencers)
         }
         
     except Exception as e:
@@ -281,4 +327,109 @@ async def approve_single_influencer(request_data: ApproveSingleInfluencerRequest
         
     except Exception as e:
         print(f"Error in approve_single_influencer: {str(e)}")
+        return {"error": str(e)}
+
+
+async def add_rejected_influencers(campaign_id: str, rejected_ids: List[str]) -> Dict[str, Any]:
+    """Append rejected influencer IDs to the campaign and update timestamp"""
+    try:
+        if not rejected_ids:
+            return {"message": "No rejected ids provided"}
+
+        await connect_to_mongodb()
+
+        from app.services.embedding_service import sync_db
+        campaigns_collection = sync_db["campaigns"]
+
+        # Ensure campaign exists
+        campaign = campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
+        if not campaign:
+            return {"error": "Campaign not found"}
+
+        existing_rejected: List[str] = campaign.get("rejected_ids", []) or []
+        # Deduplicate while preserving order (new first then existing)
+        combined = list(dict.fromkeys(existing_rejected + rejected_ids))
+
+        result = campaigns_collection.update_one(
+            {"_id": ObjectId(campaign_id)},
+            {"$set": {"rejected_ids": combined, "updated_at": datetime.utcnow()}}
+        )
+
+        if result.modified_count == 0:
+            return {"error": "Failed to update campaign with rejected ids"}
+
+        return {"message": "Rejected influencers recorded", "total_rejected": len(combined)}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+async def approve_multiple_influencers(request_data: ApproveMultipleInfluencersRequest) -> Dict[str, Any]:
+    """Approve multiple influencers and add to campaign with platform validation"""
+    try:
+        await connect_to_mongodb()
+
+        from app.services.embedding_service import sync_db
+        campaigns_collection = sync_db["campaigns"]
+
+        campaign = campaigns_collection.find_one({"_id": ObjectId(request_data.campaign_id)})
+        if not campaign:
+            return {"error": "Campaign not found"}
+
+        current_references = campaign.get("influencer_references", [])
+        current_influencer_ids = campaign.get("influencer_ids", [])
+
+        import os
+        platform_to_collection = {
+            "instagram": os.getenv("MONGODB_ATLAS_COLLECTION_INSTGRAM"),
+            "tiktok": os.getenv("MONGODB_ATLAS_COLLECTION_TIKTOK"),
+            "youtube": os.getenv("MONGODB_ATLAS_COLLECTION_YOUTUBE"),
+        }
+
+        added: List[Dict[str, Any]] = []
+        skipped: List[Dict[str, Any]] = []
+        errors: List[Dict[str, Any]] = []
+
+        for ref in request_data.influencers:
+            platform = ref.platform
+            influencer_id = ref.influencer_id
+            collection_name = platform_to_collection.get(platform)
+            if not collection_name:
+                errors.append({"influencer_id": influencer_id, "platform": platform, "reason": "Invalid or unconfigured platform"})
+                continue
+
+            platform_collection = sync_db[collection_name]
+            try:
+                influencer = platform_collection.find_one({"_id": ObjectId(influencer_id)})
+                if not influencer:
+                    errors.append({"influencer_id": influencer_id, "platform": platform, "reason": "Not found"})
+                    continue
+            except Exception as e:
+                errors.append({"influencer_id": influencer_id, "platform": platform, "reason": f"Invalid ID: {str(e)}"})
+                continue
+
+            already = influencer_id in current_influencer_ids or any(r.get("influencer_id") == influencer_id for r in current_references)
+            if already:
+                skipped.append({"influencer_id": influencer_id, "platform": platform, "reason": "Already in campaign"})
+                continue
+
+            current_influencer_ids.append(influencer_id)
+            current_references.append({"influencer_id": influencer_id, "platform": platform})
+            added.append({"influencer_id": influencer_id, "platform": platform})
+
+        if added:
+            result = campaigns_collection.update_one(
+                {"_id": ObjectId(request_data.campaign_id)},
+                {
+                    "$set": {
+                        "influencer_ids": current_influencer_ids,
+                        "influencer_references": current_references,
+                        "updated_at": datetime.utcnow()
+                    }
+                }
+            )
+            if result.modified_count == 0:
+                return {"error": "Failed to update campaign"}
+
+        return {"message": "Bulk approval completed", "added": added, "skipped": skipped, "errors": errors}
+    except Exception as e:
         return {"error": str(e)}
