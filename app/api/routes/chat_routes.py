@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException
 from typing import Dict, Any
 from app.api.controllers.influencers_controller import find_influencers, more_influencers
-from app.api.controllers.campaign_controller import create_campaign, get_all_campaigns, get_campaign_by_id, approve_single_influencer
+from app.api.controllers.campaign_controller import create_campaign, get_all_campaigns, get_campaign_by_id, approve_single_influencer, approve_multiple_influencers
 from app.api.controllers.twilio_controller import send_message
 from app.models.influencers_model import FindInfluencerRequest, DeleteInfluencerRequest, MoreInfluencerRequest
-from app.models.campaign_model import CreateCampaignRequest, ApproveSingleInfluencerRequest
+from app.models.campaign_model import CreateCampaignRequest, ApproveSingleInfluencerRequest, ApproveMultipleInfluencersRequest
 from app.services.embedding_service import delete_from_vector_store
 
 router = APIRouter()
@@ -93,5 +93,14 @@ async def approve_single_influencer_route(request_data: ApproveSingleInfluencerR
     """Approve a single influencer and add to campaign"""
     try:
         return await approve_single_influencer(request_data)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/campaigns/approve-multiple-influencers")
+async def approve_multiple_influencers_route(request_data: ApproveMultipleInfluencersRequest):
+    """Approve multiple influencers and add to campaign"""
+    try:
+        return await approve_multiple_influencers(request_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
