@@ -14,9 +14,14 @@ langchain-mongodb
 pymongo
 motor
 
+# Authentication and Security
+PyJWT
+passlib[bcrypt]
+python-multipart
+
 # Other dependencies
 pydantic
 twilio
 starlette-context
-python-multipart
 colorlog
+email-validator
