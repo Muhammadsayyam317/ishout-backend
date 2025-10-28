@@ -41,7 +41,8 @@ class CampaignResponse(BaseModel):
     country: List[str]
     influencer_ids: List[str]  # Legacy field for backward compatibility
     influencer_references: List[InfluencerReference] = []  # New field with platform info
-    rejected_ids: List[str] = []
+    rejected_ids: List[str] = []  # Rejected by admin
+    rejectedByUser: List[str] = []  # Rejected by user
     user_id: Optional[str] = None  # User who created the campaign
     status: CampaignStatus = CampaignStatus.PENDING  # Campaign status
     limit: Optional[int] = 10  # Number of influencers to generate
@@ -84,3 +85,9 @@ class RejectInfluencersRequest(BaseModel):
     campaign_id: str
     influencer_ids: List[str]  # List of influencer IDs to reject
     limit: Optional[int] = None  # Number of new influencers to generate (optional, uses campaign's limit by default)
+
+
+class UserRejectInfluencersRequest(BaseModel):
+    """Request model for user to reject approved influencers"""
+    campaign_id: str
+    influencer_ids: List[str]  # List of influencer IDs to reject

@@ -9,7 +9,8 @@ from app.models.campaign_model import (
     ApproveMultipleInfluencersRequest,
     AdminGenerateInfluencersRequest,
     CampaignStatusUpdateRequest,
-    CampaignStatus
+    CampaignStatus,
+    UserRejectInfluencersRequest
 )
 from app.services.embedding_service import connect_to_mongodb, sync_db
 
@@ -138,7 +139,8 @@ async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]
             "country": request_data.country,
             "influencer_ids": request_data.influencer_ids,  # Legacy field
             "influencer_references": [],  # New field with platform info
-            "rejected_ids": [],
+            "rejected_ids": [],  # Rejected by admin
+            "rejectedByUser": [],  # Rejected by user
             "user_id": request_data.user_id,  # Associate with user
             "status": CampaignStatus.PENDING,  # Initial status
             "limit": request_data.limit or 10,  # Store limit for influencer generation
@@ -214,6 +216,15 @@ async def get_all_campaigns() -> Dict[str, Any]:
             else:
                 campaign["rejected_ids"] = 0
                 campaign["rejected_influencers_count"] = 0
+            
+            # Replace rejectedByUser with just count for performance
+            rejected_by_user_ids = campaign.get("rejectedByUser", [])
+            if rejected_by_user_ids:
+                campaign["rejectedByUser"] = len(rejected_by_user_ids)
+                campaign["rejected_by_user_count"] = len(rejected_by_user_ids)
+            else:
+                campaign["rejectedByUser"] = 0
+                campaign["rejected_by_user_count"] = 0
             
             formatted_campaigns.append(campaign)
         
@@ -329,7 +340,7 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                 if not found:
                     missing_influencers.append({"id": influencer_id, "reason": "Influencer not found in any platform"})
         
-        # Get rejected influencer details
+        # Get rejected influencer details (rejected by admin)
         rejected_influencer_details = []
         missing_rejected_influencers = []
         rejected_ids = campaign.get("rejected_ids", [])
@@ -369,6 +380,47 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
             
             if not found:
                 missing_rejected_influencers.append({"id": rejected_id, "reason": "Rejected influencer not found in any platform"})
+        
+        # Get rejected by user influencer details
+        rejected_by_user_details = []
+        missing_rejected_by_user_influencers = []
+        rejected_by_user_ids = campaign.get("rejectedByUser", [])
+        
+        for rejected_id in rejected_by_user_ids:
+            found = False
+            for platform in ["instagram", "tiktok", "youtube"]:
+                # Get collection name using environment variables
+                import os
+                if platform == "instagram":
+                    collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_INSTGRAM")
+                elif platform == "tiktok":
+                    collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_TIKTOK")
+                elif platform == "youtube":
+                    collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_YOUTUBE")
+                else:
+                    continue
+                
+                if not collection_name:
+                    continue
+                    
+                platform_collection = sync_db[collection_name]
+                
+                try:
+                    influencer = platform_collection.find_one({"_id": ObjectId(rejected_id)})
+                    if influencer:
+                        influencer["_id"] = str(influencer["_id"])
+                        influencer["platform"] = platform
+                        # Remove embedding field to reduce payload size
+                        if "embedding" in influencer:
+                            del influencer["embedding"]
+                        rejected_by_user_details.append(influencer)
+                        found = True
+                        break
+                except Exception as e:
+                    continue
+            
+            if not found:
+                missing_rejected_by_user_influencers.append({"id": rejected_id, "reason": "Rejected by user influencer not found in any platform"})
         
         # Populate user details
         user_id = campaign.get("user_id")
@@ -418,9 +470,11 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
             "user_details": user_details,
             "approved_influencers": approved_influencers_full,
             "rejected_influencers": rejected_influencer_details,
+            "rejected_by_user_influencers": rejected_by_user_details,
             "generated_influencers": generated_influencers_full,
             "total_approved": len(approved_influencers_full),
             "total_rejected": len(rejected_influencer_details),
+            "total_rejected_by_user": len(rejected_by_user_details),
             "total_generated": len(generated_influencers_full)
         }
         
@@ -521,6 +575,79 @@ async def approve_single_influencer(request_data: ApproveSingleInfluencerRequest
         
     except Exception as e:
         print(f"Error in approve_single_influencer: {str(e)}")
+        return {"error": str(e)}
+
+
+async def user_reject_influencers(campaign_id: str, influencer_ids: List[str], user_id: str) -> Dict[str, Any]:
+    """User rejects approved influencers and moves them to rejectedByUser array"""
+    try:
+        if not influencer_ids:
+            return {"message": "No influencer IDs provided"}
+
+        await connect_to_mongodb()
+
+        from app.services.embedding_service import sync_db
+        campaigns_collection = sync_db["campaigns"]
+
+        # Ensure campaign exists and belongs to user
+        campaign = campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
+        if not campaign:
+            return {"error": "Campaign not found"}
+        
+        if campaign.get("user_id") != user_id:
+            return {"error": "You don't have permission to modify this campaign"}
+
+        # Get current approved influencer IDs and references
+        current_influencer_ids = campaign.get("influencer_ids", [])
+        current_references = campaign.get("influencer_references", [])
+        current_rejected_by_user = campaign.get("rejectedByUser", [])
+
+        # Validate that all influencer_ids are actually approved
+        rejected_influencers = []
+        remaining_approved_ids = []
+        remaining_references = []
+
+        for inf_id in influencer_ids:
+            if inf_id in current_influencer_ids:
+                rejected_influencers.append(inf_id)
+                current_rejected_by_user.append(inf_id)
+            else:
+                return {"error": f"Influencer {inf_id} is not approved for this campaign"}
+
+        # Remove rejected influencers from approved lists
+        for inf_id in current_influencer_ids:
+            if inf_id not in influencer_ids:
+                remaining_approved_ids.append(inf_id)
+
+        for ref in current_references:
+            if ref.get("influencer_id") not in influencer_ids:
+                remaining_references.append(ref)
+
+        # Update campaign
+        result = campaigns_collection.update_one(
+            {"_id": ObjectId(campaign_id)},
+            {
+                "$set": {
+                    "influencer_ids": remaining_approved_ids,
+                    "influencer_references": remaining_references,
+                    "rejectedByUser": current_rejected_by_user,
+                    "updated_at": datetime.utcnow()
+                }
+            }
+        )
+
+        if result.modified_count == 0:
+            return {"error": "Failed to update campaign"}
+
+        return {
+            "message": f"Successfully rejected {len(rejected_influencers)} influencer(s)",
+            "campaign_id": campaign_id,
+            "rejected_influencer_ids": rejected_influencers,
+            "remaining_approved_count": len(remaining_approved_ids),
+            "total_rejected_by_user": len(current_rejected_by_user)
+        }
+    except Exception as e:
+        print(f"Error in user_reject_influencers: {str(e)}")
         return {"error": str(e)}
 
 
@@ -804,12 +931,16 @@ async def reject_and_regenerate_influencers(request_data) -> Dict[str, Any]:
         if not campaign:
             return {"error": "Campaign not found"}
         
-        # Get existing rejected IDs
+        # Get existing rejected IDs (both admin rejected and user rejected)
         existing_rejected = set(campaign.get("rejected_ids", []))
+        existing_rejected_by_user = set(campaign.get("rejectedByUser", []))
         
         # Add new rejected IDs
         new_rejected_ids = list(set(request_data.influencer_ids))
         existing_rejected.update(new_rejected_ids)
+        
+        # Combine all rejected IDs for exclusion
+        all_rejected_ids = existing_rejected | existing_rejected_by_user
         
         # Update campaign with rejected IDs
         campaigns_collection.update_one(
@@ -834,7 +965,7 @@ async def reject_and_regenerate_influencers(request_data) -> Dict[str, Any]:
             campaign_id=request_data.campaign_id,
             user_id=campaign.get("user_id", ""),
             limit=campaign_limit,  # Use limit from campaign
-            exclude_ids=list(existing_rejected)  # Exclude all rejected IDs
+            exclude_ids=list(all_rejected_ids)  # Exclude all rejected IDs (both admin and user rejected)
         )
         
         # Generate new influencers
@@ -905,6 +1036,7 @@ async def reject_and_regenerate_influencers(request_data) -> Dict[str, Any]:
             "new_generated_count": len(final_new_influencers),
             "total_generated": len(all_generated_ids),
             "total_rejected": len(existing_rejected),
+            "total_rejected_by_user": len(existing_rejected_by_user),
             "rejected_influencer_ids": new_rejected_ids,
             "new_influencers": final_new_influencers,
             "campaign": {
