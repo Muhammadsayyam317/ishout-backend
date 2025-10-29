@@ -382,8 +382,8 @@ async def _get_campaign_lightweight(campaign_id: str) -> Dict[str, Any]:
         return {"error": str(e)}
 
 
-async def get_user_campaigns(user_id: str) -> Dict[str, Any]:
-    """Get all campaigns created by a user with approved influencers"""
+async def get_user_campaigns(user_id: str, status: Optional[str] = None) -> Dict[str, Any]:
+    """Get all campaigns created by a user with approved influencers. Optionally filter by status."""
     try:
         await connect_to_mongodb()
         
@@ -398,8 +398,12 @@ async def get_user_campaigns(user_id: str) -> Dict[str, Any]:
         
         campaigns_collection = db_module.sync_db["campaigns"]
         
-        # Get campaigns created by this user
-        campaigns = list(campaigns_collection.find({"user_id": user_id}).sort("created_at", -1))
+        # Get campaigns created by this user (with optional status filter)
+        query = {"user_id": user_id}
+        if status:
+            # Accept either enum value or raw string
+            query["status"] = status if isinstance(status, str) else str(status)
+        campaigns = list(campaigns_collection.find(query).sort("created_at", -1))
         
         user_campaigns = []
         for campaign in campaigns:

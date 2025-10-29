@@ -166,8 +166,8 @@ async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]
         return {"error": str(e)}
 
 
-async def get_all_campaigns() -> Dict[str, Any]:
-    """Get all campaigns with user details"""
+async def get_all_campaigns(status: Optional[str] = None) -> Dict[str, Any]:
+    """Get all campaigns with user details. Optionally filter by status."""
     try:
         await connect_to_mongodb()
         
@@ -175,7 +175,20 @@ async def get_all_campaigns() -> Dict[str, Any]:
         from app.services.embedding_service import sync_db
         campaigns_collection = sync_db["campaigns"]
         
-        campaigns = list(campaigns_collection.find().sort("created_at", -1))
+        query = {}
+        if status:
+            try:
+                # Validate against enum values
+                valid_status = {CampaignStatus.PENDING, CampaignStatus.PROCESSING, CampaignStatus.COMPLETED}
+                if status not in valid_status and status not in {s.value for s in valid_status}:
+                    return {"error": "Invalid status. Use pending, processing, or completed."}
+                # Normalize to string value
+                normalized = status.value if isinstance(status, CampaignStatus) else str(status)
+                query["status"] = normalized
+            except Exception:
+                query["status"] = str(status)
+        
+        campaigns = list(campaigns_collection.find(query).sort("created_at", -1))
         
         # Convert ObjectId to string and populate user details
         formatted_campaigns = []
