@@ -89,12 +89,17 @@ async def create_campaign_route(
 
 
 @router.get("/campaigns", tags=["User"])
-async def get_user_campaigns_route(current_user: dict = Depends(require_company_user_access)):
-    """Get user's campaigns with approved influencers (Company users only)"""
+async def get_user_campaigns_route(
+    status: Optional[str] = None,
+    current_user: dict = Depends(require_company_user_access)
+):
+    """Get user's campaigns with approved influencers (Company users only). Optional query param: status"""
     try:
-        return await get_user_campaigns(current_user["user_id"])
+        return await get_user_campaigns(current_user["user_id"], status)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+ 
 
 
 @router.put("/campaigns/reject-influencers", tags=["User"])

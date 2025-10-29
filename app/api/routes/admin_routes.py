@@ -24,12 +24,18 @@ router = APIRouter()
 
 
 @router.get("/campaigns", tags=["Admin"])
-async def get_all_campaigns_route(current_user: dict = Depends(require_admin_access)):
-    """Get all campaigns (admin only)"""
+async def get_all_campaigns_route(
+    status: Optional[str] = None,
+    current_user: dict = Depends(require_admin_access)
+):
+    """Get all campaigns (admin only). Optional query param: status=pending|processing|completed"""
     try:
-        return await get_all_campaigns()
+        return await get_all_campaigns(status)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+ 
 
 
 @router.get("/campaigns/{campaign_id}", tags=["Admin"])
