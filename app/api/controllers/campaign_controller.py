@@ -799,7 +799,7 @@ async def admin_generate_influencers(campaign_id: str, request_data: AdminGenera
 
         # Update campaign status to processing
         campaigns_collection.update_one(
-            {"_id": ObjectId(request_data.campaign_id)},
+            {"_id": ObjectId(campaign_id)},
             {
                 "$set": {
                     "status": CampaignStatus.PROCESSING,
