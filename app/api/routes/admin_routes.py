@@ -96,14 +96,15 @@ async def approve_multiple_influencers_route(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/campaigns/generate-influencers", tags=["Admin"])
+@router.post("/campaigns/generate-influencers/{campaign_id}", tags=["Admin"])
 async def generate_influencers_route(
+    campaign_id: str,
     request_data: AdminGenerateInfluencersRequest,
     current_user: dict = Depends(require_admin_access)
 ):
     """Generate influencers for a campaign (admin only)"""
     try:
-        return await admin_generate_influencers(request_data)
+        return await admin_generate_influencers(campaign_id, request_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
