@@ -2,10 +2,10 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 from bson import ObjectId
 from app.models.campaign_model import (
-    CreateCampaignRequest, 
-    CampaignResponse, 
-    ApproveSingleInfluencerRequest, 
-    CampaignListResponse, 
+    CreateCampaignRequest,
+    CampaignResponse,
+    ApproveSingleInfluencerRequest,
+    CampaignListResponse,
     ApproveMultipleInfluencersRequest,
     AdminGenerateInfluencersRequest,
     CampaignStatusUpdateRequest,
@@ -20,23 +20,23 @@ async def _populate_user_details(user_id: str) -> Dict[str, Any]:
     try:
         if not user_id:
             return None
-        
+
         # Import and check sync_db
         import app.services.embedding_service as db_module
-        
+
         if db_module.sync_db is None and db_module.sync_client is not None:
             import os
             db_name = os.getenv("MONGODB_ATLAS_DB_NAME")
             db_module.sync_db = db_module.sync_client[db_name]
         elif db_module.sync_db is None:
             return None
-        
+
         users_collection = db_module.sync_db["users"]
         user = users_collection.find_one({"_id": ObjectId(user_id)})
-        
+
         if not user:
             return None
-        
+
         return {
             "user_id": str(user["_id"]),
             "company_name": user.get("company_name"),
@@ -56,23 +56,23 @@ async def _populate_influencer_details(influencer_ids: List[str], platform: Opti
     try:
         if not influencer_ids:
             return []
-        
+
         # Import and check sync_db
         import app.services.embedding_service as db_module
         import os
-        
+
         if db_module.sync_db is None and db_module.sync_client is not None:
             db_name = os.getenv("MONGODB_ATLAS_DB_NAME")
             db_module.sync_db = db_module.sync_client[db_name]
         elif db_module.sync_db is None:
             return []
-        
+
         result = []
-        
+
         # Try to find influencers in all platform collections
         platforms_to_check = [platform] if platform else ["instagram", "tiktok", "youtube"]
         collections_to_check = []
-        
+
         for plat in platforms_to_check:
             if plat == "instagram":
                 collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_INSTGRAM")
@@ -82,10 +82,10 @@ async def _populate_influencer_details(influencer_ids: List[str], platform: Opti
                 collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_YOUTUBE")
             else:
                 continue
-            
+
             if collection_name:
                 collections_to_check.append((collection_name, plat))
-        
+
         for inf_id in influencer_ids:
             found = False
             for collection_name, plat in collections_to_check:
@@ -103,7 +103,7 @@ async def _populate_influencer_details(influencer_ids: List[str], platform: Opti
                         break
                 except Exception as e:
                     continue
-            
+
             if not found:
                 # Add placeholder for not found influencer
                 result.append({
@@ -112,7 +112,7 @@ async def _populate_influencer_details(influencer_ids: List[str], platform: Opti
                     "name": "Unknown",
                     "not_found": True
                 })
-        
+
         return result
     except Exception as e:
         print(f"Error populating influencer details: {str(e)}")
@@ -124,12 +124,12 @@ async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]
     """Create a new campaign"""
     try:
         await connect_to_mongodb()
-        
+
         # Generate default name if not provided
         campaign_name = request_data.name
         if not campaign_name:
             campaign_name = f"Campaign - {', '.join(request_data.category)} - {', '.join(request_data.platform)}"
-        
+
         campaign_doc = {
             "name": campaign_name,
             "description": request_data.description,
@@ -147,7 +147,7 @@ async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow()
         }
-        
+
         # Insert into campaigns collection
         from app.services.embedding_service import sync_db
         # Ensure database connection is established
@@ -155,12 +155,12 @@ async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]
             await connect_to_mongodb()
         campaigns_collection = sync_db["campaigns"]
         result = campaigns_collection.insert_one(campaign_doc)
-        
+
         return {
             "campaign_id": str(result.inserted_id),
             "message": "Campaign created successfully"
         }
-        
+
     except Exception as e:
         print(f"Error in create_campaign: {str(e)}")
         return {"error": str(e)}
@@ -170,11 +170,11 @@ async def get_all_campaigns(status: Optional[str] = None, page: int = 1, page_si
     """Get all campaigns with user details. Optionally filter by status with pagination support."""
     try:
         await connect_to_mongodb()
-        
+
         # Get the database connection after ensuring it's established
         from app.services.embedding_service import sync_db
         campaigns_collection = sync_db["campaigns"]
-        
+
         query = {}
         if status:
             try:
@@ -187,27 +187,27 @@ async def get_all_campaigns(status: Optional[str] = None, page: int = 1, page_si
                 query["status"] = normalized
             except Exception:
                 query["status"] = str(status)
-        
+
         # Calculate pagination
         skip = (page - 1) * page_size
-        
+
         # Get total count for pagination metadata
         total_count = campaigns_collection.count_documents(query)
-        
+
         # Get paginated campaigns
         campaigns = list(campaigns_collection.find(query).sort("created_at", -1).skip(skip).limit(page_size))
-        
+
         # Convert ObjectId to string and populate user details
         formatted_campaigns = []
         for campaign in campaigns:
             campaign["_id"] = str(campaign["_id"])
-            
+
             # Populate user details
             user_id = campaign.get("user_id")
             if user_id:
                 user_details = await _populate_user_details(user_id)
                 campaign["user_details"] = user_details
-            
+
             # Replace generated_influencers with just count for performance
             generated_influencers = campaign.get("generated_influencers", [])
             if generated_influencers:
@@ -218,7 +218,7 @@ async def get_all_campaigns(status: Optional[str] = None, page: int = 1, page_si
             else:
                 campaign["generated_influencers"] = 0
                 campaign["generated_influencers_count"] = 0
-            
+
             # Replace influencer_ids with just count for performance
             influencer_ids = campaign.get("influencer_ids", [])
             if influencer_ids:
@@ -227,7 +227,7 @@ async def get_all_campaigns(status: Optional[str] = None, page: int = 1, page_si
             else:
                 campaign["influencer_ids"] = 0
                 campaign["approved_influencers_count"] = 0
-            
+
             # Replace rejected_ids with just count for performance
             rejected_ids = campaign.get("rejected_ids", [])
             if rejected_ids:
@@ -236,7 +236,7 @@ async def get_all_campaigns(status: Optional[str] = None, page: int = 1, page_si
             else:
                 campaign["rejected_ids"] = 0
                 campaign["rejected_influencers_count"] = 0
-            
+
             # Replace rejectedByUser with just count for performance
             rejected_by_user_ids = campaign.get("rejectedByUser", [])
             if rejected_by_user_ids:
@@ -245,12 +245,12 @@ async def get_all_campaigns(status: Optional[str] = None, page: int = 1, page_si
             else:
                 campaign["rejectedByUser"] = 0
                 campaign["rejected_by_user_count"] = 0
-            
+
             formatted_campaigns.append(campaign)
-        
+
         # Calculate pagination metadata
         total_pages = (total_count + page_size - 1) // page_size  # Ceiling division
-        
+
         return {
             "campaigns": formatted_campaigns,
             "total": total_count,
@@ -260,7 +260,7 @@ async def get_all_campaigns(status: Optional[str] = None, page: int = 1, page_si
             "has_next": page < total_pages,
             "has_prev": page > 1
         }
-        
+
     except Exception as e:
         print(f"Error in get_all_campaigns: {str(e)}")
         return {"error": str(e)}
@@ -270,35 +270,35 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
     """Get campaign details by ID with populated influencer data"""
     try:
         await connect_to_mongodb()
-        
+
         # Get the database connection after ensuring it's established
         from app.services.embedding_service import sync_db
         campaigns_collection = sync_db["campaigns"]
-        
+
         # Get campaign
         campaign = campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
         if not campaign:
             return {"error": "Campaign not found"}
-        
+
         campaign["_id"] = str(campaign["_id"])
-        
+
         # Get influencer details using optimized queries
         influencer_details = []
         missing_influencers = []
-        
+
         # Use influencer_references if available (new format), otherwise fall back to legacy
         influencer_references = campaign.get("influencer_references", [])
-        
+
         if influencer_references:
             # New format: we have platform info
             for ref in influencer_references:
                 influencer_id = ref.get("influencer_id")
                 platform = ref.get("platform")
-                
+
                 if not influencer_id or not platform:
                     missing_influencers.append({"id": influencer_id, "reason": "Missing ID or platform"})
                     continue
-                
+
                 # Get collection name for platform using environment variables
                 import os
                 if platform == "instagram":
@@ -310,14 +310,14 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                 else:
                     missing_influencers.append({"id": influencer_id, "platform": platform, "reason": "Invalid platform"})
                     continue
-                
+
                 if not collection_name:
                     missing_influencers.append({"id": influencer_id, "platform": platform, "reason": f"Collection name not configured for platform {platform}"})
                     continue
-                
+
                 platform_collection = sync_db[collection_name]
                 print(f"Looking for influencer {influencer_id} in collection {collection_name}")
-                
+
                 try:
                     influencer = platform_collection.find_one({"_id": ObjectId(influencer_id)})
                     if influencer:
@@ -345,12 +345,12 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                         collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_YOUTUBE")
                     else:
                         continue
-                    
+
                     if not collection_name:
                         continue
-                        
+
                     platform_collection = sync_db[collection_name]
-                    
+
                     try:
                         influencer = platform_collection.find_one({"_id": ObjectId(influencer_id)})
                         if influencer:
@@ -364,15 +364,15 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                             break
                     except Exception as e:
                         continue
-                
+
                 if not found:
                     missing_influencers.append({"id": influencer_id, "reason": "Influencer not found in any platform"})
-        
+
         # Get rejected influencer details (rejected by admin)
         rejected_influencer_details = []
         missing_rejected_influencers = []
         rejected_ids = campaign.get("rejected_ids", [])
-        
+
         for rejected_id in rejected_ids:
             found = False
             for platform in ["instagram", "tiktok", "youtube"]:
@@ -386,12 +386,12 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                     collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_YOUTUBE")
                 else:
                     continue
-                
+
                 if not collection_name:
                     continue
-                    
+
                 platform_collection = sync_db[collection_name]
-                
+
                 try:
                     influencer = platform_collection.find_one({"_id": ObjectId(rejected_id)})
                     if influencer:
@@ -405,15 +405,15 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                         break
                 except Exception as e:
                     continue
-            
+
             if not found:
                 missing_rejected_influencers.append({"id": rejected_id, "reason": "Rejected influencer not found in any platform"})
-        
+
         # Get rejected by user influencer details
         rejected_by_user_details = []
         missing_rejected_by_user_influencers = []
         rejected_by_user_ids = campaign.get("rejectedByUser", [])
-        
+
         for rejected_id in rejected_by_user_ids:
             found = False
             for platform in ["instagram", "tiktok", "youtube"]:
@@ -427,12 +427,12 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                     collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_YOUTUBE")
                 else:
                     continue
-                
+
                 if not collection_name:
                     continue
-                    
+
                 platform_collection = sync_db[collection_name]
-                
+
                 try:
                     influencer = platform_collection.find_one({"_id": ObjectId(rejected_id)})
                     if influencer:
@@ -446,16 +446,16 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                         break
                 except Exception as e:
                     continue
-            
+
             if not found:
                 missing_rejected_by_user_influencers.append({"id": rejected_id, "reason": "Rejected by user influencer not found in any platform"})
-        
+
         # Populate user details
         user_id = campaign.get("user_id")
         user_details = None
         if user_id:
             user_details = await _populate_user_details(user_id)
-        
+
         # Populate approved influencer IDs with full details
         approved_ids = campaign.get("influencer_ids", [])
         approved_influencers_full = []
@@ -472,7 +472,7 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
             else:
                 # Try all platforms
                 approved_influencers_full = await _populate_influencer_details(approved_ids)
-        
+
         # Populate generated influencer IDs with full details
         generated_ids = campaign.get("generated_influencers", [])
         generated_influencers_full = []
@@ -492,7 +492,7 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                             generated_influencers_full.append(inf_copy)
                         else:
                             generated_influencers_full.append(inf)
-        
+
         return {
             "campaign": campaign,
             "user_details": user_details,
@@ -505,7 +505,7 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
             "total_rejected_by_user": len(rejected_by_user_details),
             "total_generated": len(generated_influencers_full)
         }
-        
+
     except Exception as e:
         print(f"Error in get_campaign_by_id: {str(e)}")
         return {"error": str(e)}
@@ -515,18 +515,18 @@ async def approve_single_influencer(request_data: ApproveSingleInfluencerRequest
     """Approve a single influencer and add to campaign with platform validation"""
     try:
         await connect_to_mongodb()
-        
+
         # Get the database connection after ensuring it's established
         from app.services.embedding_service import sync_db
         campaigns_collection = sync_db["campaigns"]
 
 
-        
+
         # Get current campaign
         campaign = campaigns_collection.find_one({"_id": ObjectId(request_data.campaign_id)})
         if not campaign:
             return {"error": "Campaign not found"}
-        
+
         # Validate influencer exists in the specified platform
         import os
         if request_data.platform == "instagram":
@@ -537,14 +537,14 @@ async def approve_single_influencer(request_data: ApproveSingleInfluencerRequest
             collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_YOUTUBE")
         else:
             return {"error": "Invalid platform"}
-        
+
         if not collection_name:
             return {"error": f"Collection name not configured for platform {request_data.platform}"}
-        
+
         platform_collection = sync_db[collection_name]
-        
+
         print(f"Validating influencer {request_data.influencer_id} in collection {collection_name}")
-        
+
         try:
             influencer = platform_collection.find_one({"_id": ObjectId(request_data.influencer_id)})
             print(f"Influencer found: {influencer is not None}")
@@ -557,20 +557,20 @@ async def approve_single_influencer(request_data: ApproveSingleInfluencerRequest
                 return {"error": f"Influencer not found in {request_data.platform} platform (collection: {collection_name})"}
         except Exception as e:
             return {"error": f"Invalid influencer ID format: {str(e)}"}
-        
+
         # Get current influencer references
         current_references = campaign.get("influencer_references", [])
         current_influencer_ids = campaign.get("influencer_ids", [])  # Legacy field
-        
+
         # Check if influencer already exists (check both new and legacy formats)
         if request_data.influencer_id in current_influencer_ids:
             return {"message": "Influencer already approved for this campaign"}
-        
+
         # Check in new format
         for ref in current_references:
             if ref.get("influencer_id") == request_data.influencer_id:
                 return {"message": "Influencer already approved for this campaign"}
-        
+
         # Add new influencer reference
         new_reference = {
             "influencer_id": request_data.influencer_id,
@@ -578,7 +578,7 @@ async def approve_single_influencer(request_data: ApproveSingleInfluencerRequest
         }
         new_references = current_references + [new_reference]
         new_influencer_ids = current_influencer_ids + [request_data.influencer_id]  # Legacy field
-        
+
         # Update campaign with both formats
         result = campaigns_collection.update_one(
             {"_id": ObjectId(request_data.campaign_id)},
@@ -590,17 +590,17 @@ async def approve_single_influencer(request_data: ApproveSingleInfluencerRequest
                 }
             }
         )
-        
+
         if result.modified_count == 0:
             return {"error": "Failed to update campaign"}
-        
+
         return {
             "message": "Successfully added influencer to campaign",
             "influencer_id": request_data.influencer_id,
             "platform": request_data.platform,
             "total_influencers": len(new_influencer_ids)
         }
-        
+
     except Exception as e:
         print(f"Error in approve_single_influencer: {str(e)}")
         return {"error": str(e)}
@@ -621,7 +621,7 @@ async def user_reject_influencers(campaign_id: str, influencer_ids: List[str], u
         campaign = campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
         if not campaign:
             return {"error": "Campaign not found"}
-        
+
         if campaign.get("user_id") != user_id:
             return {"error": "You don't have permission to modify this campaign"}
 
@@ -784,19 +784,19 @@ async def approve_multiple_influencers(request_data: ApproveMultipleInfluencersR
         return {"error": str(e)}
 
 
-async def admin_generate_influencers(request_data: AdminGenerateInfluencersRequest) -> Dict[str, Any]:
+async def admin_generate_influencers(campaign_id: str, request_data: AdminGenerateInfluencersRequest) -> Dict[str, Any]:
     """Admin generates influencers for a campaign"""
     try:
         await connect_to_mongodb()
-        
+
         from app.services.embedding_service import sync_db
         campaigns_collection = sync_db["campaigns"]
-        
+
         # Get campaign
-        campaign = campaigns_collection.find_one({"_id": ObjectId(request_data.campaign_id)})
+        campaign = campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
         if not campaign:
             return {"error": "Campaign not found"}
-        
+
         # Update campaign status to processing
         campaigns_collection.update_one(
             {"_id": ObjectId(request_data.campaign_id)},
@@ -807,30 +807,30 @@ async def admin_generate_influencers(request_data: AdminGenerateInfluencersReque
                 }
             }
         )
-        
+
         # Import influencer search functionality
         from app.api.controllers.influencers_controller import find_influencers_by_campaign
         from app.models.influencers_model import FindInfluencerRequest
-        
+
         # Use limit from campaign if available, otherwise use request limit
         campaign_limit = campaign.get("limit") or request_data.limit or 10
-        
+
         # Create influencer search request based on campaign criteria
         influencer_request = FindInfluencerRequest(
-            campaign_id=request_data.campaign_id,
+            campaign_id=campaign_id,
             user_id=campaign.get("user_id", ""),  # Get user_id from campaign
             limit=campaign_limit  # Use limit from campaign
         )
-        
+
         # Generate influencers
         result = await find_influencers_by_campaign(influencer_request)
-        
+
         print(f"Result from find_influencers_by_campaign: {result}")
-        
+
         if "error" in result:
             # Update status back to pending if generation failed
             campaigns_collection.update_one(
-                {"_id": ObjectId(request_data.campaign_id)},
+                {"_id": ObjectId(campaign_id)},
                 {
                     "$set": {
                         "status": CampaignStatus.PENDING,
@@ -839,21 +839,21 @@ async def admin_generate_influencers(request_data: AdminGenerateInfluencersReque
                 }
             )
             return result
-        
+
         # Update campaign with generated influencers (for admin review)
         generated_influencers = result.get("influencers", [])
         print(f"Generated influencers count: {len(generated_influencers)}")
-        
+
         # Extract only IDs from influencers for storage
         generated_influencer_ids = []
         for inf in generated_influencers:
             inf_id = inf.get("influencer_id") or inf.get("_id") or inf.get("id")
             if inf_id:
                 generated_influencer_ids.append(str(inf_id))
-        
+
         # Store only IDs to reduce database size
         campaigns_collection.update_one(
-            {"_id": ObjectId(request_data.campaign_id)},
+            {"_id": ObjectId(campaign_id)},
             {
                 "$set": {
                     "generated_influencers": generated_influencer_ids,  # Store only IDs
@@ -862,14 +862,14 @@ async def admin_generate_influencers(request_data: AdminGenerateInfluencersReque
                 }
             }
         )
-        
+
         return {
             "message": f"Generated {len(generated_influencers)} influencers for admin review",
-            "campaign_id": request_data.campaign_id,
+            "campaign_id": campaign_id,
             "generated_count": len(generated_influencers),
             "influencers": generated_influencers
         }
-        
+
     except Exception as e:
         print(f"Error in admin_generate_influencers: {str(e)}")
         return {"error": str(e)}
@@ -879,10 +879,10 @@ async def update_campaign_status(request_data: CampaignStatusUpdateRequest) -> D
     """Update campaign status"""
     try:
         await connect_to_mongodb()
-        
+
         from app.services.embedding_service import sync_db
         campaigns_collection = sync_db["campaigns"]
-        
+
         # Update campaign status
         result = campaigns_collection.update_one(
             {"_id": ObjectId(request_data.campaign_id)},
@@ -893,16 +893,16 @@ async def update_campaign_status(request_data: CampaignStatusUpdateRequest) -> D
                 }
             }
         )
-        
+
         if result.modified_count == 0:
             return {"error": "Campaign not found or no changes made"}
-        
+
         return {
             "message": f"Campaign status updated to {request_data.status}",
             "campaign_id": request_data.campaign_id,
             "status": request_data.status
         }
-        
+
     except Exception as e:
         print(f"Error in update_campaign_status: {str(e)}")
         return {"error": str(e)}
@@ -912,18 +912,18 @@ async def get_campaign_generated_influencers(campaign_id: str) -> Dict[str, Any]
     """Get generated influencers for a campaign (admin only) - populates full details from IDs"""
     try:
         await connect_to_mongodb()
-        
+
         from app.services.embedding_service import sync_db
         campaigns_collection = sync_db["campaigns"]
-        
+
         # Get campaign with generated influencers
         campaign = campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
         if not campaign:
             return {"error": "Campaign not found"}
-        
+
         # Get generated influencer IDs
         generated_influencer_ids = campaign.get("generated_influencers", [])
-        
+
         # Populate full details if we have IDs
         generated_influencers_with_details = []
         if generated_influencer_ids and isinstance(generated_influencer_ids[0], str):
@@ -932,7 +932,7 @@ async def get_campaign_generated_influencers(campaign_id: str) -> Dict[str, Any]
         else:
             # Legacy format (already full objects), return as is
             generated_influencers_with_details = generated_influencer_ids
-        
+
         return {
             "campaign_id": campaign_id,
             "campaign_name": campaign["name"],
@@ -940,7 +940,7 @@ async def get_campaign_generated_influencers(campaign_id: str) -> Dict[str, Any]
             "generated_influencers": generated_influencers_with_details,
             "total_generated": len(generated_influencers_with_details)
         }
-        
+
     except Exception as e:
         print(f"Error in get_campaign_generated_influencers: {str(e)}")
         return {"error": str(e)}
@@ -950,26 +950,26 @@ async def reject_and_regenerate_influencers(request_data) -> Dict[str, Any]:
     """Reject influencers and generate new ones"""
     try:
         await connect_to_mongodb()
-        
+
         from app.services.embedding_service import sync_db
         campaigns_collection = sync_db["campaigns"]
-        
+
         # Get campaign
         campaign = campaigns_collection.find_one({"_id": ObjectId(request_data.campaign_id)})
         if not campaign:
             return {"error": "Campaign not found"}
-        
+
         # Get existing rejected IDs (both admin rejected and user rejected)
         existing_rejected = set(campaign.get("rejected_ids", []))
         existing_rejected_by_user = set(campaign.get("rejectedByUser", []))
-        
+
         # Add new rejected IDs
         new_rejected_ids = list(set(request_data.influencer_ids))
         existing_rejected.update(new_rejected_ids)
-        
+
         # Combine all rejected IDs for exclusion
         all_rejected_ids = existing_rejected | existing_rejected_by_user
-        
+
         # Update campaign with rejected IDs
         campaigns_collection.update_one(
             {"_id": ObjectId(request_data.campaign_id)},
@@ -980,14 +980,14 @@ async def reject_and_regenerate_influencers(request_data) -> Dict[str, Any]:
                 }
             }
         )
-        
+
         # Import influencer search functionality
         from app.api.controllers.influencers_controller import find_influencers_by_campaign
         from app.models.influencers_model import FindInfluencerRequest
-        
+
         # Use limit from campaign if available, otherwise use request limit
         campaign_limit = campaign.get("limit") or request_data.limit or 10
-        
+
         # Create influencer search request with exclude_ids
         influencer_request = FindInfluencerRequest(
             campaign_id=request_data.campaign_id,
@@ -995,23 +995,23 @@ async def reject_and_regenerate_influencers(request_data) -> Dict[str, Any]:
             limit=campaign_limit,  # Use limit from campaign
             exclude_ids=list(all_rejected_ids)  # Exclude all rejected IDs (both admin and user rejected)
         )
-        
+
         # Generate new influencers
         result = await find_influencers_by_campaign(influencer_request)
-        
+
         print(f"Result from find_influencers_by_campaign (regenerate): {result}")
-        
+
         if "error" in result:
             return result
-        
+
         # Get new influencers
         new_influencers = result.get("influencers", [])
         print(f"New influencers count: {len(new_influencers)}")
-        
+
         # Get existing generated influencer IDs (now stored as simple list of IDs)
         existing_generated_ids = set()
         existing_generated = campaign.get("generated_influencers", [])
-        
+
         # Check if it's list of IDs (new format) or list of objects (legacy format)
         if existing_generated and isinstance(existing_generated[0], str):
             # New format: list of IDs
@@ -1022,29 +1022,29 @@ async def reject_and_regenerate_influencers(request_data) -> Dict[str, Any]:
                 inf_id = inf.get("influencer_id") or inf.get("_id") or inf.get("id")
                 if inf_id:
                     existing_generated_ids.add(str(inf_id))
-        
+
         # Get IDs of already approved influencers (to exclude from regeneration results)
         already_approved_ids = set(campaign.get("influencer_ids", []))
-        
+
         # Filter out already generated influencers AND already approved influencers
         final_new_influencers = []
         final_new_influencer_ids = []
         for inf in new_influencers:
             inf_id = inf.get("influencer_id") or inf.get("_id") or inf.get("id")
             inf_id_str = str(inf_id) if inf_id else None
-            
+
             # Only include if not already generated AND not already approved
             if inf_id_str and inf_id_str not in existing_generated_ids and inf_id_str not in already_approved_ids:
                 final_new_influencers.append(inf)
                 final_new_influencer_ids.append(inf_id_str)
-        
+
         # Limit to the requested number of new influencers
         final_new_influencers = final_new_influencers[:campaign_limit]
         final_new_influencer_ids = final_new_influencer_ids[:campaign_limit]
-        
+
         # Combine with existing generated influencers (as IDs)
         all_generated_ids = existing_generated_ids | set(final_new_influencer_ids)
-        
+
         # Update campaign with merged generated influencer IDs only (not full objects)
         campaigns_collection.update_one(
             {"_id": ObjectId(request_data.campaign_id)},
@@ -1056,7 +1056,7 @@ async def reject_and_regenerate_influencers(request_data) -> Dict[str, Any]:
                 }
             }
         )
-        
+
         return {
             "message": f"Rejected {len(new_rejected_ids)} influencer(s) and generated {len(final_new_influencers)} new influencer(s)",
             "campaign_id": request_data.campaign_id,
@@ -1074,7 +1074,7 @@ async def reject_and_regenerate_influencers(request_data) -> Dict[str, Any]:
                 "category": campaign.get("category", [])
             }
         }
-        
+
     except Exception as e:
         print(f"Error in reject_and_regenerate_influencers: {str(e)}")
         return {"error": str(e)}
