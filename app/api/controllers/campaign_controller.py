@@ -166,8 +166,8 @@ async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]
         return {"error": str(e)}
 
 
-async def get_all_campaigns(status: Optional[str] = None) -> Dict[str, Any]:
-    """Get all campaigns with user details. Optionally filter by status."""
+async def get_all_campaigns(status: Optional[str] = None, page: int = 1, page_size: int = 10) -> Dict[str, Any]:
+    """Get all campaigns with user details. Optionally filter by status with pagination support."""
     try:
         await connect_to_mongodb()
         
@@ -188,7 +188,14 @@ async def get_all_campaigns(status: Optional[str] = None) -> Dict[str, Any]:
             except Exception:
                 query["status"] = str(status)
         
-        campaigns = list(campaigns_collection.find(query).sort("created_at", -1))
+        # Calculate pagination
+        skip = (page - 1) * page_size
+        
+        # Get total count for pagination metadata
+        total_count = campaigns_collection.count_documents(query)
+        
+        # Get paginated campaigns
+        campaigns = list(campaigns_collection.find(query).sort("created_at", -1).skip(skip).limit(page_size))
         
         # Convert ObjectId to string and populate user details
         formatted_campaigns = []
@@ -241,9 +248,17 @@ async def get_all_campaigns(status: Optional[str] = None) -> Dict[str, Any]:
             
             formatted_campaigns.append(campaign)
         
+        # Calculate pagination metadata
+        total_pages = (total_count + page_size - 1) // page_size  # Ceiling division
+        
         return {
             "campaigns": formatted_campaigns,
-            "total": len(formatted_campaigns)
+            "total": total_count,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages,
+            "has_next": page < total_pages,
+            "has_prev": page > 1
         }
         
     except Exception as e:
