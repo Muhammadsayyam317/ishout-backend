@@ -26,31 +26,37 @@ router = APIRouter()
 @router.get("/campaigns", tags=["Admin"])
 async def get_all_campaigns_route(
     status: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 10,
     current_user: dict = Depends(require_admin_access)
 ):
-    """Get all campaigns (admin only). Optional query param: status=pending|processing|completed"""
+    """Get all campaigns (admin only). Optional query params: status=pending|processing|completed, page=1, page_size=10"""
     try:
-        return await get_all_campaigns(status)
+        return await get_all_campaigns(status, page, page_size)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get('/pending-campaigns', tags= ["Admin"])
 async def get_pending_campaigns_route(
         status = 'pending',
+        page: int = 1,
+        page_size: int = 10,
         current_user: dict = Depends(require_admin_access)
 ):
   try:
-      return await get_all_campaigns(status)
+      return await get_all_campaigns(status, page, page_size)
   except Exception as e:
       raise HTTPException(status_code=500, detail=str(e))
 
 @router.get('/processing-campaigns', tags= ["Admin"])
-async def get_pending_campaigns_route(
+async def get_processing_campaigns_route(
         status = 'processing',
+        page: int = 1,
+        page_size: int = 10,
         current_user: dict = Depends(require_admin_access)
 ):
   try:
-      return await get_all_campaigns(status)
+      return await get_all_campaigns(status, page, page_size)
   except Exception as e:
       raise HTTPException(status_code=500, detail=str(e))
 
