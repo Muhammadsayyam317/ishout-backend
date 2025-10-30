@@ -34,9 +34,25 @@ async def get_all_campaigns_route(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get('/pending-campaigns', tags= ["Admin"])
+async def get_pending_campaigns_route(
+        status = 'pending',
+        current_user: dict = Depends(require_admin_access)
+):
+  try:
+      return await get_all_campaigns(status)
+  except Exception as e:
+      raise HTTPException(status_code=500, detail=str(e))
 
- 
-
+@router.get('/processing-campaigns', tags= ["Admin"])
+async def get_pending_campaigns_route(
+        status = 'processing',
+        current_user: dict = Depends(require_admin_access)
+):
+  try:
+      return await get_all_campaigns(status)
+  except Exception as e:
+      raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/campaigns/{campaign_id}", tags=["Admin"])
 async def get_campaign_route(
