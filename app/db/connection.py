@@ -1,24 +1,34 @@
-from fastapi import FastAPI
-from motor.motor_asyncio import AsyncIOMotorClient
-from contextlib import asynccontextmanager
-from app.config.credentials_config import config
+from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
-async def connect_to_mongodb(app: FastAPI):
-    app.mongodb_client = AsyncIOMotorClient(config.DATABASE_URL)
-    app.mongodb = app.mongodb_client.get_database(config.DB_NAME)
-    print("MongoDB connected")
+class Database:
+    _client: AsyncIOMotorClient | None = None
+    _db: AsyncIOMotorDatabase | None = None
 
 
-async def disconnect_from_mongodb(app: FastAPI):
-    app.mongodb_client.close()
-    print("MongoDB disconnected")
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
+@staticmethod
+def connect() -> None:
     try:
-        await connect_to_mongodb(app)
-        yield
-    finally:
-        await disconnect_from_mongodb(app)
+        Database._client = AsyncIOMotorClient(os.getenv("MONGODB_ATLAS_URI"))
+        Database._db = Database._client[os.getenv("MONGODB_ATLAS_DB_NAME")]
+    except Exception as e:
+        raise RuntimeError(f"Error connecting to MongoDB: {e}")
+
+
+@staticmethod
+def close() -> None:
+    if Database._client is not None:
+        Database._client.close()
+    else:
+        raise RuntimeError("MongoDB client not initialized. .")
+
+
+def get_db() -> AsyncIOMotorDatabase:
+    if Database._db is None:
+        return Database._db
+    else:
+        raise RuntimeError("MongoDB database not initialized..")
