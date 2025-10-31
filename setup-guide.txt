@@ -1,0 +1,9 @@
+# Create virtual environment (use your installed Python version)
+py -m venv .venv
+
+# Activate it
+.\.venv\Scripts\Activate.ps1
+
+# Upgrade pip and install dependencies
+python -m pip install --upgrade pip
+pip install -r requirements.txt

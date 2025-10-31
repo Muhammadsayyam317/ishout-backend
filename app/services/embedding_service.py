@@ -40,7 +40,7 @@ async def connect_to_mongodb():
         db = async_client[db_name]
         sync_db = sync_client[db_name]
 
-        print("MongoDB connected (async and sync clients) ✅")
+        print("MongoDB connected (async and sync clients)")
     
     return db
 

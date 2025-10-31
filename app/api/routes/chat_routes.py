@@ -12,10 +12,9 @@ from app.middleware.auth_middleware import get_authenticated_user, get_optional_
 router = APIRouter()
 
 
-@router.get("/health", tags=["General"])
-def health_check():
-    """Health check endpoint"""
-    return {"status": "healthy", "message": "Ishout API is running"}
+@router.get("/")
+def indexView():
+    return {"message": "Hello, World!"}
 
 
 @router.delete("/delete-influencer", tags=["Admin"])
