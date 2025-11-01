@@ -8,6 +8,7 @@ from app.models.influencers_model import FindInfluencerRequest, DeleteInfluencer
 from app.models.campaign_model import CreateCampaignRequest, ApproveSingleInfluencerRequest, ApproveMultipleInfluencersRequest
 from app.services.embedding_service import delete_from_vector_store
 from app.middleware.auth_middleware import get_authenticated_user, get_optional_user, require_admin_access, security
+from app.db.connection import Database, get_sync_db
 
 router = APIRouter()
 
@@ -15,6 +16,30 @@ router = APIRouter()
 @router.get("/")
 def indexView():
     return {"message": "Hello, World!"}
+
+
+@router.get("/health/db-connection", tags=["Health"])
+def check_db_connection():
+    """Check database connection status - verify only one connection exists"""
+    info = Database.get_connection_info()
+    
+    # Check if MongoDB server shows active connections (if using pymongo)
+    active_connections = "N/A"
+    try:
+        db = get_sync_db()
+        server_status = db.client.server_info()
+        active_connections = db.client.admin.command("serverStatus").get("connections", {}).get("current", "N/A")
+    except Exception as e:
+        active_connections = f"Error: {str(e)}"
+    
+    status = "✅ HEALTHY" if info["connection_count"] == 1 else "⚠️ WARNING"
+    
+    return {
+        "status": status,
+        "connection_info": info,
+        "mongodb_server_connections": active_connections,
+        "message": "✅ Only 1 connection created" if info["connection_count"] == 1 else f"⚠️ {info['connection_count']} connection attempts detected"
+    }
 
 
 @router.delete("/delete-influencer", tags=["Admin"])

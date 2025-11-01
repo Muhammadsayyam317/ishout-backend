@@ -1,4 +1,5 @@
 from typing import Dict, Any
+import re
 from app.services.embedding_service import query_vector_store
 
 
@@ -64,7 +65,6 @@ async def search_tiktok_influencers(query: str, limit: int = 10, min_followers: 
             
         if not username and external_link:
             # Extract username from URL pattern like https://www.tiktok.com/@username
-            import re
             username_match = re.search(r'tiktok\.com/@?([^/]+)', external_link)
             if username_match:
                 username = username_match.group(1)

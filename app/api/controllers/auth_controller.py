@@ -1,7 +1,6 @@
 import hashlib
 import secrets
 import jwt
-import os
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 from bson import ObjectId
@@ -16,14 +15,9 @@ from app.models.user_model import (
     UserUpdateRequest,
     UserCampaignResponse
 )
-from app.services.embedding_service import connect_to_mongodb, sync_db
+from app.db.connection import get_sync_db
 from app.api.controllers.campaign_controller import get_campaign_by_id
-
-
-# JWT Configuration
-SECRET_KEY = "your-secret-key-change-in-production"  # In production, use environment variable
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 720
+from app.config import config
 
 
 def hash_password(password: str) -> str:
@@ -44,17 +38,21 @@ def verify_password(password: str, hashed_password: str) -> bool:
 
 def create_access_token(data: dict) -> str:
     """Create JWT access token"""
+    if not config.JWT_SECRET_KEY:
+        raise ValueError("JWT_SECRET_KEY not configured in environment variables")
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.utcnow() + timedelta(minutes=config.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, config.JWT_SECRET_KEY, algorithm=config.JWT_ALGORITHM)
     return encoded_jwt
 
 
 def verify_token(token: str) -> Optional[Dict[str, Any]]:
     """Verify JWT token and return payload"""
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if not config.JWT_SECRET_KEY:
+            return None
+        payload = jwt.decode(token, config.JWT_SECRET_KEY, algorithms=[config.JWT_ALGORITHM])
         return payload
     except jwt.ExpiredSignatureError:
         return None
@@ -65,20 +63,11 @@ def verify_token(token: str) -> Optional[Dict[str, Any]]:
 async def register_company(request_data: CompanyRegistrationRequest) -> Dict[str, Any]:
     """Register a new company user"""
     try:
-        await connect_to_mongodb()
-        
-        # Import and check sync_db
-        import app.services.embedding_service as db_module
-        
-        # If sync_db is not initialized, try to get it from sync_client
-        if db_module.sync_db is None and db_module.sync_client is not None:
-            db_name = os.getenv("MONGODB_ATLAS_DB_NAME")
-            db_module.sync_db = db_module.sync_client[db_name]
-        elif db_module.sync_db is None:
-            return {"error": "Database connection not initialized"}
+        # Get database connection (singleton, already initialized at app startup)
+        db = get_sync_db()
         
         # Check if user already exists
-        users_collection = db_module.sync_db["users"]
+        users_collection = db["users"]
         existing_user = users_collection.find_one({"email": request_data.email})
         if existing_user:
             return {"error": "User with this email already exists"}
@@ -143,20 +132,11 @@ async def register_company(request_data: CompanyRegistrationRequest) -> Dict[str
 async def login_user(request_data: UserLoginRequest) -> Dict[str, Any]:
     """Login user and return access token"""
     try:
-        await connect_to_mongodb()
-        
-        # Import and check sync_db
-        import app.services.embedding_service as db_module
-        
-        # If sync_db is not initialized, try to get it from sync_client
-        if db_module.sync_db is None and db_module.sync_client is not None:
-            db_name = os.getenv("MONGODB_ATLAS_DB_NAME")
-            db_module.sync_db = db_module.sync_client[db_name]
-        elif db_module.sync_db is None:
-            return {"error": "Database connection not initialized"}
+        # Get database connection (singleton, already initialized at app startup)
+        db = get_sync_db()
         
         # Find user by email
-        users_collection = db_module.sync_db["users"]
+        users_collection = db["users"]
         user = users_collection.find_one({"email": request_data.email})
         
         if not user:
@@ -208,18 +188,10 @@ async def login_user(request_data: UserLoginRequest) -> Dict[str, Any]:
 async def get_user_profile(user_id: str) -> Dict[str, Any]:
     """Get user profile by ID"""
     try:
-        await connect_to_mongodb()
+        # Get database connection (singleton, already initialized at app startup)
+        db = get_sync_db()
         
-        # Import and check sync_db
-        import app.services.embedding_service as db_module
-        
-        if db_module.sync_db is None and db_module.sync_client is not None:
-            db_name = os.getenv("MONGODB_ATLAS_DB_NAME")
-            db_module.sync_db = db_module.sync_client[db_name]
-        elif db_module.sync_db is None:
-            return {"error": "Database connection not initialized"}
-        
-        users_collection = db_module.sync_db["users"]
+        users_collection = db["users"]
         user = users_collection.find_one({"_id": ObjectId(user_id)})
         
         if not user:
@@ -249,18 +221,10 @@ async def get_user_profile(user_id: str) -> Dict[str, Any]:
 async def update_user_profile(user_id: str, request_data: UserUpdateRequest) -> Dict[str, Any]:
     """Update user profile"""
     try:
-        await connect_to_mongodb()
+        # Get database connection (singleton, already initialized at app startup)
+        db = get_sync_db()
         
-        # Import and check sync_db
-        import app.services.embedding_service as db_module
-        
-        if db_module.sync_db is None and db_module.sync_client is not None:
-            db_name = os.getenv("MONGODB_ATLAS_DB_NAME")
-            db_module.sync_db = db_module.sync_client[db_name]
-        elif db_module.sync_db is None:
-            return {"error": "Database connection not initialized"}
-        
-        users_collection = db_module.sync_db["users"]
+        users_collection = db["users"]
         
         # Check if user exists
         user = users_collection.find_one({"_id": ObjectId(user_id)})
@@ -299,18 +263,10 @@ async def update_user_profile(user_id: str, request_data: UserUpdateRequest) -> 
 async def change_password(user_id: str, request_data: PasswordChangeRequest) -> Dict[str, Any]:
     """Change user password"""
     try:
-        await connect_to_mongodb()
+        # Get database connection (singleton, already initialized at app startup)
+        db = get_sync_db()
         
-        # Import and check sync_db
-        import app.services.embedding_service as db_module
-        
-        if db_module.sync_db is None and db_module.sync_client is not None:
-            db_name = os.getenv("MONGODB_ATLAS_DB_NAME")
-            db_module.sync_db = db_module.sync_client[db_name]
-        elif db_module.sync_db is None:
-            return {"error": "Database connection not initialized"}
-        
-        users_collection = db_module.sync_db["users"]
+        users_collection = db["users"]
         
         # Get user
         user = users_collection.find_one({"_id": ObjectId(user_id)})
@@ -348,18 +304,10 @@ async def change_password(user_id: str, request_data: PasswordChangeRequest) -> 
 async def _get_campaign_lightweight(campaign_id: str) -> Dict[str, Any]:
     """Get lightweight campaign details (no full influencer details for performance)"""
     try:
-        await connect_to_mongodb()
+        # Get database connection (singleton, already initialized at app startup)
+        db = get_sync_db()
         
-        # Import and check sync_db
-        import app.services.embedding_service as db_module
-        
-        if db_module.sync_db is None and db_module.sync_client is not None:
-            db_name = os.getenv("MONGODB_ATLAS_DB_NAME")
-            db_module.sync_db = db_module.sync_client[db_name]
-        elif db_module.sync_db is None:
-            return {"error": "Database connection not initialized"}
-        
-        campaigns_collection = db_module.sync_db["campaigns"]
+        campaigns_collection = db["campaigns"]
         
         # Get campaign
         campaign = campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
@@ -385,18 +333,10 @@ async def _get_campaign_lightweight(campaign_id: str) -> Dict[str, Any]:
 async def get_user_campaigns(user_id: str, status: Optional[str] = None) -> Dict[str, Any]:
     """Get all campaigns created by a user with approved influencers. Optionally filter by status."""
     try:
-        await connect_to_mongodb()
+        # Get database connection (singleton, already initialized at app startup)
+        db = get_sync_db()
         
-        # Import and check sync_db
-        import app.services.embedding_service as db_module
-        
-        if db_module.sync_db is None and db_module.sync_client is not None:
-            db_name = os.getenv("MONGODB_ATLAS_DB_NAME")
-            db_module.sync_db = db_module.sync_client[db_name]
-        elif db_module.sync_db is None:
-            return {"error": "Database connection not initialized"}
-        
-        campaigns_collection = db_module.sync_db["campaigns"]
+        campaigns_collection = db["campaigns"]
         
         # Get campaigns created by this user (with optional status filter)
         query = {"user_id": user_id}

@@ -1,5 +1,6 @@
 from typing import Dict, Any
 import math
+from bson import ObjectId
 from app.services.agent_planner_service import plan_limits
 from app.services.rag_service import retrieve_with_rag_then_fallback
 from app.services.response_ranker_service import sort_and_diversify
@@ -13,6 +14,7 @@ from app.services.guardrails_service import check_input_guard_rail
 from app.utils.prompts import FIND_INFLUENCER_PROMPT
 from app.utils.helpers import parse_follower_count, parse_follower_range
 from app.models.influencers_model import FindInfluencerRequest, MoreInfluencerRequest, FindInfluencerLegacyRequest, MoreInfluencerLegacyRequest
+from app.db.connection import get_sync_db
 
 
 
@@ -32,24 +34,11 @@ async def find_influencers_by_campaign(request_data: FindInfluencerRequest):
     Fetches campaign details and uses them for influencer search
     """
     try:
-        from bson import ObjectId
-        from app.services.embedding_service import connect_to_mongodb
-        
-        # Connect to database
-        await connect_to_mongodb()
-        
-        # Import and check sync_db
-        import app.services.embedding_service as db_module
-        
-        if db_module.sync_db is None and db_module.sync_client is not None:
-            import os
-            db_name = os.getenv("MONGODB_ATLAS_DB_NAME")
-            db_module.sync_db = db_module.sync_client[db_name]
-        elif db_module.sync_db is None:
-            return {"error": "Database connection not initialized"}
+        # Get database connection (singleton, already initialized at app startup)
+        db = get_sync_db()
         
         # Get campaign details
-        campaigns_collection = db_module.sync_db["campaigns"]
+        campaigns_collection = db["campaigns"]
         campaign = campaigns_collection.find_one({"_id": ObjectId(request_data.campaign_id)})
         
         if not campaign:

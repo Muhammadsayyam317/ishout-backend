@@ -1,8 +1,8 @@
-import os
 from app.db.connection import (
     close,
     connect,
 )
+from app.config import config
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,11 +24,21 @@ security_schemes = {
         "description": "Enter your JWT token",
     }
 }
-# Create FastAPI app
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Connect to database
+    connect()
+    yield
+    # Shutdown: Close database connection
+    close()
+
+# Create FastAPI app with lifespan
 app = FastAPI(
     title="Ishout API",
     description="API for finding social media influencers",
     version="1.0.0",
+    lifespan=lifespan,
     swagger_ui_init_oauth={
         "clientId": "swagger-ui",
     },
@@ -65,21 +75,13 @@ app.add_middleware(
 )
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    connect()
-    yield
-    close()
-
-
-app.lifespan = lifespan
 
 app.include_router(api_router)
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", "8000"))
+    port = config.PORT
     uvicorn.run(
-        "main:app",
+        app,  # Pass app instance to ensure lifespan context manager runs
         host="0.0.0.0",
         port=port,
         reload=False,

@@ -1,61 +1,21 @@
-import os
 from typing import List, Optional, Dict, Any
-from motor.motor_asyncio import AsyncIOMotorClient
-from pymongo import MongoClient
+# Use centralized database connection instead
+from app.db.connection import get_sync_db
+from app.config import config
 from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain_openai import OpenAIEmbeddings
 from bson import ObjectId
 
-
-# MongoDB connection clients
-async_client: Optional[AsyncIOMotorClient] = None
-sync_client: Optional[MongoClient] = None
-db = None
-sync_db = None
+# Embeddings are initialized here, database connection uses centralized connection
 embeddings = None
 
 
-
-
-async def connect_to_mongodb():
-    """
-    Connect to MongoDB using the credentials from environment variables
-    
-    Returns:
-        MongoDB database instance
-    """
-    global async_client, sync_client, db, sync_db
-    
-    if not async_client:
-        mongo_uri = os.getenv("MONGODB_ATLAS_URI")
-        if not mongo_uri:
-            print("connect_to_mongodb() - MongoDB URI not found in environment variables")
-            raise ValueError("MongoDB URI not found in environment variables")
-
-        async_client = AsyncIOMotorClient(mongo_uri)
-        sync_client = MongoClient(mongo_uri)
-
-        db_name = os.getenv("MONGODB_ATLAS_DB_NAME")
-        print(f"connect_to_mongodb() - DB name: {db_name}")
-        db = async_client[db_name]
-        sync_db = sync_client[db_name]
-
-        print("MongoDB connected (async and sync clients)")
-    
-    return db
-
-
-
 def initialize_embeddings():
-    """Initialize OpenAI embeddings with API key from environment variables"""
+    """Initialize OpenAI embeddings with API key from centralized config"""
     global embeddings
     if embeddings is None:
-        api_key = os.getenv("OPENAI_API_KEY")
-        print(f"initialize_embeddings() - OPENAI_API_KEY present: {bool(api_key)}")
-        if not api_key:
-            raise ValueError("OpenAI API Key not found in environment variables")
-
-        model = os.getenv("EMBEDDING_MODEL", "text-embedding-ada-002")
+        api_key = config.OPENAI_API_KEY
+        model = config.EMBEDDING_MODEL
 
         # Create the embeddings client - no fallback
         embeddings = OpenAIEmbeddings(
@@ -82,17 +42,17 @@ def get_vector_store(collection, platform=None):
     """
     emb = initialize_embeddings()
     
-    # Get the index name from environment or use default (same for all platforms)
-    index_name = os.getenv("MONGODB_VECTOR_INDEX_NAME", "vector_index")
+    # Get the index name and keys from centralized config
+    index_name = config.MONGODB_VECTOR_INDEX_NAME
     
     if platform == "instagram":
         text_key = "pageContent" 
     elif platform == "tiktok":
         text_key = "pageContent" 
     else:
-        text_key = os.getenv("MONGODB_TEXT_KEY", "text") 
+        text_key = config.MONGODB_TEXT_KEY
     
-    embedding_key = os.getenv("MONGODB_EMBEDDING_KEY", "embedding")
+    embedding_key = config.MONGODB_EMBEDDING_KEY
     print(f"Creating vector store with index: {index_name}, text_key: {text_key}, embedding_key: {embedding_key}")
     
     
@@ -146,18 +106,20 @@ async def query_vector_store(query: str, platform: str, limit: int = 10, min_fol
     """
     try:
 
-        # Ensure embeddings and DB connection are ready
+        # Ensure embeddings are ready
         emb = initialize_embeddings()
-        await connect_to_mongodb()
+        
+        # Use centralized database connection (already initialized at app startup)
+        db = get_sync_db()
 
-        # Choose collection by platform
+        # Choose collection by platform from centralized config
         collection_name = None
         if platform == "instagram":
-            collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_INSTGRAM")
+            collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
         elif platform == "tiktok":
-            collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_TIKTOK")
+            collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
         elif platform == "youtube":
-            collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_YOUTUBE")
+            collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
         else:
             raise ValueError(f"Invalid platform specified: {platform}")
 
@@ -165,7 +127,7 @@ async def query_vector_store(query: str, platform: str, limit: int = 10, min_fol
         if not collection_name:
             raise ValueError(f"Collection name is empty for platform {platform}. Check your environment variables.")
 
-        sync_collection = sync_db[collection_name]
+        sync_collection = db[collection_name]
 
         store = get_vector_store(sync_collection, platform)
      
@@ -267,21 +229,22 @@ async def delete_from_vector_store(platform: str, influencer_id: str) -> Dict[st
     Returns:
         Dict with details about the deletion outcome
     """
-    await connect_to_mongodb()
+    # Use centralized database connection (already initialized at app startup)
+    db = get_sync_db()
 
     if platform == "instagram":
-        collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_INSTGRAM")
+        collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
     elif platform == "tiktok":
-        collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_TIKTOK")
+        collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
     elif platform == "youtube":
-        collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_YOUTUBE")
+        collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
     else:
         raise ValueError(f"Invalid platform specified: {platform}")
 
     if not collection_name:
         raise ValueError(f"Collection name is empty for platform {platform}. Check your environment variables.")
 
-    collection = sync_db[collection_name]
+    collection = db[collection_name]
 
     # Build the deletion filter
     delete_filter: Dict[str, Any] = {}
