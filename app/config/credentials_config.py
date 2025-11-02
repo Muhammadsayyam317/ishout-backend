@@ -15,6 +15,7 @@ class Config(BaseModel):
 
     MONGODB_ATLAS_URI: str = Field(default=os.getenv("MONGODB_ATLAS_URI"))
     MONGODB_ATLAS_DB_NAME: str = Field(default=os.getenv("MONGODB_ATLAS_DB_NAME"))
+
     MONGODB_ATLAS_COLLECTION_INFLUENCERS: str = Field(
         default=os.getenv("MONGODB_ATLAS_COLLECTION_INFLUENCERS")
     )

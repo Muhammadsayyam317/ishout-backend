@@ -1,7 +1,6 @@
 import hashlib
 import secrets
 import jwt
-import os
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 from bson import ObjectId
@@ -16,17 +15,9 @@ from app.models.user_model import (
     UserUpdateRequest,
     UserCampaignResponse,
 )
-from app.services.embedding_service import connect_to_mongodb, sync_db
-from app.api.controllers.campaign_controller import get_campaign_by_id
 from app.db.connection import get_db
 from app.config import config
 
-# JWT Configuration
-SECRET_KEY = (
-    "your-secret-key-change-in-production"  # In production, use environment variable
-)
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 720
 
 db = get_db()
 
@@ -67,7 +58,9 @@ def verify_token(token: str) -> Optional[Dict[str, Any]]:
     try:
         if not config.JWT_SECRET_KEY:
             return None
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(
+            token, config.JWT_SECRET_KEY, algorithms=[config.JWT_ALGORITHM]
+        )
         return payload
     except jwt.ExpiredSignatureError:
         return None

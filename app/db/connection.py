@@ -6,8 +6,12 @@ load_dotenv()
 
 
 class Database:
+    """Singleton pattern for database connection"""
+
+    _instance: "Database" = None
     _client: AsyncIOMotorClient | None = None
     _db: AsyncIOMotorDatabase | None = None
+    _initialized: bool = False
 
 
 @staticmethod
