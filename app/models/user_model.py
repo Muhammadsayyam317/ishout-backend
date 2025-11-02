@@ -5,20 +5,17 @@ from enum import Enum
 
 
 class UserRole(str, Enum):
-    """User roles in the system"""
     COMPANY = "company"
     ADMIN = "admin"
 
 
 class UserStatus(str, Enum):
-    """User account status"""
     ACTIVE = "active"
     INACTIVE = "inactive"
     SUSPENDED = "suspended"
 
 
 class CompanyRegistrationRequest(BaseModel):
-    """Request model for company registration"""
     company_name: str
     email: EmailStr
     password: str
@@ -29,13 +26,11 @@ class CompanyRegistrationRequest(BaseModel):
 
 
 class UserLoginRequest(BaseModel):
-    """Request model for user login"""
     email: EmailStr
     password: str
 
 
 class UserResponse(BaseModel):
-    """Response model for user data"""
     user_id: str
     company_name: str
     email: str
@@ -51,6 +46,7 @@ class UserResponse(BaseModel):
 
 class LoginResponse(BaseModel):
     """Response model for login"""
+
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
@@ -58,12 +54,14 @@ class LoginResponse(BaseModel):
 
 class PasswordChangeRequest(BaseModel):
     """Request model for password change"""
+
     current_password: str
     new_password: str
 
 
 class UserUpdateRequest(BaseModel):
     """Request model for updating user profile"""
+
     company_name: Optional[str] = None
     contact_person: Optional[str] = None
     phone: Optional[str] = None
@@ -73,6 +71,7 @@ class UserUpdateRequest(BaseModel):
 
 class UserCampaignResponse(BaseModel):
     """Response model for user's campaigns with approved influencers"""
+
     campaign_id: str
     name: str
     description: Optional[str] = None

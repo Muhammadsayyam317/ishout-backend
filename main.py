@@ -1,8 +1,4 @@
-import os
-from app.db.connection import (
-    close,
-    connect,
-)
+from app.db.connection import close, connect
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,6 +6,7 @@ from fastapi.security import HTTPBearer
 from fastapi.openapi.utils import get_openapi
 from app.api.api import api_router
 from contextlib import asynccontextmanager
+
 
 security = HTTPBearer(
     scheme_name="Bearer", description="Enter your Bearer token", auto_error=False
@@ -74,13 +71,21 @@ async def lifespan(app: FastAPI):
 
 app.lifespan = lifespan
 
+
+# @app.get("/")
+# async def main(db: AsyncIOMotorDatabase):
+#     await db.client.server_info()
+#     return {
+#         "message": "Server is running on port 8000",
+#     }
+
+
 app.include_router(api_router)
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", "8000"))
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=port,
-        reload=False,
+        lifespan=lifespan,
+        reload=True,
     )
