@@ -4,20 +4,19 @@ from langchain_openai import OpenAIEmbeddings
 from bson import ObjectId
 
 from app.config import config
-from app.core.database import db_connection, connect_to_mongodb, get_sync_db
+from app.core.database import db_connection, get_sync_db
 
 
 # Embeddings singleton
 embeddings = None
 
-# Backward compatibility exports - sync_db will be available after calling connect_to_mongodb()
+# Backward compatibility exports - sync_db will be resolved from the singleton
 sync_db = None  # Will be set dynamically via get_sync_db()
 
 
 async def _ensure_db_connection():
-    """Ensure database connection is established"""
+    """Ensure database connection reference is set from the singleton"""
     global sync_db
-    await connect_to_mongodb()
     sync_db = get_sync_db()
     return sync_db
 
@@ -239,6 +238,7 @@ async def delete_from_vector_store(platform: str, influencer_id: str) -> Dict[st
         Dict with details about the deletion outcome
     """
     await _ensure_db_connection()
+    await _ensure_db_connection()
 
     collection_name = config.get_collection_name(platform)
     if not collection_name:
@@ -269,7 +269,6 @@ async def delete_from_vector_store(platform: str, influencer_id: str) -> Dict[st
     }
 
 
-# Backward compatibility: Export connect_to_mongodb for existing imports
-# sync_db will be available after calling connect_to_mongodb() or _ensure_db_connection()
-__all__ = ["connect_to_mongodb", "sync_db", "initialize_embeddings", "get_vector_store", 
+# Backward compatibility: export sync_db symbol and helpers
+__all__ = ["sync_db", "initialize_embeddings", "get_vector_store", 
            "query_vector_store", "delete_from_vector_store"]
