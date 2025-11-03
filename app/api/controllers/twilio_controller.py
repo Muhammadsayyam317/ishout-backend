@@ -1,10 +1,6 @@
-import os
 from typing import Dict, Any
-import logging
 from twilio.rest import Client
-
-# Setup logging
-logger = logging.getLogger(__name__)
+from app.config import config
 
 async def send_message(request_data: Dict[str, Any] = None):
     """
@@ -16,12 +12,12 @@ async def send_message(request_data: Dict[str, Any] = None):
     Returns:
         str: The SID of the created message
     """
-    # Get Twilio credentials from environment variables
-    account_sid = os.getenv("TWILIO_ACCOUNT_SID")
-    auth_token = os.getenv("TWILIO_AUTH_TOKEN")
+    # Get Twilio credentials from centralized config
+    account_sid = config.TWILIO_ACCOUNT_SID
+    auth_token = config.TWILIO_AUTH_TOKEN
     
     if not account_sid or not auth_token:
-        raise ValueError("Twilio credentials not found in environment variables")
+        raise ValueError("Twilio credentials not found in configuration")
     
     # Initialize Twilio client
     client = Client(account_sid, auth_token)
@@ -34,8 +30,6 @@ async def send_message(request_data: Dict[str, Any] = None):
             to="whatsapp:+923240149841"
         )
         
-        logger.info(f"Message SID: {message.sid}")
         return message.sid
     except Exception as e:
-        logger.error(f"Error sending Twilio message: {str(e)}")
         raise
