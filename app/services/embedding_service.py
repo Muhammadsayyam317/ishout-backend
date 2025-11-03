@@ -1,19 +1,17 @@
-import os
 from typing import List, Optional, Dict, Any
-from fastapi import HTTPException
 from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain_openai import OpenAIEmbeddings
 from bson import ObjectId
 from app.db.connection import get_db
 from app.config import config
 
-db = get_db()
+# Removed eager DB fetch to avoid initialization at import time
 
 embeddings = None
 
 
 def initialize_embeddings():
-    """Initialize OpenAI embeddings with API key from environment variables"""
+    """Initialize OpenAI embeddings with API key from centralized config"""
     global embeddings
     if embeddings is None:
         api_key = config.OPENAI_API_KEY
@@ -25,7 +23,7 @@ def initialize_embeddings():
         embeddings = OpenAIEmbeddings(api_key=api_key, model=model)
 
         # Simple test to ensure embeddings work
-        test_embedding = embeddings.embed_query("test query")
+        embeddings.embed_query("test query")
 
     return embeddings
 
@@ -51,7 +49,7 @@ def get_vector_store(collection, platform=None):
     elif platform == "tiktok":
         text_key = "pageContent"
     else:
-        text_key = os.getenv("MONGODB_TEXT_KEY", "text")
+        text_key = config.MONGODB_TEXT_KEY
 
     embedding_key = config.MONGODB_EMBEDDING_KEY
     try:
@@ -112,9 +110,12 @@ async def query_vector_store(
         collection_name = None
         if platform == "instagram":
             collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
+            collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
         elif platform == "tiktok":
             collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
+            collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
         elif platform == "youtube":
+            collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
             collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
         else:
             raise ValueError(f"Invalid platform specified: {platform}")
@@ -127,7 +128,7 @@ async def query_vector_store(
                 f"Collection name is empty for platform {platform}. Check your environment variables."
             )
 
-        sync_collection = db.get_collection(collection_name)
+        sync_collection = get_db().get_collection(collection_name)
 
         store = get_vector_store(sync_collection, platform)
 
@@ -180,7 +181,7 @@ async def query_vector_store(
                 )
             else:
                 docs_with_scores = store.similarity_search_with_score(query, k=limit)
-        except Exception as e_ws:
+        except Exception:
             if pre_filter:
                 docs = store.similarity_search(query, k=limit, pre_filter=pre_filter)
             else:
@@ -225,9 +226,12 @@ async def delete_from_vector_store(platform: str, influencer_id: str) -> Dict[st
     collection_name = None
     if platform == "instagram":
         collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
+        collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
     elif platform == "tiktok":
         collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
+        collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
     elif platform == "youtube":
+        collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
         collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
     else:
         raise ValueError(f"Invalid platform specified: {platform}")
@@ -237,7 +241,7 @@ async def delete_from_vector_store(platform: str, influencer_id: str) -> Dict[st
             f"Collection name is empty for platform {platform}. Check your environment variables."
         )
 
-    collection = db.get_collection(collection_name)
+    collection = get_db().get_collection(collection_name)
 
     # Build the deletion filter
     delete_filter: Dict[str, Any] = {}
@@ -252,7 +256,7 @@ async def delete_from_vector_store(platform: str, influencer_id: str) -> Dict[st
 
     # Execute deletion
     if "_id" in delete_filter:
-        result = collection.delete_one(delete_filter)
+        result = await collection.delete_one(delete_filter)
         deleted_count = result.deleted_count
     else:
         raise ValueError(f"Invalid influencer_id format: {influencer_id}")

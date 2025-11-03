@@ -15,14 +15,13 @@ from app.api.controllers.influencers_controller import find_influencers_by_campa
 from app.db.connection import get_db
 from app.config import config
 
-db = get_db()
-
 
 async def _populate_user_details(user_id: str) -> Dict[str, Any]:
     """Populate user details from user_id"""
     try:
         if not user_id:
             return None
+        db = get_db()
         users_collection = db.get_collection("users")
         user = await users_collection.find_one({"_id": ObjectId(user_id)})
         if not user:
@@ -60,9 +59,12 @@ async def _populate_influencer_details(
         for plat in platforms_to_check:
             if plat == "instagram":
                 collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
+                collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
             elif plat == "tiktok":
                 collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
+                collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
             elif plat == "youtube":
+                collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
                 collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
             else:
                 continue
@@ -73,7 +75,8 @@ async def _populate_influencer_details(
         for inf_id in influencer_ids:
             for collection_name, plat in collections_to_check:
                 try:
-                    collection = db.sync_db[collection_name]
+                    db = get_db()
+                    collection = db.get_collection(collection_name)
                     influencer = await collection.find_one({"_id": ObjectId(inf_id)})
                     if influencer:
                         influencer["_id"] = str(influencer["_id"])
@@ -95,6 +98,7 @@ async def _populate_influencer_details(
 async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]:
     """Create a new campaign"""
     try:
+        db = get_db()
         campaigns_collection = db.get_collection("campaigns")
         campaign_name = request_data.name
         if not campaign_name:
@@ -137,6 +141,7 @@ async def get_all_campaigns(
 ) -> Dict[str, Any]:
     """Get all campaigns with user details. Optionally filter by status with pagination support."""
     try:
+        db = get_db()
         campaigns_collection = db.get_collection("campaigns")
         query = {}
         if status:
@@ -171,12 +176,13 @@ async def get_all_campaigns(
         # Get total count for pagination metadata
         total_count = await campaigns_collection.count_documents(query)
 
-        # Get paginated campaigns
-        campaigns = list(
+        # Get paginated campaigns (await to_list for Motor)
+        campaigns = await (
             campaigns_collection.find(query)
             .sort("created_at", -1)
             .skip(skip)
             .limit(page_size)
+            .to_list(length=None)
         )
 
         # Convert ObjectId to string and populate user details
@@ -251,6 +257,7 @@ async def get_all_campaigns(
 async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
     """Get campaign details by ID with populated influencer data"""
     try:
+        db = get_db()
         campaigns_collection = db.get_collection("campaigns")
         # Get campaign
         campaign = await campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
@@ -279,6 +286,7 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                     continue
 
                 if platform == "instagram":
+                    collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
                     collection_name = config.MONGODB_ATLAS_COLLECTION_INFLUENCERS
                 elif platform == "tiktok":
                     collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
@@ -304,13 +312,15 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                     )
                     continue
 
-                platform_collection = db.get_collection[collection_name]
+                platform_collection = db.get_collection(collection_name)
                 print(
-                    f"Looking for influencer {influencer_id} in collection {collection_name}"
+                    "Looking for influencer {} in collection {}".format(
+                        influencer_id, collection_name
+                    )
                 )
 
                 try:
-                    influencer = platform_collection.find_one(
+                    influencer = await platform_collection.find_one(
                         {"_id": ObjectId(influencer_id)}
                     )
                     if influencer:
@@ -328,12 +338,12 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                                 "reason": "Influencer not found",
                             }
                         )
-                except Exception as e:
+                except Exception:
                     missing_influencers.append(
                         {
                             "id": influencer_id,
                             "platform": platform,
-                            "reason": f"Invalid ID format: {str(e)}",
+                            "reason": "Invalid ID format",
                         }
                     )
         else:
@@ -341,12 +351,15 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
             for influencer_id in campaign.get("influencer_ids", []):
                 found = False
                 for platform in ["instagram", "tiktok", "youtube"]:
-                    # Get collection name using environment variables
+                    # Get collection name from centralized config
                     if platform == "instagram":
+                        collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
                         collection_name = config.MONGODB_ATLAS_COLLECTION_INFLUENCERS
                     elif platform == "tiktok":
                         collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
+                        collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
                     elif platform == "youtube":
+                        collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
                         collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
                     else:
                         continue
@@ -354,10 +367,10 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                     if not collection_name:
                         continue
 
-                    platform_collection = db.get[collection_name]
+                    platform_collection = db.get_collection(collection_name)
 
                     try:
-                        influencer = platform_collection.find_one(
+                        influencer = await platform_collection.find_one(
                             {"_id": ObjectId(influencer_id)}
                         )
                         if influencer:
@@ -369,7 +382,7 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                             influencer_details.append(influencer)
                             found = True
                             break
-                    except Exception as e:
+                    except Exception:
                         continue
 
                 if not found:
@@ -388,15 +401,14 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
         for rejected_id in rejected_ids:
             found = False
             for platform in ["instagram", "tiktok", "youtube"]:
-                # Get collection name using environment variables
-                import os
+                db = get_db()
 
                 if platform == "instagram":
-                    collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_INSTGRAM")
+                    collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
                 elif platform == "tiktok":
-                    collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_TIKTOK")
+                    collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
                 elif platform == "youtube":
-                    collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_YOUTUBE")
+                    collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
                 else:
                     continue
 
@@ -406,7 +418,7 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                 platform_collection = db.get_collection(collection_name)
 
                 try:
-                    influencer = platform_collection.find_one(
+                    influencer = await platform_collection.find_one(
                         {"_id": ObjectId(rejected_id)}
                     )
                     if influencer:
@@ -418,7 +430,7 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                         rejected_influencer_details.append(influencer)
                         found = True
                         break
-                except Exception as e:
+                except Exception:
                     continue
 
             if not found:
@@ -438,14 +450,13 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
             found = False
             for platform in ["instagram", "tiktok", "youtube"]:
                 # Get collection name using environment variables
-                import os
 
                 if platform == "instagram":
-                    collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_INSTGRAM")
+                    collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
                 elif platform == "tiktok":
-                    collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_TIKTOK")
+                    collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
                 elif platform == "youtube":
-                    collection_name = os.getenv("MONGODB_ATLAS_COLLECTION_YOUTUBE")
+                    collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
                 else:
                     continue
 
@@ -455,7 +466,7 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                 platform_collection = db.get_collection(collection_name)
 
                 try:
-                    influencer = platform_collection.find_one(
+                    influencer = await platform_collection.find_one(
                         {"_id": ObjectId(rejected_id)}
                     )
                     if influencer:
@@ -467,7 +478,7 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                         rejected_by_user_details.append(influencer)
                         found = True
                         break
-                except Exception as e:
+                except Exception:
                     continue
 
             if not found:
@@ -548,6 +559,7 @@ async def approve_single_influencer(
 ) -> Dict[str, Any]:
     """Approve a single influencer and add to campaign with platform validation"""
     try:
+        db = get_db()
         campaigns_collection = db.get_collection("campaigns")
 
         # Get current campaign
@@ -559,10 +571,13 @@ async def approve_single_influencer(
 
         # Validate influencer exists in the specified platform
         if request_data.platform == "instagram":
+            collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
             collection_name = config.MONGODB_ATLAS_COLLECTION_INFLUENCERS
         elif request_data.platform == "tiktok":
             collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
+            collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
         elif request_data.platform == "youtube":
+            collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
             collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
         else:
             raise HTTPException(status_code=400, detail="Invalid platform")
@@ -581,10 +596,10 @@ async def approve_single_influencer(
             )
             if not influencer:
                 # Try to find by other fields as fallback
-                influencer_by_username = platform_collection.find_one(
+                influencer_by_username = await platform_collection.find_one(
                     {"username": request_data.influencer_id}
                 )
-                influencer_by_handle = platform_collection.find_one(
+                influencer_by_handle = await platform_collection.find_one(
                     {"handle": request_data.influencer_id}
                 )
                 if influencer_by_username or influencer_by_handle:
@@ -625,7 +640,7 @@ async def approve_single_influencer(
         ]  # Legacy field
 
         # Update campaign with both formats
-        result = campaigns_collection.update_one(
+        result = await campaigns_collection.update_one(
             {"_id": ObjectId(request_data.campaign_id)},
             {
                 "$set": {
@@ -659,7 +674,7 @@ async def user_reject_influencers(
     try:
         if not influencer_ids:
             return {"message": "No influencer IDs provided"}
-
+        db = get_db()
         campaigns_collection = db.get_collection("campaigns")
 
         # Ensure campaign exists and belongs to user
@@ -702,7 +717,7 @@ async def user_reject_influencers(
                 remaining_references.append(ref)
 
         # Update campaign
-        result = campaigns_collection.update_one(
+        result = await campaigns_collection.update_one(
             {"_id": ObjectId(campaign_id)},
             {
                 "$set": {
@@ -736,6 +751,7 @@ async def add_rejected_influencers(
     try:
         if not rejected_ids:
             return {"message": "No rejected ids provided"}
+        db = get_db()
         campaigns_collection = db.get_collection("campaigns")
         # Ensure campaign exists
         campaign = await campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
@@ -746,7 +762,7 @@ async def add_rejected_influencers(
         # Deduplicate while preserving order (new first then existing)
         combined = list(dict.fromkeys(existing_rejected + rejected_ids))
 
-        result = campaigns_collection.update_one(
+        result = await campaigns_collection.update_one(
             {"_id": ObjectId(campaign_id)},
             {"$set": {"rejected_ids": combined, "updated_at": datetime.utcnow()}},
         )
@@ -771,6 +787,7 @@ async def approve_multiple_influencers(
 ) -> Dict[str, Any]:
     """Approve multiple influencers and add to campaign with platform validation"""
     try:
+        db = get_db()
         campaigns_collection = db.get_collection("campaigns")
         campaign = await campaigns_collection.find_one(
             {"_id": ObjectId(request_data.campaign_id)}
@@ -878,6 +895,7 @@ async def admin_generate_influencers(
 ) -> Dict[str, Any]:
     """Admin generates influencers for a campaign"""
     try:
+        db = get_db()
         campaigns_collection = db.get_collection("campaigns")
         # Get campaign
         campaign = await campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
@@ -885,7 +903,7 @@ async def admin_generate_influencers(
             raise HTTPException(status_code=404, detail="Campaign not found")
 
         # Update campaign status to processing
-        campaigns_collection.update_one(
+        await campaigns_collection.update_one(
             {"_id": ObjectId(campaign_id)},
             {
                 "$set": {
@@ -933,7 +951,7 @@ async def admin_generate_influencers(
                 generated_influencer_ids.append(str(inf_id))
 
         # Store only IDs to reduce database size
-        campaigns_collection.update_one(
+        await campaigns_collection.update_one(
             {"_id": ObjectId(campaign_id)},
             {
                 "$set": {
@@ -962,6 +980,7 @@ async def update_campaign_status(
 ) -> Dict[str, Any]:
     """Update campaign status"""
     try:
+        db = get_db()
         campaigns_collection = db.get_collection("campaigns")
 
         # Update campaign status
@@ -989,6 +1008,7 @@ async def update_campaign_status(
 async def get_campaign_generated_influencers(campaign_id: str) -> Dict[str, Any]:
     """Get generated influencers for a campaign (admin only) - populates full details from IDs"""
     try:
+        db = get_db()
         campaigns_collection = db.get_collection("campaigns")
         # Get campaign with generated influencers
         campaign = await campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
@@ -1027,6 +1047,7 @@ async def get_campaign_generated_influencers(campaign_id: str) -> Dict[str, Any]
 async def reject_and_regenerate_influencers(request_data) -> Dict[str, Any]:
     """Reject influencers and generate new ones"""
     try:
+        db = get_db()
         campaigns_collection = db.get_collection("campaigns")
         # Get campaign
         campaign = await campaigns_collection.find_one(
@@ -1047,7 +1068,7 @@ async def reject_and_regenerate_influencers(request_data) -> Dict[str, Any]:
         all_rejected_ids = existing_rejected | existing_rejected_by_user
 
         # Update campaign with rejected IDs
-        campaigns_collection.update_one(
+        await campaigns_collection.update_one(
             {"_id": ObjectId(request_data.campaign_id)},
             {
                 "$set": {
@@ -1124,7 +1145,7 @@ async def reject_and_regenerate_influencers(request_data) -> Dict[str, Any]:
         all_generated_ids = existing_generated_ids | set(final_new_influencer_ids)
 
         # Update campaign with merged generated influencer IDs only (not full objects)
-        campaigns_collection.update_one(
+        await campaigns_collection.update_one(
             {"_id": ObjectId(request_data.campaign_id)},
             {
                 "$set": {

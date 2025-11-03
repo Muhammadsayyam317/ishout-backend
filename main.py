@@ -1,4 +1,4 @@
-from app.db.connection import close, connect
+from app.db.connection import connect, close
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,6 +7,7 @@ from fastapi.openapi.utils import get_openapi
 from app.api.api import api_router
 from contextlib import asynccontextmanager
 
+# Removed premature database retrieval
 
 security = HTTPBearer(
     scheme_name="Bearer", description="Enter your Bearer token", auto_error=False
@@ -21,17 +22,25 @@ security_schemes = {
         "description": "Enter your JWT token",
     }
 }
-# Create FastAPI app
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Connect to database
+    await connect()
+    yield
+    # Shutdown: Close database connection
+    await close()
+
+
+# Create FastAPI app with lifespan
 app = FastAPI(
     title="Ishout API",
     description="API for finding social media influencers",
     version="1.0.0",
-    swagger_ui_init_oauth={
-        "clientId": "swagger-ui",
-    },
-    swagger_ui_parameters={
-        "persistAuthorization": True,
-    },
+    lifespan=lifespan,
+    swagger_ui_init_oauth={"clientId": "swagger-ui"},
+    swagger_ui_parameters={"persistAuthorization": True},
 )
 
 
@@ -55,30 +64,11 @@ app.openapi = custom_openapi
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify actual origins
-    allow_credentials=False,  # Wildcard origins cannot be used with credentials
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    connect()
-    yield
-    close()
-
-
-app.lifespan = lifespan
-
-
-# @app.get("/")
-# async def main(db: AsyncIOMotorDatabase):
-#     await db.client.server_info()
-#     return {
-#         "message": "Server is running on port 8000",
-#     }
-
 
 app.include_router(api_router)
 
@@ -86,6 +76,6 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        lifespan=lifespan,
-        reload=True,
+        port=8000,
+        reload=False,
     )

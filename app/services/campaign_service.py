@@ -5,12 +5,11 @@ from fastapi import HTTPException
 from app.models.campaign_model import CreateCampaignRequest, CampaignStatus
 from app.db.connection import get_db
 
-db = get_db()
-
 
 async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]:
     """Create a new campaign"""
     try:
+        db = get_db()
         campaigns_collection = db.get_collection("campaigns")
         campaign_name = request_data.name
         if not campaign_name:
@@ -55,6 +54,7 @@ async def add_rejected_influencers(
     try:
         if not rejected_ids:
             return {"message": "No rejected ids provided"}
+        db = get_db()
         campaigns_collection = db.get_collection("campaigns")
         # Ensure campaign exists
         campaign = await campaigns_collection.find_one({"_id": ObjectId(campaign_id)})

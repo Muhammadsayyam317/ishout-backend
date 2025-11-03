@@ -7,19 +7,17 @@ from bson import ObjectId
 from app.models.user_model import (
     CompanyRegistrationRequest,
     UserLoginRequest,
-    LoginResponse,
     UserResponse,
     UserRole,
     UserStatus,
     PasswordChangeRequest,
     UserUpdateRequest,
-    UserCampaignResponse,
 )
 from app.db.connection import get_db
 from app.config import config
 
 
-db = get_db()
+# Removed eager DB retrieval to avoid initialization at import time
 
 
 def hash_password(password: str) -> str:
@@ -70,6 +68,7 @@ def verify_token(token: str) -> Optional[Dict[str, Any]]:
 
 async def register_company(request_data: CompanyRegistrationRequest) -> Dict[str, Any]:
     try:
+        db = get_db()
         users_collection = db.get_collection("users")
         existing_user = await users_collection.find_one({"email": request_data.email})
         if existing_user:
@@ -93,7 +92,7 @@ async def register_company(request_data: CompanyRegistrationRequest) -> Dict[str
         }
 
         # Insert user
-        result = users_collection.insert_one(user_doc)
+        result = await users_collection.insert_one(user_doc)
         user_id = str(result.inserted_id)
 
         # Create access token
@@ -133,6 +132,7 @@ async def register_company(request_data: CompanyRegistrationRequest) -> Dict[str
 
 async def login_user(request_data: UserLoginRequest) -> Dict[str, Any]:
     try:
+        db = get_db()
         users_collection = db.get_collection("users")
         user = await users_collection.find_one({"email": request_data.email})
         if not user:
@@ -179,6 +179,7 @@ async def login_user(request_data: UserLoginRequest) -> Dict[str, Any]:
 async def get_user_profile(user_id: str) -> Dict[str, Any]:
     """Get user profile by ID"""
     try:
+        db = get_db()
         users_collection = db.get_collection("users")
         user = await users_collection.find_one({"_id": ObjectId(user_id)})
         if not user:
@@ -210,8 +211,9 @@ async def update_user_profile(
 ) -> Dict[str, Any]:
     """Update user profile"""
     try:
-        users_collection = db.collection("users")
-        user = users_collection.find_one({"_id": ObjectId(user_id)})
+        db = get_db()
+        users_collection = db.get_collection("users")
+        user = await users_collection.find_one({"_id": ObjectId(user_id)})
         if not user:
             return {"error": "User not found"}
         # Prepare update data
@@ -228,7 +230,7 @@ async def update_user_profile(
             update_data["company_size"] = request_data.company_size
 
         # Update user
-        result = users_collection.update_one(
+        result = await users_collection.update_one(
             {"_id": ObjectId(user_id)}, {"$set": update_data}
         )
 
@@ -247,6 +249,7 @@ async def change_password(
 ) -> Dict[str, Any]:
     """Change user password"""
     try:
+        db = get_db()
         users_collection = db.get_collection("users")
         user = await users_collection.find_one({"_id": ObjectId(user_id)})
         if not user:
@@ -281,7 +284,7 @@ async def change_password(
 
 async def _get_campaign_lightweight(campaign_id: str) -> Dict[str, Any]:
     try:
-
+        db = get_db()
         campaigns_collection = db.get_collection("campaigns")
         campaign = await campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
         if not campaign:
@@ -306,6 +309,7 @@ async def get_user_campaigns(
     user_id: str, status: Optional[str] = None
 ) -> Dict[str, Any]:
     try:
+        db = get_db()
         campaigns_collection = db.get_collection("campaigns")
         query = {"user_id": user_id}
         if status:

@@ -1,10 +1,7 @@
-import logging
 from typing import Dict, Any
 import json
 import openai
-
-# Setup logging
-logger = logging.getLogger(__name__)
+from app.config import config
 
 async def check_input_guard_rail(input_text: str) -> Dict[str, bool]:
     """
@@ -22,7 +19,7 @@ async def check_input_guard_rail(input_text: str) -> Dict[str, bool]:
                      "If not, politely respond that the input is not relevant.")
         
         # Call the OpenAI API - newer versions don't need await for this call
-        client = openai.OpenAI(api_key=openai.api_key)
+        client = openai.OpenAI(api_key=config.OPENAI_API_KEY)
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
@@ -57,6 +54,5 @@ async def check_input_guard_rail(input_text: str) -> Dict[str, bool]:
         
         return {"tripwire": True}  # Default to true if something went wrong
     except Exception as e:
-        logger.error(f"Error in guardrail: {str(e)}")
         # In case of error, let the input through
         return {"tripwire": False}

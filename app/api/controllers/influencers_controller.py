@@ -18,8 +18,6 @@ from app.models.influencers_model import (
 from app.db.connection import get_db
 from bson import ObjectId
 
-db = get_db()
-
 
 class Agent:
     """Simple Agent class to mimic OpenAI's Agent functionality"""
@@ -38,6 +36,7 @@ async def find_influencers_by_campaign(request_data: FindInfluencerRequest):
     """
     try:
         # Get campaign details
+        db = get_db()
         campaigns_collection = db.get_collection("campaigns")
         campaign = await campaigns_collection.find_one(
             {"_id": ObjectId(request_data.campaign_id)}
@@ -378,14 +377,14 @@ async def more_influencers(request_data: MoreInfluencerRequest):
     """Simplified wrapper for fetching more influencers based on campaign"""
     try:
         # Create a FindInfluencerRequest with the more count
-        find_request = await find_influencers_by_campaign(
-            FindInfluencerRequest(
-                campaign_id=request_data.campaign_id,
-                user_id=request_data.user_id,
-                limit=request_data.more,
-                exclude_ids=request_data.exclude_ids,
-            ),
+        db = get_db()
+        campaigns_collection = db.get_collection("campaigns")
+        campaign = await campaigns_collection.find_one(
+            {"_id": ObjectId(request_data.campaign_id)}
         )
+        if not campaign:
+            return {"error": "Campaign not found"}
+        find_request = await find_influencers_by_campaign(campaign)
 
         # Use the simplified find function
         return find_request
