@@ -1,17 +1,15 @@
 
-import os
 import sys
 import uvicorn
-from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer
-from app.services.embedding_service import connect_to_mongodb
+
+from app.config import config
+from app.core.database import connect_to_mongodb, db_connection
 
 # Prevent Python from writing bytecode files
 sys.dont_write_bytecode = True
-# Load environment variables
-load_dotenv()
 
 # Create security scheme for Swagger UI
 security = HTTPBearer(
@@ -72,16 +70,26 @@ app.add_middleware(
 )
 
 
+# Startup/Shutdown events: connect DB once and reuse
+@app.on_event("startup")
+async def on_startup():
+    await connect_to_mongodb()
+
+
+@app.on_event("shutdown")
+async def on_shutdown():
+    await db_connection.disconnect()
+
+
 from app.api.api import api_router
 app.include_router(api_router)
 
 
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", "8000"))
     uvicorn.run(
         "main:app", 
         host="0.0.0.0", 
-        port=port,
+        port=config.PORT,
         reload=False,
     )

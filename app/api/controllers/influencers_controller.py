@@ -1,5 +1,9 @@
 from typing import Dict, Any
 import math
+from bson import ObjectId
+
+from app.config import config
+from app.core.database import connect_to_mongodb, get_sync_db
 from app.services.agent_planner_service import plan_limits
 from app.services.rag_service import retrieve_with_rag_then_fallback
 from app.services.response_ranker_service import sort_and_diversify
@@ -32,24 +36,11 @@ async def find_influencers_by_campaign(request_data: FindInfluencerRequest):
     Fetches campaign details and uses them for influencer search
     """
     try:
-        from bson import ObjectId
-        from app.services.embedding_service import connect_to_mongodb
-        
-        # Connect to database
-        await connect_to_mongodb()
-        
-        # Import and check sync_db
-        import app.services.embedding_service as db_module
-        
-        if db_module.sync_db is None and db_module.sync_client is not None:
-            import os
-            db_name = os.getenv("MONGODB_ATLAS_DB_NAME")
-            db_module.sync_db = db_module.sync_client[db_name]
-        elif db_module.sync_db is None:
-            return {"error": "Database connection not initialized"}
+        # DB is connected at app startup; just fetch the instance
+        sync_db = get_sync_db()
         
         # Get campaign details
-        campaigns_collection = db_module.sync_db["campaigns"]
+        campaigns_collection = sync_db["campaigns"]
         campaign = campaigns_collection.find_one({"_id": ObjectId(request_data.campaign_id)})
         
         if not campaign:
