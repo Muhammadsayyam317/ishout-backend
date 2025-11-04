@@ -147,6 +147,9 @@ async def reject_and_regenerate_route(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-router.delete(
-    "/campaigns/{campaign_id}", delete_campaign_ById, methods=["DELETE"], tags=["Admin"]
+router.add_api_route(
+    path="/delete-campaign/{campaign_id}",
+    endpoint=delete_campaign_ById,
+    methods=["DELETE"],
+    tags=["Admin"],
 )

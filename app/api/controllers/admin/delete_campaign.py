@@ -5,10 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.db.connection import get_db
 from app.middleware.auth_middleware import require_admin_access
 
-router = APIRouter()
 
-
-@router.delete("/campaigns/{campaign_id}", tags=["Admin"])
 async def delete_campaign_ById(
     campaign_id: str,
     current_user: dict = Depends(require_admin_access),

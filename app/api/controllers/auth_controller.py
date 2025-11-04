@@ -1,5 +1,6 @@
 import hashlib
 import secrets
+from fastapi import HTTPException
 import jwt
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
@@ -33,7 +34,7 @@ def verify_password(password: str, hashed_password: str) -> bool:
         salt, password_hash = hashed_password.split(":")
         return hashlib.sha256((password + salt).encode()).hexdigest() == password_hash
     except ValueError:
-        return False
+        raise HTTPException(status_code=401, detail="Invalid password")
 
 
 def create_access_token(data: dict) -> str:
@@ -61,9 +62,9 @@ def verify_token(token: str) -> Optional[Dict[str, Any]]:
         )
         return payload
     except jwt.ExpiredSignatureError:
-        return None
-    except jwt.JWTError:
-        return None
+        raise HTTPException(status_code=401, detail="Token has expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
 
 
 async def register_company(request_data: CompanyRegistrationRequest) -> Dict[str, Any]:
@@ -126,8 +127,7 @@ async def register_company(request_data: CompanyRegistrationRequest) -> Dict[str
         }
 
     except Exception as e:
-        print(f"Error in register_company: {str(e)}")
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 async def login_user(request_data: UserLoginRequest) -> Dict[str, Any]:
@@ -172,8 +172,7 @@ async def login_user(request_data: UserLoginRequest) -> Dict[str, Any]:
         }
 
     except Exception as e:
-        print(f"Error in login_user: {str(e)}")
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 async def get_user_profile(user_id: str) -> Dict[str, Any]:
@@ -183,7 +182,7 @@ async def get_user_profile(user_id: str) -> Dict[str, Any]:
         users_collection = db.get_collection("users")
         user = await users_collection.find_one({"_id": ObjectId(user_id)})
         if not user:
-            return {"error": "User not found"}
+            raise HTTPException(status_code=404, detail="User not found")
 
         user_response = UserResponse(
             user_id=str(user["_id"]),
@@ -202,8 +201,7 @@ async def get_user_profile(user_id: str) -> Dict[str, Any]:
         return {"user": user_response.model_dump()}
 
     except Exception as e:
-        print(f"Error in get_user_profile: {str(e)}")
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 async def update_user_profile(
@@ -240,8 +238,7 @@ async def update_user_profile(
         return {"message": "Profile updated successfully"}
 
     except Exception as e:
-        print(f"Error in update_user_profile: {str(e)}")
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 async def change_password(
@@ -273,7 +270,7 @@ async def change_password(
         )
 
         if result.modified_count == 0:
-            return {"error": "Failed to update password"}
+            raise HTTPException(status_code=500, detail="Failed to update password")
 
         return {"message": "Password changed successfully"}
 
@@ -301,8 +298,7 @@ async def _get_campaign_lightweight(campaign_id: str) -> Dict[str, Any]:
         }
 
     except Exception as e:
-        print(f"Error in _get_campaign_lightweight: {str(e)}")
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 async def get_user_campaigns(
