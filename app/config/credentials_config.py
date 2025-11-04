@@ -29,12 +29,12 @@ class Config(BaseModel):
 
     OPENAI_API_KEY: str = Field(default=os.getenv("OPENAI_API_KEY"))
     EMBEDDING_MODEL: str = Field(default=os.getenv("EMBEDDING_MODEL"))
-    PORT: int = Field(default=int(os.getenv("PORT")))
+    PORT: int = Field(default=int(os.getenv("PORT", "8000")))
 
     JWT_SECRET_KEY: str = Field(default=os.getenv("JWT_SECRET_KEY"))
-    JWT_ALGORITHM: str = Field(default=os.getenv("JWT_ALGORITHM"))
+    JWT_ALGORITHM: str = Field(default=os.getenv("JWT_ALGORITHM", "HS256"))
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
-        default=int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES"))
+        default=int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
     )
 
 
