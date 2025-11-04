@@ -34,12 +34,8 @@ async def register_company(request_data: CompanyRegistrationRequest) -> Dict[str
             "created_at": datetime.now(timezone.utc),
             "updated_at": datetime.now(timezone.utc),
         }
-
-        # Insert user
         result = await users_collection.insert_one(user_doc)
         user_id = str(result.inserted_id)
-
-        # Create access token
         token_data = {
             "user_id": user_id,
             "email": request_data.email,
