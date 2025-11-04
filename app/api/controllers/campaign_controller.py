@@ -1,5 +1,5 @@
 from typing import Dict, Any, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from bson import ObjectId
 from fastapi import HTTPException
 from app.models.campaign_model import (
@@ -118,8 +118,8 @@ async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]
             "user_id": request_data.user_id,  # Associate with user
             "status": CampaignStatus.PENDING,  # Initial status
             "limit": request_data.limit or 10,  # Store limit for influencer generation
-            "created_at": datetime.now(datetime.UTC),
-            "updated_at": datetime.now(datetime.UTC),
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
         }
 
         # Insert into campaigns collection
@@ -646,7 +646,7 @@ async def approve_single_influencer(
                 "$set": {
                     "influencer_ids": new_influencer_ids,  # Legacy field
                     "influencer_references": new_references,  # New field
-                    "updated_at": datetime.now(datetime.UTC),
+                    "updated_at": datetime.now(timezone.utc),
                 }
             },
         )
@@ -871,7 +871,7 @@ async def approve_multiple_influencers(
                     "$set": {
                         "influencer_ids": current_influencer_ids,
                         "influencer_references": current_references,
-                        "updated_at": datetime.now(datetime.UTC),
+                        "updated_at": datetime.now(timezone.utc),
                     }
                 },
             )
@@ -908,7 +908,7 @@ async def admin_generate_influencers(
             {
                 "$set": {
                     "status": CampaignStatus.PROCESSING,
-                    "updated_at": datetime.now(datetime.UTC),
+                    "updated_at": datetime.now(timezone.utc),
                 }
             },
         )
@@ -957,7 +957,7 @@ async def admin_generate_influencers(
                 "$set": {
                     "generated_influencers": generated_influencer_ids,  # Store only IDs
                     "status": CampaignStatus.PROCESSING,
-                    "updated_at": datetime.now(datetime.UTC),
+                    "updated_at": datetime.now(timezone.utc),
                 }
             },
         )
@@ -1073,7 +1073,7 @@ async def reject_and_regenerate_influencers(request_data) -> Dict[str, Any]:
             {
                 "$set": {
                     "rejected_ids": list(existing_rejected),
-                    "updated_at": datetime.now(datetime.UTC),
+                    "updated_at": datetime.now(timezone.utc),
                 }
             },
         )
@@ -1151,7 +1151,7 @@ async def reject_and_regenerate_influencers(request_data) -> Dict[str, Any]:
                 "$set": {
                     "generated_influencers": list(all_generated_ids),  # Store only IDs
                     "status": CampaignStatus.PROCESSING,
-                    "updated_at": datetime.now(datetime.UTC),
+                    "updated_at": datetime.now(timezone.utc),
                 }
             },
         )
