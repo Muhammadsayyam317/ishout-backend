@@ -572,12 +572,9 @@ async def approve_single_influencer(
         # Validate influencer exists in the specified platform
         if request_data.platform == "instagram":
             collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
-            collection_name = config.MONGODB_ATLAS_COLLECTION_INFLUENCERS
         elif request_data.platform == "tiktok":
             collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
-            collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
         elif request_data.platform == "youtube":
-            collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
             collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
         else:
             raise HTTPException(status_code=400, detail="Invalid platform")
