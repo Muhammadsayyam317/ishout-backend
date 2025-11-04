@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, Header
 from typing import Optional
+from app.api.controllers.admin.approved_campaign import approved_campaign
 from app.api.controllers.admin.delete_campaign import delete_campaign_ById
 from app.api.controllers.campaign_controller import (
     get_all_campaigns,
@@ -151,5 +152,12 @@ router.add_api_route(
     path="/delete-campaign/{campaign_id}",
     endpoint=delete_campaign_ById,
     methods=["DELETE"],
+    tags=["Admin"],
+)
+
+router.add_api_route(
+    path="/approved-campaign",
+    endpoint=approved_campaign,
+    methods=["GET"],
     tags=["Admin"],
 )
