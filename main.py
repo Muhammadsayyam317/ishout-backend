@@ -6,6 +6,7 @@ from fastapi.security import HTTPBearer
 from fastapi.openapi.utils import get_openapi
 from app.api.api import api_router
 from contextlib import asynccontextmanager
+import os
 
 # Removed premature database retrieval
 
@@ -26,14 +27,12 @@ security_schemes = {
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Connect to database
+    print(f"🔧 Server PID: {os.getpid()}")
     await connect()
     yield
-    # Shutdown: Close database connection
     await close()
 
 
-# Create FastAPI app with lifespan
 app = FastAPI(
     title="Ishout API",
     description="API for finding social media influencers",
@@ -77,5 +76,5 @@ if __name__ == "__main__":
         "main:app",
         host="0.0.0.0",
         port=8000,
-        reload=False,
+        reload=True,
     )
