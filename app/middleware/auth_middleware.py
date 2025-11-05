@@ -1,7 +1,7 @@
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional, Dict, Any
-from app.api.controllers.auth_controller import get_current_user
+from app.core.auth import get_current_user_from_token
 import inspect
 
 # Security scheme for Swagger UI (exported for use in routes)
@@ -22,10 +22,13 @@ class AuthMiddleware:
         """Get current user with required authentication"""
         if not credentials:
             raise HTTPException(status_code=401, detail="Authentication required")
+
         token = credentials.credentials
-        current_user = await get_current_user(token)
+        current_user = get_current_user_from_token(token)
+
         if not current_user:
             raise HTTPException(status_code=401, detail="Invalid or expired token")
+
         return current_user
 
     @staticmethod
@@ -35,10 +38,13 @@ class AuthMiddleware:
         """Get current user with optional authentication"""
         if not credentials:
             return None
+
         token = credentials.credentials
-        current_user = await get_current_user(token)
+        current_user = get_current_user_from_token(token)
+
         if not current_user:
             return None
+
         return current_user
 
     @staticmethod
@@ -57,6 +63,7 @@ class AuthMiddleware:
                 status_code=403,
                 detail="This endpoint is for company users only, not admins",
             )
+
         if current_user.get("role") != "company":
             raise HTTPException(status_code=403, detail="Company user access required")
 
@@ -68,26 +75,34 @@ class AuthMiddleware:
         current_user: Dict[str, Any] = Depends(get_current_user_required),
     ) -> Dict[str, Any]:
         """Require either user ownership or admin role"""
+        # Admin can access any resource
         if current_user.get("role") == "admin":
             return current_user
+
+        # Regular users can only access their own resources
         if current_user["user_id"] != request_data_user_id:
             raise HTTPException(
                 status_code=403,
                 detail="Access denied: You can only access your own resources",
             )
+
         return current_user
 
 
+# Convenience functions for common use cases
 async def get_authenticated_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ) -> Dict[str, Any]:
     """Dependency for getting authenticated user (required)"""
     if not credentials:
         raise HTTPException(status_code=401, detail="Authentication required")
+
     token = credentials.credentials
-    current_user = await get_current_user(token)
+    current_user = get_current_user_from_token(token)
+
     if not current_user:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
+
     return current_user
 
 
@@ -97,10 +112,13 @@ async def get_optional_user(
     """Dependency for getting authenticated user (optional)"""
     if not credentials:
         return None
+
     token = credentials.credentials
-    current_user = await get_current_user(token)
+    current_user = get_current_user_from_token(token)
+
     if not current_user:
         return None
+
     return current_user
 
 

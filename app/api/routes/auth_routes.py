@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends, Header
 from typing import Optional, Dict, Any
+from app.api.controllers.auth.login import login_user
+from app.api.controllers.auth.register import register_company
 from app.api.controllers.auth_controller import (
-    register_company,
-    login_user,
     get_user_profile,
     update_user_profile,
     change_password,

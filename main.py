@@ -7,6 +7,7 @@ from fastapi.openapi.utils import get_openapi
 from app.api.api import api_router
 from contextlib import asynccontextmanager
 import os
+from app.core.errors import register_exception_handlers
 
 # Removed premature database retrieval
 
@@ -41,6 +42,9 @@ app = FastAPI(
     swagger_ui_init_oauth={"clientId": "swagger-ui"},
     swagger_ui_parameters={"persistAuthorization": True},
 )
+
+
+register_exception_handlers(app)
 
 
 def custom_openapi():

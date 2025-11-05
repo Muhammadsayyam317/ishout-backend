@@ -2,7 +2,7 @@ import hashlib
 import secrets
 from fastapi import HTTPException
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional
 from bson import ObjectId
 from app.models.user_model import (
@@ -42,7 +42,7 @@ def create_access_token(data: dict) -> str:
     if not config.JWT_SECRET_KEY:
         raise ValueError("JWT Secret Key is not configured in environment variables")
     to_encode = data.copy()
-    expire = datetime.now(datetime.UTC) + timedelta(
+    expire = datetime.now(timezone.utc) + timedelta(
         minutes=config.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
     )
     to_encode.update({"exp": expire})
@@ -65,114 +65,6 @@ def verify_token(token: str) -> Optional[Dict[str, Any]]:
         raise HTTPException(status_code=401, detail="Token has expired")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
-
-
-async def register_company(request_data: CompanyRegistrationRequest) -> Dict[str, Any]:
-    try:
-        db = get_db()
-        users_collection = db.get_collection("users")
-        existing_user = await users_collection.find_one({"email": request_data.email})
-        if existing_user:
-            return {"error": "User with this email already exists"}
-        # Hash password
-        hashed_password = hash_password(request_data.password)
-
-        # Create user document
-        user_doc = {
-            "company_name": request_data.company_name,
-            "email": request_data.email,
-            "password": hashed_password,
-            "contact_person": request_data.contact_person,
-            "phone": request_data.phone,
-            "industry": request_data.industry,
-            "company_size": request_data.company_size,
-            "role": UserRole.COMPANY,
-            "status": UserStatus.ACTIVE,
-            "created_at": datetime.now(datetime.UTC),
-            "updated_at": datetime.now(datetime.UTC),
-        }
-
-        # Insert user
-        result = await users_collection.insert_one(user_doc)
-        user_id = str(result.inserted_id)
-
-        # Create access token
-        token_data = {
-            "user_id": user_id,
-            "email": request_data.email,
-            "role": UserRole.COMPANY,
-        }
-        access_token = create_access_token(token_data)
-
-        # Prepare user response
-        user_response = UserResponse(
-            user_id=user_id,
-            company_name=request_data.company_name,
-            email=request_data.email,
-            contact_person=request_data.contact_person,
-            phone=request_data.phone,
-            industry=request_data.industry,
-            company_size=request_data.company_size,
-            role=UserRole.COMPANY,
-            status=UserStatus.ACTIVE,
-            created_at=user_doc["created_at"],
-            updated_at=user_doc["updated_at"],
-        )
-
-        return {
-            "message": "Company registered successfully",
-            "access_token": access_token,
-            "token_type": "bearer",
-            "user": user_response.model_dump(),
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-async def login_user(request_data: UserLoginRequest) -> Dict[str, Any]:
-    try:
-        db = get_db()
-        users_collection = db.get_collection("users")
-        user = await users_collection.find_one({"email": request_data.email})
-        if not user:
-            return {"error": "Invalid email or password"}
-        if user["status"] != UserStatus.ACTIVE:
-            return {"error": "Account is not active"}
-        if not verify_password(request_data.password, user["password"]):
-            return {"error": "Invalid email or password"}
-        # Create access token
-        token_data = {
-            "user_id": str(user["_id"]),
-            "email": user["email"],
-            "role": user["role"],
-        }
-        access_token = create_access_token(token_data)
-
-        # Prepare user response
-        user_response = UserResponse(
-            user_id=str(user["_id"]),
-            company_name=user["company_name"],
-            email=user["email"],
-            contact_person=user["contact_person"],
-            phone=user.get("phone"),
-            industry=user.get("industry"),
-            company_size=user.get("company_size"),
-            role=user["role"],
-            status=user["status"],
-            created_at=user["created_at"],
-            updated_at=user["updated_at"],
-        )
-
-        return {
-            "message": "Login successful",
-            "access_token": access_token,
-            "token_type": "bearer",
-            "user": user_response.model_dump(),
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 async def get_user_profile(user_id: str) -> Dict[str, Any]:
@@ -264,7 +156,7 @@ async def change_password(
             {
                 "$set": {
                     "password": new_hashed_password,
-                    "updated_at": datetime.now(datetime.UTC),
+                    "updated_at": datetime.now(timezone.utc),
                 }
             },
         )
@@ -275,8 +167,7 @@ async def change_password(
         return {"message": "Password changed successfully"}
 
     except Exception as e:
-        print(f"Error in change_password: {str(e)}")
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 async def _get_campaign_lightweight(campaign_id: str) -> Dict[str, Any]:
@@ -285,7 +176,7 @@ async def _get_campaign_lightweight(campaign_id: str) -> Dict[str, Any]:
         campaigns_collection = db.get_collection("campaigns")
         campaign = await campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
         if not campaign:
-            return {"error": "Campaign not found"}
+            raise HTTPException(status_code=404, detail="Campaign not found")
 
         campaign["_id"] = str(campaign["_id"])
 
@@ -344,8 +235,7 @@ async def get_user_campaigns(
         return {"campaigns": user_campaigns, "total": len(user_campaigns)}
 
     except Exception as e:
-        print(f"Error in get_user_campaigns: {str(e)}")
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 def _get_status_message(status: str) -> str:
@@ -368,5 +258,4 @@ async def get_current_user(token: str) -> Optional[Dict[str, Any]]:
             "role": payload.get("role"),
         }
     except Exception as e:
-        print(f"Error in get_current_user: {str(e)}")
-        return None
+        raise HTTPException(status_code=500, detail=str(e))

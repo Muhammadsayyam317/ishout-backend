@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, Header
 from typing import Optional
+from app.api.controllers.admin.approved_campaign import approved_campaign
 from app.api.controllers.admin.delete_campaign import delete_campaign_ById
 from app.api.controllers.campaign_controller import (
     get_all_campaigns,
@@ -62,6 +63,13 @@ async def get_processing_campaigns_route(
         return await get_all_campaigns(status, page, page_size)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+        router.add_api_route(
+            path="/approved-campaign",
+            endpoint=approved_campaign,
+            methods=["GET"],
+            tags=["Admin"],
+        )
 
 
 @router.get("/campaigns/{campaign_id}", tags=["Admin"])

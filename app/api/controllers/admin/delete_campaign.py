@@ -1,6 +1,6 @@
 from typing import Any, Dict
 from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import Depends, HTTPException
 
 from app.db.connection import get_db
 from app.middleware.auth_middleware import require_admin_access
