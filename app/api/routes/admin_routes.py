@@ -64,6 +64,13 @@ async def get_processing_campaigns_route(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+        router.add_api_route(
+            path="/approved-campaign",
+            endpoint=approved_campaign,
+            methods=["GET"],
+            tags=["Admin"],
+        )
+
 
 @router.get("/campaigns/{campaign_id}", tags=["Admin"])
 async def get_campaign_route(
@@ -152,12 +159,5 @@ router.add_api_route(
     path="/delete-campaign/{campaign_id}",
     endpoint=delete_campaign_ById,
     methods=["DELETE"],
-    tags=["Admin"],
-)
-
-router.add_api_route(
-    path="/approved-campaign",
-    endpoint=approved_campaign,
-    methods=["GET"],
     tags=["Admin"],
 )
