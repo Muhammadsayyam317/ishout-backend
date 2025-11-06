@@ -287,7 +287,6 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
 
                 if platform == "instagram":
                     collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
-                    collection_name = config.MONGODB_ATLAS_COLLECTION_INFLUENCERS
                 elif platform == "tiktok":
                     collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
                 elif platform == "youtube":
@@ -354,12 +353,9 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                     # Get collection name from centralized config
                     if platform == "instagram":
                         collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
-                        collection_name = config.MONGODB_ATLAS_COLLECTION_INFLUENCERS
                     elif platform == "tiktok":
                         collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
-                        collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
                     elif platform == "youtube":
-                        collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
                         collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
                     else:
                         continue
