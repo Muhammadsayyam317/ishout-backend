@@ -286,7 +286,7 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                     continue
 
                 if platform == "instagram":
-                    collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
+                    collection_name = config.MONGODB_ATLAS_COLLECTION_INSTAGRAM
                 elif platform == "tiktok":
                     collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
                 elif platform == "youtube":
@@ -352,7 +352,7 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                 for platform in ["instagram", "tiktok", "youtube"]:
                     # Get collection name from centralized config
                     if platform == "instagram":
-                        collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
+                        collection_name = config.MONGODB_ATLAS_COLLECTION_INSTAGRAM
                     elif platform == "tiktok":
                         collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
                     elif platform == "youtube":
@@ -400,7 +400,7 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                 db = get_db()
 
                 if platform == "instagram":
-                    collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
+                    collection_name = config.MONGODB_ATLAS_COLLECTION_INSTAGRAM
                 elif platform == "tiktok":
                     collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
                 elif platform == "youtube":
@@ -448,7 +448,7 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                 # Get collection name using environment variables
 
                 if platform == "instagram":
-                    collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
+                    collection_name = config.MONGODB_ATLAS_COLLECTION_INSTAGRAM
                 elif platform == "tiktok":
                     collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
                 elif platform == "youtube":
@@ -567,7 +567,7 @@ async def approve_single_influencer(
 
         # Validate influencer exists in the specified platform
         if request_data.platform == "instagram":
-            collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
+            collection_name = config.MONGODB_ATLAS_COLLECTION_INSTAGRAM
         elif request_data.platform == "tiktok":
             collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
         elif request_data.platform == "youtube":
@@ -791,7 +791,7 @@ async def approve_multiple_influencers(
         current_references = campaign.get("influencer_references", [])
         current_influencer_ids = campaign.get("influencer_ids", [])
         platform_to_collection = {
-            "instagram": config.MONGODB_ATLAS_COLLECTION_INSTGRAM,
+            "instagram": config.MONGODB_ATLAS_COLLECTION_INSTAGRAM,
             "tiktok": config.MONGODB_ATLAS_COLLECTION_TIKTOK,
             "youtube": config.MONGODB_ATLAS_COLLECTION_YOUTUBE,
         }
