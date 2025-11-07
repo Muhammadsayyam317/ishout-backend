@@ -58,13 +58,10 @@ async def _populate_influencer_details(
 
         for plat in platforms_to_check:
             if plat == "instagram":
-                collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
-                collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
+                collection_name = config.MONGODB_ATLAS_COLLECTION_INSTAGRAM
             elif plat == "tiktok":
                 collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
-                collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
             elif plat == "youtube":
-                collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
                 collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
             else:
                 continue
