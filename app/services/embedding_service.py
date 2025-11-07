@@ -109,13 +109,10 @@ async def query_vector_store(
         # Choose collection by platform
         collection_name = None
         if platform == "instagram":
-            collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
-            collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
+            collection_name = config.MONGODB_ATLAS_COLLECTION_INSTAGRAM
         elif platform == "tiktok":
             collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
-            collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
         elif platform == "youtube":
-            collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
             collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
         else:
             raise ValueError(f"Invalid platform specified: {platform}")
@@ -225,13 +222,10 @@ async def delete_from_vector_store(platform: str, influencer_id: str) -> Dict[st
     """
     collection_name = None
     if platform == "instagram":
-        collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
-        collection_name = config.MONGODB_ATLAS_COLLECTION_INSTGRAM
+        collection_name = config.MONGODB_ATLAS_COLLECTION_INSTAGRAM
     elif platform == "tiktok":
         collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
-        collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
     elif platform == "youtube":
-        collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
         collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
     else:
         raise ValueError(f"Invalid platform specified: {platform}")
