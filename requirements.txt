@@ -1,3 +1,4 @@
+httpx
 # FastAPI and web server
 fastapi
 uvicorn
