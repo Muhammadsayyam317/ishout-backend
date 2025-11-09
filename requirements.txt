@@ -1,3 +1,4 @@
+httpx
 # FastAPI and web server
 fastapi
 uvicorn
@@ -5,6 +6,7 @@ python-dotenv
 
 # OpenAI and LangChain
 openai
+openai-agents
 langchain
 langchain-openai
 langchain-community

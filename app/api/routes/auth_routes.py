@@ -25,6 +25,7 @@ from app.models.campaign_model import (
     CreateCampaignRequest,
     UserRejectInfluencersRequest,
 )
+from app.tools.search_influencers import search_influencers
 
 router = APIRouter()
 
@@ -169,3 +170,11 @@ async def get_campaign_approved_influencers_route(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+router.add_api_route(
+    path="/search-influencers",
+    endpoint=search_influencers,
+    methods=["POST"],
+    tags=["User"],
+)

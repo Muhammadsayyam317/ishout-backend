@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException, Depends, Header
 from typing import Optional
 from app.api.controllers.admin.approved_campaign import approved_campaign
+from app.api.controllers.admin.campaign_byId import campaign_by_id_controller
 from app.api.controllers.admin.delete_campaign import delete_campaign_ById
 from app.api.controllers.campaign_controller import (
     get_all_campaigns,
-    get_campaign_by_id,
     approve_single_influencer,
     approve_multiple_influencers,
     admin_generate_influencers,
@@ -64,23 +64,13 @@ async def get_processing_campaigns_route(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-        router.add_api_route(
-            path="/approved-campaign",
-            endpoint=approved_campaign,
-            methods=["GET"],
-            tags=["Admin"],
-        )
 
-
-@router.get("/campaigns/{campaign_id}", tags=["Admin"])
-async def get_campaign_route(
-    campaign_id: str, current_user: dict = Depends(require_admin_access)
-):
-    """Get campaign details by ID (admin only)"""
-    try:
-        return await get_campaign_by_id(campaign_id)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+router.add_api_route(
+    path="/approved-campaign",
+    endpoint=approved_campaign,
+    methods=["GET"],
+    tags=["Admin"],
+)
 
 
 @router.put("/campaigns/approve-single-influencer", tags=["Admin"])
@@ -120,13 +110,20 @@ async def generate_influencers_route(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/campaigns/{campaign_id}/generated-influencers", tags=["Admin"])
-async def get_generated_influencers_route(
+router.add_api_route(
+    path="/campaigns/{campaign_id}/generated-influencers",
+    endpoint=get_campaign_generated_influencers,
+    methods=["GET"],
+    tags=["Admin"],
+)
+
+
+def get_generated_influencers_route(
     campaign_id: str, current_user: dict = Depends(require_admin_access)
 ):
     """Get generated influencers for a campaign (admin only)"""
     try:
-        return await get_campaign_generated_influencers(campaign_id)
+        return get_campaign_generated_influencers(campaign_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -154,6 +151,13 @@ async def reject_and_regenerate_route(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
+router.add_api_route(
+    path="/campaigns/{campaign_id}",
+    endpoint=campaign_by_id_controller,
+    methods=["GET"],
+    tags=["Admin"],
+)
 
 router.add_api_route(
     path="/delete-campaign/{campaign_id}",

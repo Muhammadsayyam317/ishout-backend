@@ -1,17 +1,18 @@
 from pydantic import BaseModel
 from typing import List, Optional
 
+
 class FindInfluencerRequest(BaseModel):
-    """Simplified request model - only requires campaign_id and user_id"""
     campaign_id: str
     user_id: str
-    limit: Optional[int] = 10  # Number of influencers to find
-    more: Optional[int] = None  # Override limit for subsequent calls
-    exclude_ids: Optional[List[str]] = None  # IDs to exclude from results
+    limit: Optional[int] = 10
+    more: Optional[int] = None
+    exclude_ids: Optional[List[str]] = None
 
 
 class FindInfluencerLegacyRequest(BaseModel):
     """Legacy request model for backward compatibility"""
+
     platform: List[str]
     category: List[str]
     followers: List[str]
@@ -34,12 +35,14 @@ class DeleteInfluencerRequest(BaseModel):
 
     Provide at least one identifier. If multiple are provided, they are combined with OR.
     """
+
     platform: str
     influencer_id: str
 
 
 class MoreInfluencerRequest(BaseModel):
     """Simplified request model for fetching more influencers"""
+
     campaign_id: str
     user_id: str
     more: int  # Number of additional influencers to fetch
@@ -48,6 +51,7 @@ class MoreInfluencerRequest(BaseModel):
 
 class MoreInfluencerLegacyRequest(BaseModel):
     """Legacy request model for fetching more (fresh) influencers"""
+
     platform: List[str]
     category: List[str]
     followers: List[str]
@@ -56,3 +60,11 @@ class MoreInfluencerLegacyRequest(BaseModel):
     exclude_ids: List[str]
     # Optional: campaign context and newly rejected IDs from the last batch
     campaign_id: Optional[str] = None
+
+
+class GenerateInfluencersRequest(BaseModel):
+    platform: List[str]
+    category: List[str]
+    followers: List[str]
+    country: List[str]
+    limit: str
