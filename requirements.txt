@@ -5,6 +5,7 @@ python-dotenv
 
 # OpenAI and LangChain
 openai
+openai-agents
 langchain
 langchain-openai
 langchain-community

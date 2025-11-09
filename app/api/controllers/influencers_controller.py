@@ -22,20 +22,9 @@ from bson import ObjectId
 class Agent:
     """Simple Agent class to mimic OpenAI's Agent functionality"""
 
-    def __init__(self, name, tools, instructions, input_guardrails=None):
-        self.name = name
-        self.tools = tools
-        self.instructions = instructions
-        self.input_guardrails = input_guardrails or []
-
 
 async def find_influencers_by_campaign(request_data: FindInfluencerRequest):
-    """
-    Simplified handler for finding influencers based on campaign criteria
-    Fetches campaign details and uses them for influencer search
-    """
     try:
-        # Get campaign details
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
         campaign = await campaigns_collection.find_one(
@@ -43,46 +32,19 @@ async def find_influencers_by_campaign(request_data: FindInfluencerRequest):
         )
 
         if not campaign:
-            return {"error": "Campaign not found"}
-
-        # Note: Permission check is done at the route level
-        # Admins can access any campaign, users can only access their own
-
-        # Extract campaign criteria
+            raise HTTPException(status_code=404, detail="Campaign not found")
         platforms = campaign["platform"]
         categories = campaign["category"]
         followers_list = campaign["followers"]
         countries = campaign["country"]
+        limit = request_data.limit
 
-        # Use the simplified limit
-        limit = request_data.limit or 10
-        more = getattr(request_data, "more", None)
-        exclude_ids = set(getattr(request_data, "exclude_ids", []) or [])
-
-        # Validate required fields
         if not platforms or not categories:
-            return {"error": "Campaign must have platform and category specified"}
+            raise HTTPException(
+                status_code=400,
+                detail="Campaign must have platform and category specified",
+            )
 
-        # Determine API limit
-        try:
-            api_limit = int(limit)
-        except ValueError:
-            api_limit = 10
-
-        # Agentic planning for limits
-        effective_limit = int(more) if more else api_limit
-        adjusted_global_limit, per_call_limit = plan_limits(
-            user_limit=effective_limit,
-            categories=categories,
-            followers_list=followers_list,
-            countries=countries,
-        )
-
-        all_results = []  # Collect all responses
-        global_influencers: list = []  # Flattened, deduped influencer pool
-        seen_keys = set()
-
-        # Create cross-product search: each platform × each category × each follower count × each country
         for platform in platforms:
             platform = platform.strip().lower()
 
@@ -94,105 +56,17 @@ async def find_influencers_by_campaign(request_data: FindInfluencerRequest):
             elif platform == "youtube":
                 tool = search_youtube_influencers
             else:
-                all_results.append({"error": f"Unsupported platform: {platform}"})
-                continue
+                raise HTTPException(
+                    status_code=400, detail=f"Unsupported platform: {platform}"
+                )
 
-            for category in categories:
-                category = category.strip()
-
-                for raw_followers in followers_list:
-                    raw_followers = raw_followers.strip()
-
-                    # Parse followers (range or single)
-                    min_followers = max_followers = None
-                    if raw_followers:
-                        if "-" in raw_followers:
-                            min_val, max_val, original = parse_follower_range(
-                                raw_followers
-                            )
-                            min_followers, max_followers = min_val, max_val
-                        else:
-                            min_followers = parse_follower_count(raw_followers)
-
-                    for country in countries:
-                        country = country.strip() if country else None
-
-                        # Build descriptive query
-                        if min_followers is not None:
-                            if max_followers is not None:
-                                query = f"find {category} influencers with {min_followers}-{max_followers} followers"
-                            else:
-                                query = f"find {category} influencers with at least {min_followers} followers"
-                        else:
-                            query = f"find {category} influencers"
-
-                        influencers = await retrieve_with_rag_then_fallback(
-                            platform=platform,
-                            category=category,
-                            country=country,
-                            raw_followers=raw_followers,
-                            min_followers=min_followers,
-                            max_followers=max_followers,
-                            per_call_limit=per_call_limit,
-                            tool_call=tool,
-                            query=query,
-                            seen_keys=seen_keys,
-                            exclude_keys=exclude_ids,
-                        )
-
-                        # collect into global pool for final flattening
-                        global_influencers.extend(influencers)
-
-                        follower_info = {}
-                        if min_followers is not None and max_followers is not None:
-                            follower_info = {
-                                "min": min_followers,
-                                "max": max_followers,
-                                "range": raw_followers,
-                            }
-                        elif min_followers is not None:
-                            follower_info = {"min": min_followers}
-
-                        # Append each result to list
-                        all_results.append(
-                            {
-                                "category": category,
-                                "platform": platform,
-                                "country": country,
-                                "followers": follower_info,
-                                "limit": per_call_limit,
-                                "count": len(influencers),
-                                "influencers": influencers,
-                            }
-                        )
-
-        # Rank and diversify before applying cap
-        ranked = sort_and_diversify(global_influencers, diversify_by="platform")
-        flattened = ranked[:adjusted_global_limit]
-
-        # Add brief response notes
-        notes = {
-            "requested": api_limit,
-            "returned": len(flattened),
-            "global_cap": adjusted_global_limit,
-            "strategy": "RAG-first with fallback, similarity-ranked and platform-diversified",
-            "campaign_id": request_data.campaign_id,
-            "campaign_name": campaign["name"],
-        }
-
-        return {
-            "influencers": flattened,
-            "notes": notes,
-            "campaign": {
-                "id": request_data.campaign_id,
-                "name": campaign["name"],
-                "description": campaign.get("description"),
-                "platform": platforms,
-                "category": categories,
-                "followers": followers_list,
-                "country": countries,
-            },
-        }
+        result = await tool(
+            category=categories,
+            limit=limit,
+            followers=followers_list,
+            country=countries,
+        )
+        return result
 
     except Exception as e:
         raise HTTPException(

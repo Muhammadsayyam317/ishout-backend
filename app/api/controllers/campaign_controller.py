@@ -111,10 +111,10 @@ async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]
             "influencer_ids": request_data.influencer_ids,  # Legacy field
             "influencer_references": [],  # New field with platform info
             "rejected_ids": [],  # Rejected by admin
-            "rejectedByUser": [],  # Rejected by user
-            "user_id": request_data.user_id,  # Associate with user
-            "status": CampaignStatus.PENDING,  # Initial status
-            "limit": request_data.limit or 10,  # Store limit for influencer generation
+            "rejectedByUser": [],
+            "user_id": request_data.user_id,
+            "status": CampaignStatus.PENDING,
+            "limit": request_data.limit,
             "created_at": datetime.now(timezone.utc),
             "updated_at": datetime.now(timezone.utc),
         }
@@ -887,78 +887,18 @@ async def admin_generate_influencers(
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
-        # Get campaign
         campaign = await campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
         if not campaign:
             raise HTTPException(status_code=404, detail="Campaign not found")
-
-        # Update campaign status to processing
-        await campaigns_collection.update_one(
-            {"_id": ObjectId(campaign_id)},
-            {
-                "$set": {
-                    "status": CampaignStatus.PROCESSING,
-                    "updated_at": datetime.now(timezone.utc),
-                }
-            },
-        )
-
-        # Use limit from campaign if available, otherwise use request limit
         campaign_limit = campaign.get("limit") or request_data.limit or 10
-
-        # Create influencer search request based on campaign criteria
         influencer_request = FindInfluencerRequest(
             campaign_id=campaign_id,
-            user_id=campaign.get("user_id", ""),  # Get user_id from campaign
-            limit=campaign_limit,  # Use limit from campaign
+            user_id=campaign.get("user_id", ""),
+            limit=campaign_limit,
         )
 
-        # Generate influencers
         result = await find_influencers_by_campaign(influencer_request)
-
-        if "error" in result:
-            # Update status back to pending if generation failed
-            await campaigns_collection.update_one(
-                {"_id": ObjectId(campaign_id)},
-                {
-                    "$set": {
-                        "status": CampaignStatus.PENDING,
-                        "updated_at": datetime.utcnow(),
-                    }
-                },
-            )
-            return result
-
-        # Update campaign with generated influencers (for admin review)
-        generated_influencers = result.get("influencers", [])
-        print(f"Generated influencers count: {len(generated_influencers)}")
-
-        # Extract only IDs from influencers for storage
-        generated_influencer_ids = []
-        for inf in generated_influencers:
-            inf_id = inf.get("influencer_id") or inf.get("_id") or inf.get("id")
-            if inf_id:
-                generated_influencer_ids.append(str(inf_id))
-
-        # Store only IDs to reduce database size
-        await campaigns_collection.update_one(
-            {"_id": ObjectId(campaign_id)},
-            {
-                "$set": {
-                    "generated_influencers": generated_influencer_ids,  # Store only IDs
-                    "status": CampaignStatus.PROCESSING,
-                    "updated_at": datetime.now(timezone.utc),
-                }
-            },
-        )
-
-        return {
-            "message": f"Generated {len(generated_influencers)} influencers for admin review",
-            "campaign_id": campaign_id,
-            "generated_count": len(generated_influencers),
-            "influencers": generated_influencers,
-        }
-
+        return result
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error in admin generate influencers: {str(e)}"
