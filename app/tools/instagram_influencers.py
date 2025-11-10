@@ -60,7 +60,7 @@ async def search_instagram_influencers(
                     )
 
                     for r in results:
-                        influencer_data = extract_influencer_data(r)
+                        influencer_data = extract_influencer_data(r, "Instagram")
                         username = influencer_data.get("username")
                         if username and username in seen_usernames:
                             continue

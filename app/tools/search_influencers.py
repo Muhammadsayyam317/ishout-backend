@@ -3,7 +3,6 @@ from app.tools.instagram_influencers import search_instagram_influencers
 from app.tools.tiktok_influencers import search_tiktok_influencers
 from app.tools.youtube_influencers import search_youtube_influencers
 import asyncio
-import logging
 
 
 async def search_influencers(
@@ -14,10 +13,13 @@ async def search_influencers(
     limit: int,
 ):
     try:
-        logging.info(f"🔍 Platforms: {platforms}")
         tasks = []
-        logging.info(f"🔍 Tasks: {tasks}")
-        if "instagram" in platforms:
+        platforms_lower = [
+            p.strip().lower() if isinstance(p, str) else str(p).strip().lower()
+            for p in platforms
+        ]
+
+        if "instagram" in platforms_lower:
             tasks.append(
                 search_instagram_influencers(
                     category=category,
@@ -26,8 +28,7 @@ async def search_influencers(
                     country=country,
                 )
             )
-            logging.info(f"🔍 Instagram task: {tasks}")
-        if "tiktok" in platforms:
+        if "tiktok" in platforms_lower:
             tasks.append(
                 search_tiktok_influencers(
                     category=category,
@@ -36,8 +37,7 @@ async def search_influencers(
                     country=country,
                 )
             )
-            logging.info(f"🔍 Tiktok task: {tasks}")
-        if "youtube" in platforms:
+        if "youtube" in platforms_lower:
             tasks.append(
                 search_youtube_influencers(
                     category=category,
@@ -46,11 +46,7 @@ async def search_influencers(
                     country=country,
                 )
             )
-
-        # ✅ Run all platform searches in parallel
         results = await asyncio.gather(*tasks, return_exceptions=True)
-
-        # ✅ Merge and handle exceptions
         combined_results = []
         for result in results:
             if isinstance(result, Exception):

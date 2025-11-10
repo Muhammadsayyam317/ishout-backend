@@ -63,7 +63,7 @@ async def search_tiktok_influencers(
                     )
 
                     for r in results:
-                        influencer_data = extract_influencer_data(r)
+                        influencer_data = extract_influencer_data(r, "TikTok")
                         username = influencer_data.get("username")
 
                         if username and username in seen_usernames:
