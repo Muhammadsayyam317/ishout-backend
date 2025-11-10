@@ -50,7 +50,6 @@ async def _populate_influencer_details(
     try:
         if not influencer_ids:
             raise HTTPException(status_code=400, detail="No influencer IDs provided")
-        # Try to find influencers in all platform collections
         platforms_to_check = (
             [platform] if platform else ["instagram", "tiktok", "youtube"]
         )
@@ -108,10 +107,6 @@ async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]
             "category": request_data.category,
             "followers": request_data.followers,
             "country": request_data.country,
-            "influencer_ids": request_data.influencer_ids,  # Legacy field
-            "influencer_references": [],  # New field with platform info
-            "rejected_ids": [],  # Rejected by admin
-            "rejectedByUser": [],
             "user_id": request_data.user_id,
             "status": CampaignStatus.PENDING,
             "limit": request_data.limit,
@@ -936,27 +931,21 @@ async def update_campaign_status(
 
 
 async def get_campaign_generated_influencers(campaign_id: str) -> Dict[str, Any]:
-    """Get generated influencers for a campaign (admin only) - populates full details from IDs"""
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
-        # Get campaign with generated influencers
         campaign = await campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
         if not campaign:
             raise HTTPException(status_code=404, detail="Campaign not found")
 
-        # Get generated influencer IDs
         generated_influencer_ids = campaign.get("generated_influencers", [])
 
-        # Populate full details if we have IDs
         generated_influencers_with_details = []
         if generated_influencer_ids and isinstance(generated_influencer_ids[0], str):
-            # These are IDs, populate full details
             generated_influencers_with_details = await _populate_influencer_details(
                 generated_influencer_ids
             )
         else:
-            # Legacy format (already full objects), return as is
             generated_influencers_with_details = generated_influencer_ids
 
         return {

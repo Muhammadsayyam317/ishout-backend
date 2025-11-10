@@ -1,4 +1,5 @@
 from typing import Dict, Any
+import asyncio
 from fastapi import HTTPException
 from app.services.agent_planner_service import plan_limits
 from app.services.rag_service import retrieve_with_rag_then_fallback
@@ -44,29 +45,37 @@ async def find_influencers_by_campaign(request_data: FindInfluencerRequest):
                 status_code=400,
                 detail="Campaign must have platform and category specified",
             )
-
+        tasks = []
         for platform in platforms:
-            platform = platform.strip().lower()
+            platform_normalized = platform.strip().lower()
 
-            # Choose platform tool
-            if platform == "instagram":
+            if platform_normalized == "instagram":
                 tool = search_instagram_influencers
-            elif platform == "tiktok":
+            elif platform_normalized == "tiktok":
                 tool = search_tiktok_influencers
-            elif platform == "youtube":
+            elif platform_normalized == "youtube":
                 tool = search_youtube_influencers
             else:
                 raise HTTPException(
                     status_code=400, detail=f"Unsupported platform: {platform}"
                 )
+            tasks.append(
+                tool(
+                    category=categories,
+                    limit=limit,
+                    followers=followers_list,
+                    country=countries,
+                )
+            )
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        combined_results = []
+        for result in results:
+            if isinstance(result, Exception):
+                print(f"Platform error: {result}")
+                continue
+            combined_results.extend(result)
 
-        result = await tool(
-            category=categories,
-            limit=limit,
-            followers=followers_list,
-            country=countries,
-        )
-        return result
+        return combined_results
 
     except Exception as e:
         raise HTTPException(
@@ -75,16 +84,10 @@ async def find_influencers_by_campaign(request_data: FindInfluencerRequest):
 
 
 async def find_influencers(request_data: FindInfluencerLegacyRequest):
-    """
-    Handler for the find-influencer endpoint supporting cross-product search
-    Each platform will be searched for each combination of category, followers, and country
-    """
     try:
-        all_results = []  # Collect all responses
-        global_influencers: list = []  # Flattened, deduped influencer pool
+        all_results = []
+        global_influencers: list = []
         seen_keys = set()
-
-        # Extract arrays from request
         platforms = request_data.platform
         categories = request_data.category
         followers_list = request_data.followers
@@ -94,17 +97,13 @@ async def find_influencers(request_data: FindInfluencerLegacyRequest):
         exclude_ids = set(getattr(request_data, "exclude_ids", []) or [])
         is_campaign_create = request_data.is_campaign_create
 
-        # Validate required fields
         if not platforms or not categories:
             return {"error": "Platform and category are required"}
-
-        # Determine API limit (treat as global requested count), then adjust
         try:
             api_limit = int(limit)
         except ValueError:
             api_limit = 5
 
-        # Agentic planning for limits (use `more` when present for follow-up requests)
         effective_limit = int(more) if more else api_limit
         adjusted_global_limit, per_call_limit = plan_limits(
             user_limit=effective_limit,

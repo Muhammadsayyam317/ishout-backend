@@ -149,15 +149,16 @@ def build_combination_query(
     return query
 
 
-def extract_influencer_data(result) -> Dict[str, Any]:
+def extract_influencer_data(result, platform: str) -> Dict[str, Any]:
     return {
-        "platform": result.metadata.get("platform"),
         "username": result.metadata.get("influencer_username"),
         "followers": result.metadata.get("followers"),
         "country": result.metadata.get("country"),
         "bio": result.metadata.get("bio"),
         "engagementRate": result.metadata.get("engagementRate"),
         "picture": result.metadata.get("pic"),
+        "platform": platform.lower(),
+        "id": result.metadata.get("influencer_id"),
     }
 
 
