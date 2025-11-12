@@ -735,8 +735,6 @@ async def update_campaign_status(
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
-
-        # Update campaign status
         result = await campaigns_collection.update_one(
             {"_id": ObjectId(request_data.campaign_id)},
             {"$set": {"status": request_data.status, "updated_at": datetime.utcnow()}},
