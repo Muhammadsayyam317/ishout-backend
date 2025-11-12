@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Header
+from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional
 from app.api.controllers.admin.approved_campaign import approved_campaign
 from app.api.controllers.admin.campaign_byId import campaign_by_id_controller
@@ -6,20 +6,17 @@ from app.api.controllers.admin.delete_campaign import delete_campaign_ById
 from app.api.controllers.campaign_controller import (
     get_all_campaigns,
     approve_single_influencer,
-    approve_multiple_influencers,
     admin_generate_influencers,
     update_campaign_status,
     get_campaign_generated_influencers,
     reject_and_regenerate_influencers,
 )
+from app.models.campaign_influencers_model import CampaignInfluencersRequest
 from app.models.campaign_model import (
-    ApproveSingleInfluencerRequest,
-    ApproveMultipleInfluencersRequest,
     AdminGenerateInfluencersRequest,
     CampaignStatusUpdateRequest,
     RejectInfluencersRequest,
 )
-from app.api.controllers.auth_controller import get_current_user
 from app.middleware.auth_middleware import require_admin_access
 
 router = APIRouter()
@@ -73,26 +70,14 @@ router.add_api_route(
 )
 
 
-@router.put("/campaigns/approve-single-influencer", tags=["Admin"])
+@router.patch("/campaigns/approve-single-influencer", tags=["Admin"])
 async def approve_single_influencer_route(
-    request_data: ApproveSingleInfluencerRequest,
+    request_data: CampaignInfluencersRequest,
     current_user: dict = Depends(require_admin_access),
 ):
-    """Approve a single influencer and add to campaign (admin only)"""
+    """Approve or reject a single influencer (admin only)"""
     try:
         return await approve_single_influencer(request_data)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.put("/campaigns/approve-multiple-influencers", tags=["Admin"])
-async def approve_multiple_influencers_route(
-    request_data: ApproveMultipleInfluencersRequest,
-    current_user: dict = Depends(require_admin_access),
-):
-    """Approve multiple influencers and add to campaign (admin only)"""
-    try:
-        return await approve_multiple_influencers(request_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
