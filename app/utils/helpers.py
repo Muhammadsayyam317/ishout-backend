@@ -158,7 +158,7 @@ def extract_influencer_data(result, platform: str) -> Dict[str, Any]:
         "engagementRate": result.metadata.get("engagementRate"),
         "picture": result.metadata.get("pic"),
         "platform": platform.lower(),
-        "id": result.metadata.get("influencer_id"),
+        "id": result.metadata.get("id"),
     }
 
 
