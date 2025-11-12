@@ -41,7 +41,6 @@ async def search_instagram_influencers(
         for cat in categories:
             for cntry in countries:
                 for follower_range_str in followers_list:
-                    # Build query for this specific combination
                     query = build_combination_query(
                         platform="Instagram",
                         category=cat if cat else None,

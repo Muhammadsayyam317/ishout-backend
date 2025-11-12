@@ -70,7 +70,7 @@ router.add_api_route(
 )
 
 
-@router.patch("/campaigns/approve-single-influencer", tags=["Admin"])
+@router.patch("/campaigns/update-influencer-status", tags=["Admin"])
 async def approve_single_influencer_route(
     request_data: CampaignInfluencersRequest,
     current_user: dict = Depends(require_admin_access),
