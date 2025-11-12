@@ -737,7 +737,12 @@ async def update_campaign_status(
         campaigns_collection = db.get_collection("campaigns")
         result = await campaigns_collection.update_one(
             {"_id": ObjectId(request_data.campaign_id)},
-            {"$set": {"status": request_data.status, "updated_at": datetime.utcnow()}},
+            {
+                "$set": {
+                    "status": request_data.status,
+                    "updated_at": datetime.now(timezone.utc),
+                }
+            },
         )
 
         if result.modified_count == 0:
