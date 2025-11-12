@@ -214,7 +214,6 @@ async def get_user_campaigns(
             campaign_dict = {
                 "campaign_id": str(campaign["_id"]),
                 "name": campaign["name"],
-                "description": campaign.get("description"),
                 "platform": campaign["platform"],
                 "category": campaign["category"],
                 "followers": campaign["followers"],

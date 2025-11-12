@@ -56,7 +56,6 @@ async def approved_campaign(
                 {
                     "campaign_id": str(doc.get("_id")),
                     "name": doc.get("name"),
-                    "description": doc.get("description"),
                     "platform": doc.get("platform"),
                     "category": doc.get("category"),
                     "followers": doc.get("followers"),

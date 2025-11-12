@@ -2,10 +2,13 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 from bson import ObjectId
 from fastapi import HTTPException
+from app.models.campaign_influencers_model import (
+    CampaignInfluencerStatus,
+    CampaignInfluencersRequest,
+    CampaignInfluencersResponse,
+)
 from app.models.campaign_model import (
     CreateCampaignRequest,
-    ApproveSingleInfluencerRequest,
-    ApproveMultipleInfluencersRequest,
     AdminGenerateInfluencersRequest,
     CampaignStatusUpdateRequest,
     CampaignStatus,
@@ -102,7 +105,6 @@ async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]
 
         campaign_doc = {
             "name": campaign_name,
-            "description": request_data.description,
             "platform": request_data.platform,
             "category": request_data.category,
             "followers": request_data.followers,
@@ -543,113 +545,47 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
 
 
 async def approve_single_influencer(
-    request_data: ApproveSingleInfluencerRequest,
-) -> Dict[str, Any]:
-    """Approve a single influencer and add to campaign with platform validation"""
+    request_data: CampaignInfluencersRequest,
+) -> CampaignInfluencersResponse:
     try:
         db = get_db()
-        campaigns_collection = db.get_collection("campaigns")
-
-        # Get current campaign
-        campaign = await campaigns_collection.find_one(
-            {"_id": ObjectId(request_data.campaign_id)}
-        )
-        if not campaign:
-            raise HTTPException(status_code=404, detail="Campaign not found")
-
-        # Validate influencer exists in the specified platform
-        if request_data.platform == "instagram":
-            collection_name = config.MONGODB_ATLAS_COLLECTION_INSTAGRAM
-        elif request_data.platform == "tiktok":
-            collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
-        elif request_data.platform == "youtube":
-            collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
-        else:
-            raise HTTPException(status_code=400, detail="Invalid platform")
-
-        if not collection_name:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Collection name not configured for platform {request_data.platform}",
-            )
-
-        platform_collection = db.get_collection(collection_name)
-
-        try:
-            influencer = await platform_collection.find_one(
-                {"_id": ObjectId(request_data.influencer_id)}
-            )
-            if not influencer:
-                # Try to find by other fields as fallback
-                influencer_by_username = await platform_collection.find_one(
-                    {"username": request_data.influencer_id}
-                )
-                influencer_by_handle = await platform_collection.find_one(
-                    {"handle": request_data.influencer_id}
-                )
-                if influencer_by_username or influencer_by_handle:
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Influencer found but with different ID format. Please use the correct ObjectId.",
-                    )
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Influencer not found in {request_data.platform} platform (collection: {collection_name})",
-                )
-        except Exception as e:
-            raise HTTPException(
-                status_code=400, detail=f"Invalid influencer ID format: {str(e)}"
-            )
-
-        # Get current influencer references
-        current_references = campaign.get("influencer_references", [])
-        current_influencer_ids = campaign.get("influencer_ids", [])  # Legacy field
-
-        # Check if influencer already exists (check both new and legacy formats)
-        if request_data.influencer_id in current_influencer_ids:
-            return {"message": "Influencer already approved for this campaign"}
-
-        # Check in new format
-        for ref in current_references:
-            if ref.get("influencer_id") == request_data.influencer_id:
-                return {"message": "Influencer already approved for this campaign"}
-
-        # Add new influencer reference
-        new_reference = {
-            "influencer_id": request_data.influencer_id,
-            "platform": request_data.platform,
-        }
-        new_references = current_references + [new_reference]
-        new_influencer_ids = current_influencer_ids + [
-            request_data.influencer_id
-        ]  # Legacy field
-
-        # Update campaign with both formats
-        result = await campaigns_collection.update_one(
-            {"_id": ObjectId(request_data.campaign_id)},
+        collection = db.get_collection("campaign_influencers")
+        existing = await collection.find_one(
             {
-                "$set": {
-                    "influencer_ids": new_influencer_ids,  # Legacy field
-                    "influencer_references": new_references,  # New field
-                    "updated_at": datetime.now(timezone.utc),
-                }
-            },
+                "campaign_id": ObjectId(request_data.campaign_id),
+                "influencer_id": ObjectId(request_data.influencer_id),
+                "platform": request_data.platform,
+            }
         )
 
-        if result.modified_count == 0:
-            raise HTTPException(status_code=500, detail="Failed to update campaign")
-
-        return {
-            "message": "Successfully added influencer to campaign",
-            "influencer_id": request_data.influencer_id,
+        data = {
+            "campaign_id": ObjectId(request_data.campaign_id),
+            "influencer_id": ObjectId(request_data.influencer_id),
             "platform": request_data.platform,
-            "total_influencers": len(new_influencer_ids),
+            "status": request_data.status.value,
         }
+
+        if existing:
+            await collection.update_one(
+                {
+                    "campaign_id": ObjectId(request_data.campaign_id),
+                    "influencer_id": ObjectId(request_data.influencer_id),
+                    "platform": request_data.platform,
+                },
+                {"$set": {"status": request_data.status.value}},
+            )
+        else:
+            await collection.insert_one(data)
+
+        return CampaignInfluencersResponse(
+            message=f"Influencer {request_data.status.value} successfully",
+            status=request_data.status,
+        )
 
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error in approve single influencer: {str(e)}"
-        ) from e
+        )
 
 
 async def user_reject_influencers(
@@ -764,114 +700,6 @@ async def add_rejected_influencers(
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error in add rejected influencers: {str(e)}"
-        ) from e
-
-
-async def approve_multiple_influencers(
-    request_data: ApproveMultipleInfluencersRequest,
-) -> Dict[str, Any]:
-    """Approve multiple influencers and add to campaign with platform validation"""
-    try:
-        db = get_db()
-        campaigns_collection = db.get_collection("campaigns")
-        campaign = await campaigns_collection.find_one(
-            {"_id": ObjectId(request_data.campaign_id)}
-        )
-        if not campaign:
-            raise HTTPException(status_code=404, detail="Campaign not found")
-
-        current_references = campaign.get("influencer_references", [])
-        current_influencer_ids = campaign.get("influencer_ids", [])
-        platform_to_collection = {
-            "instagram": config.MONGODB_ATLAS_COLLECTION_INSTAGRAM,
-            "tiktok": config.MONGODB_ATLAS_COLLECTION_TIKTOK,
-            "youtube": config.MONGODB_ATLAS_COLLECTION_YOUTUBE,
-        }
-
-        added: List[Dict[str, Any]] = []
-        skipped: List[Dict[str, Any]] = []
-        errors: List[Dict[str, Any]] = []
-
-        for ref in request_data.influencers:
-            platform = ref.platform
-            influencer_id = ref.influencer_id
-            collection_name = platform_to_collection.get(platform)
-            if not collection_name:
-                errors.append(
-                    {
-                        "influencer_id": influencer_id,
-                        "platform": platform,
-                        "reason": "Invalid or unconfigured platform",
-                    }
-                )
-                continue
-
-            platform_collection = db.get_collection(collection_name)
-            try:
-                influencer = await platform_collection.find_one(
-                    {"_id": ObjectId(influencer_id)}
-                )
-                if not influencer:
-                    errors.append(
-                        {
-                            "influencer_id": influencer_id,
-                            "platform": platform,
-                            "reason": "Not found",
-                        }
-                    )
-                    continue
-            except Exception as e:
-                errors.append(
-                    {
-                        "influencer_id": influencer_id,
-                        "platform": platform,
-                        "reason": f"Invalid ID: {str(e)}",
-                    }
-                )
-                continue
-
-            already = influencer_id in current_influencer_ids or any(
-                r.get("influencer_id") == influencer_id for r in current_references
-            )
-            if already:
-                skipped.append(
-                    {
-                        "influencer_id": influencer_id,
-                        "platform": platform,
-                        "reason": "Already in campaign",
-                    }
-                )
-                continue
-
-            current_influencer_ids.append(influencer_id)
-            current_references.append(
-                {"influencer_id": influencer_id, "platform": platform}
-            )
-            added.append({"influencer_id": influencer_id, "platform": platform})
-
-        if added:
-            result = await campaigns_collection.update_one(
-                {"_id": ObjectId(request_data.campaign_id)},
-                {
-                    "$set": {
-                        "influencer_ids": current_influencer_ids,
-                        "influencer_references": current_references,
-                        "updated_at": datetime.now(timezone.utc),
-                    }
-                },
-            )
-            if result.modified_count == 0:
-                return {"error": "Failed to update campaign"}
-
-        return {
-            "message": "Bulk approval completed",
-            "added": added,
-            "skipped": skipped,
-            "errors": errors,
-        }
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error in approve multiple influencers: {str(e)}"
         ) from e
 
 

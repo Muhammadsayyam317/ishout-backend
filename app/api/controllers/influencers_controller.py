@@ -207,14 +207,8 @@ async def find_influencers(request_data: FindInfluencerLegacyRequest):
             campaign_name = (
                 request_data.campaign_name or f"Campaign - {', '.join(categories)}"
             )
-            campaign_description = (
-                request_data.campaign_description
-                or f"Auto-generated campaign for {', '.join(categories)} influencers on {', '.join(platforms)}"
-            )
-
             campaign_request = CreateCampaignRequest(
                 name=campaign_name,
-                description=campaign_description,
                 platform=platforms,
                 category=categories,
                 followers=followers_list,
