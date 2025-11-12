@@ -9,6 +9,7 @@ from fastapi import HTTPException, Request, BackgroundTasks
 from fastapi import status
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field
+from app.services.notification_service import broadcast_to_role
 
 # --- Config via env -----------------------------------------------------------
 VERIFY_TOKEN = os.getenv("META_VERIFY_TOKEN", "replace-me")
@@ -62,7 +63,7 @@ def _upsert_conversation(ig_page_id: str, psid: str) -> Tuple[str, str]:
         CONVERSATIONS[key] = {"ig_page_id": ig_page_id, "psid": psid, "last_event_ts": None}
     return key
 
-def _handle_message_event(ev: Dict[str, Any]) -> None:
+async def _handle_message_event_async(ev: Dict[str, Any]) -> None:
     sender = ev.get("sender", {}).get("id")
     recipient = ev.get("recipient", {}).get("id")
     timestamp = ev.get("timestamp")
@@ -91,6 +92,16 @@ def _handle_message_event(ev: Dict[str, Any]) -> None:
         "payload": ev,
     })
 
+    # Minimal MVP: when a message arrives (user -> admin), broadcast a realtime notification
+    if message and message.get("text"):
+        await broadcast_to_role("admin", {
+            "type": "ig_reply",
+            "from_psid": user_psid,
+            "to_page_id": ig_page_id,
+            "text": message.get("text"),
+            "timestamp": timestamp,
+        })
+
 
 # --- Webhook entry (GET verify + POST deliver) --------------------------------
 async def webhook(request: Request, background: Optional[BackgroundTasks] = None):
@@ -115,11 +126,12 @@ async def webhook(request: Request, background: Optional[BackgroundTasks] = None
         events = _extract_events(payload)
 
         if background:
+            # Schedule async tasks for each event
             for ev in events:
-                background.add_task(_handle_message_event, ev)
+                background.add_task(_handle_message_event_async, ev)
         else:
             for ev in events:
-                _handle_message_event(ev)
+                await _handle_message_event_async(ev)
 
         return JSONResponse(status_code=200, content={"status": "ok", "received": len(events)})
 
@@ -206,5 +218,5 @@ async def mock_webhook(ev: MockEvent):
         }]
     }
     for e in _extract_events(simulated):
-        _handle_message_event(e)
+        await _handle_message_event_async(e)
     return {"status": "mocked", "psid": ev.sender_psid}
