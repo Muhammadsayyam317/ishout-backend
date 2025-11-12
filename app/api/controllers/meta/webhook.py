@@ -5,6 +5,7 @@ import hashlib
 from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
+import time
 from fastapi import HTTPException, Request, BackgroundTasks
 from fastapi import status
 from fastapi.responses import JSONResponse, PlainTextResponse
@@ -18,10 +19,14 @@ PAGE_TOKEN   = os.getenv("PAGE_ACCESS_TOKEN", "replace-me")
 GRAPH_VER    = os.getenv("IG_GRAPH_API_VERSION", "v23.0")
 
 GRAPH_SEND_URL = f"https://graph.facebook.com/{GRAPH_VER}/me/messages"
+GRAPH_BASE_URL = f"https://graph.facebook.com/{GRAPH_VER}"
 
 # --- In-memory demo stores (swap with your DB layer) --------------------------
 CONVERSATIONS = {}  # key: (ig_page_id, user_psid) -> metadata
 MESSAGES = []       # append-only event log
+# simple profile cache to map PSID -> username/name
+PROFILE_CACHE: Dict[str, Dict[str, Any]] = {}
+PROFILE_TTL_SEC = 60 * 60  # 1 hour
 
 
 # --- Helpers ------------------------------------------------------------------
@@ -93,6 +98,8 @@ async def _handle_message_event_async(ev: Dict[str, Any]) -> None:
     })
 
     # Minimal MVP: when a message arrives (user -> admin), broadcast a realtime notification
+    # Try to enrich with sender username (best-effort)
+    from_username: Optional[str] = await _get_ig_sender_username(user_psid)
     if message and message.get("text"):
         await broadcast_to_role("admin", {
             "type": "ig_reply",
@@ -100,6 +107,7 @@ async def _handle_message_event_async(ev: Dict[str, Any]) -> None:
             "to_page_id": ig_page_id,
             "text": message.get("text"),
             "timestamp": timestamp,
+            "from_username": from_username,
         })
 
 
@@ -220,3 +228,37 @@ async def mock_webhook(ev: MockEvent):
     for e in _extract_events(simulated):
         await _handle_message_event_async(e)
     return {"status": "mocked", "psid": ev.sender_psid}
+
+
+# --- Profile lookup ----------------------------------------------------------
+async def _get_ig_sender_username(psid: Optional[str]) -> Optional[str]:
+    """Resolve IG sender username from PSID using Graph API.
+
+    Best-effort: returns None on any failure. Caches results for PROFILE_TTL_SEC.
+    """
+    if not psid:
+        return None
+    # Env checks
+    if not PAGE_TOKEN or PAGE_TOKEN == "replace-me":
+        return None
+
+    now = time.time()
+    cached = PROFILE_CACHE.get(psid)
+    if cached and (now - cached.get("ts", 0) < PROFILE_TTL_SEC):
+        return cached.get("username") or cached.get("name")
+
+    # Query Graph: /{psid}?fields=username,name
+    url = f"{GRAPH_BASE_URL}/{psid}"
+    params = {"fields": "username,name", "access_token": PAGE_TOKEN}
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(url, params=params)
+            if resp.status_code == 200:
+                data = resp.json()
+                username = data.get("username")
+                name = data.get("name")
+                PROFILE_CACHE[psid] = {"username": username, "name": name, "ts": now}
+                return username or name
+    except Exception:
+        pass
+    return None
