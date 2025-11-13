@@ -3,7 +3,7 @@ from typing import Optional, Dict, Any
 from app.core.auth import get_current_user_from_token
 from app.services.websocket_manager import ws_manager
 
-router = APIRouter(prefix="/api/ws", tags=["WebSockets"])
+router = APIRouter(tags=["WebSockets"])
 
 
 @router.websocket("/general-ws")
@@ -31,7 +31,6 @@ async def websocket_root(websocket: WebSocket, token: Optional[str] = Query(None
             user_id = user.get("user_id")
             role = user.get("role")
         except Exception:
-            # Accept connection without auth if token invalid; could also close.
             pass
 
     await ws_manager.connect(websocket, user_id, role)
@@ -57,7 +56,7 @@ async def websocket_root(websocket: WebSocket, token: Optional[str] = Query(None
             pass
 
 
-@router.websocket("/ws/notifications")
+@router.websocket("/notifications")
 async def websocket_notifications(
     websocket: WebSocket, token: Optional[str] = Query(None)
 ):
