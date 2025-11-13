@@ -12,10 +12,10 @@ class NotifyPayload(BaseModel):
     data: Dict[str, Any] | None = None
 
 
-router = APIRouter(prefix="/api", tags=["Notifications"])
+router = APIRouter(tags=["Notifications"])
 
 
-@router.post("/notify")
+@router.post("/send-notification")
 async def notify(payload: NotifyPayload, _=Depends(require_admin_access)):
     body = {"title": payload.title, "message": payload.message}
     if payload.data:
