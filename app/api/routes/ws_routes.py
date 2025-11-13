@@ -1,86 +1,76 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
-from typing import Optional, Dict, Any
-from app.core.auth import get_current_user_from_token
+from typing import Optional
+from fastapi import (
+    APIRouter,
+    Request,
+    BackgroundTasks,
+    Response,
+    WebSocket,
+    WebSocketDisconnect,
+)
+from fastapi.responses import JSONResponse
 from app.services.websocket_manager import ws_manager
 
-router = APIRouter(tags=["WebSockets"])
+router = APIRouter()
+VERIFY_TOKEN = "longrandomstring123"  # Must match Meta dashboard
 
 
-@router.websocket("/general-ws")
-async def websocket_root(websocket: WebSocket, token: Optional[str] = Query(None)):
-    """General websocket endpoint.
+# -------------------------
+# GET verification (Meta)
+# -------------------------
+@router.get("/meta")
+async def verify_webhook(request: Request):
+    params = dict(request.query_params)
+    print("🔍 Meta verification params:", params)
 
-    Authentication:
-        - Provide JWT as query param `token` OR as `Authorization: Bearer <jwt>` header.
-    Messages:
-        - Incoming JSON will be echoed back with `{type: 'echo'}` wrapper.
-        - Special message `{"action": "stats"}` returns connection stats.
-    """
-    # Attempt token retrieval from header if not query param
-    if token is None:
-        auth_header = websocket.headers.get("authorization")
-        if auth_header and auth_header.lower().startswith("bearer "):
-            token = auth_header.split(" ", 1)[1]
+    mode = params.get("hub.mode")
+    token = params.get("hub.verify_token")
+    challenge = params.get("hub.challenge")
 
-    user: Optional[Dict[str, Any]] = None
-    user_id: Optional[str] = None
-    role: Optional[str] = None
-    if token:
-        try:
-            user = get_current_user_from_token(token)
-            user_id = user.get("user_id")
-            role = user.get("role")
-        except Exception:
-            pass
+    if mode == "subscribe" and token == VERIFY_TOKEN:
+        print("✅ Meta Webhook verified successfully.")
+        return Response(content=challenge, status_code=200)
 
-    await ws_manager.connect(websocket, user_id, role)
+    print("❌ Meta Webhook verification failed.")
+    return Response(status_code=403)
 
-    try:
-        while True:
-            data = await websocket.receive_json()
-            if isinstance(data, dict) and data.get("action") == "stats":
-                await websocket.send_json(
-                    {"type": "stats", **(await ws_manager.stats())}
-                )
-                continue
-            # Echo
-            await websocket.send_json({"type": "echo", "received": data})
-    except WebSocketDisconnect:
-        await ws_manager.disconnect(websocket, user_id, role)
-    except Exception as e:
-        # Unexpected error - attempt graceful close
-        await ws_manager.disconnect(websocket, user_id, role)
-        try:
-            await websocket.close(code=1011)
-        except Exception:
-            pass
+
+# -------------------------
+# POST webhook (Meta sends messages)
+# -------------------------
+@router.post("/meta")
+async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
+    body = await request.json()
+    print("📩 Incoming Meta Webhook POST:", body)
+
+    # Loop through all entries and changes
+    for entry in body.get("entry", []):
+        for change in entry.get("changes", []):
+            value = change.get("value", {})
+
+            # Only handle messages
+            if "message" in value:
+                msg_data = {
+                    "type": "ig_reply",
+                    "from_psid": value.get("from", {}).get("id"),
+                    "to_page_id": value.get("to", {}).get("id"),
+                    "from_username": value.get("from", {}).get("username", "unknown"),
+                    "text": value["message"].get("text", ""),
+                    "timestamp": value.get("timestamp"),
+                }
+
+                # Broadcast to all connected admin WebSocket clients
+                await ws_manager.broadcast(msg_data)
+
+    # Respond 200 OK to Meta
+    return JSONResponse({"status": "received"})
 
 
 @router.websocket("/notifications")
-async def websocket_notifications(
-    websocket: WebSocket, token: Optional[str] = Query(None)
-):
-    """Dedicated notifications channel.
-
-    Server pushes only. Clients typically just connect & wait.
-    You can still send `{action: 'stats'}` to query stats.
+async def websocket_notifications(websocket: WebSocket, token: Optional[str] = None):
     """
-    if token is None:
-        auth_header = websocket.headers.get("authorization")
-        if auth_header and auth_header.lower().startswith("bearer "):
-            token = auth_header.split(" ", 1)[1]
-
-    user_id = None
-    role = None
-    if token:
-        try:
-            user = get_current_user_from_token(token)
-            user_id = user.get("user_id")
-            role = user.get("role")
-        except Exception:
-            pass
-
-    await ws_manager.connect(websocket, user_id, role)
+    Admin clients connect here to receive live Instagram messages
+    """
+    await ws_manager.connect(websocket, user_id=None, role="admin")
     try:
         while True:
             data = await websocket.receive_json()
@@ -88,13 +78,12 @@ async def websocket_notifications(
                 await websocket.send_json(
                     {"type": "stats", **(await ws_manager.stats())}
                 )
-                continue
-            # Ignore other incoming messages (could extend later)
-            await websocket.send_json({"type": "noop"})
+            else:
+                await websocket.send_json({"type": "noop"})
     except WebSocketDisconnect:
-        await ws_manager.disconnect(websocket, user_id, role)
+        await ws_manager.disconnect(websocket, user_id=None, role="admin")
     except Exception:
-        await ws_manager.disconnect(websocket, user_id, role)
+        await ws_manager.disconnect(websocket, user_id=None, role="admin")
         try:
             await websocket.close(code=1011)
         except Exception:
