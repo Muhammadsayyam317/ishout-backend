@@ -1,7 +1,6 @@
 from fastapi import APIRouter
 from app.api.controllers.meta.notification import (
     handle_webhook,
-    send_notification_to_user,
     verify_webhook,
     websocket_notifications,
 )
@@ -35,11 +34,3 @@ router.add_api_websocket_route(
     endpoint=websocket_notifications,
     name="meta_notifications",
 )
-
-
-router.add_api_route(
-    path="/send-notification",
-    endpoint=send_notification_to_user,
-    methods=["POST"],
-    tags=["Meta"],
-),

@@ -9,15 +9,10 @@ from fastapi import (
     WebSocketDisconnect,
 )
 from fastapi.responses import JSONResponse
-from app.models.notification_model import NotifyPayload
-from app.services.notification_service import broadcast_notification, send_notification
 from app.services.websocket_manager import ws_manager
 from app.config import config
 
 router = APIRouter()
-
-GRAPH_BASE_URL = f"https://graph.facebook.com/{config.IG_GRAPH_API_VERSION}"
-PAGE_TOKEN = config.PAGE_ACCESS_TOKEN
 
 
 async def verify_webhook(request: Request):
@@ -75,15 +70,3 @@ async def websocket_notifications(websocket: WebSocket):
             await websocket.close(code=1011)
         except Exception:
             pass
-
-
-async def send_notification_to_user(payload: NotifyPayload):
-    body = {"title": payload.title, "message": payload.message}
-    if payload.data:
-        body["data"] = payload.data
-    if payload.user_id:
-        result = await send_notification(payload.user_id, body)
-    else:
-        result = await broadcast_notification(body)
-
-    return {"status": "ok", **result}
