@@ -24,7 +24,7 @@ router.add_api_route(
 )
 
 router.add_api_route(
-    path="meta",
+    path="/meta",
     endpoint=handle_webhook,
     methods=["POST"],
     tags=["Meta"],
