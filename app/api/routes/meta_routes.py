@@ -1,4 +1,3 @@
-from typing import Optional
 from fastapi import APIRouter, BackgroundTasks, Request
 from app.api.controllers.meta.webhook import (
     webhook,
@@ -39,10 +38,8 @@ async def verify_webhook(request: Request):
 
 @router.post("/meta")
 async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
-    body = await request.json()
-    print("📩 Incoming Meta Webhook POST:", body)
-    await webhook(request, background_tasks)
-    return {"status": "received"}
+    # Let webhook() handle the body reading and signature verification
+    return await webhook(request, background_tasks)
 
 
 @router.get("/debug/state")

@@ -21,15 +21,13 @@ GRAPH_VER = os.getenv("IG_GRAPH_API_VERSION", "v23.0")
 GRAPH_SEND_URL = f"https://graph.facebook.com/{GRAPH_VER}/me/messages"
 GRAPH_BASE_URL = f"https://graph.facebook.com/{GRAPH_VER}"
 
-# --- In-memory demo stores (swap with your DB layer) --------------------------
-CONVERSATIONS = {}  # key: (ig_page_id, user_psid) -> metadata
-MESSAGES = []  # append-only event log
-# simple profile cache to map PSID -> username/name
+
+CONVERSATIONS = {}
+MESSAGES = []
 PROFILE_CACHE: Dict[str, Dict[str, Any]] = {}
-PROFILE_TTL_SEC = 60 * 60  # 1 hour
+PROFILE_TTL_SEC = 60 * 60
 
 
-# --- Helpers ------------------------------------------------------------------
 def _compute_signature(raw_body: bytes) -> str:
     digest = hmac.new(APP_SECRET.encode("utf-8"), raw_body, hashlib.sha256).hexdigest()
     return f"sha256={digest}"
@@ -111,7 +109,6 @@ async def _handle_message_event_async(ev: Dict[str, Any]) -> None:
 
     from_username: Optional[str] = await _get_ig_sender_username(user_psid)
     if message and message.get("text"):
-        # Broadcast directly to all WebSocket connections (including /api/ws/notifications)
         await ws_manager.broadcast(
             {
                 "type": "ig_reply",
@@ -145,6 +142,7 @@ async def webhook(request: Request, background: Optional[BackgroundTasks] = None
         except json.JSONDecodeError:
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid JSON")
 
+        print("📩 Incoming Meta Webhook POST:", payload)
         events = _extract_events(payload)
 
         if background:
@@ -182,7 +180,6 @@ async def debug_state(limit: int = 5):
     )
 
 
-# --- Send API: DM endpoint ----------------------------------------------------
 class DMRequest(BaseModel):
     psid: Optional[str] = Field(
         default=None,
@@ -219,7 +216,6 @@ async def send_dm(body: DMRequest):
             json=payload,
         )
         if resp.status_code >= 300:
-            # Bubble up Graph error detail for easier debugging
             try:
                 detail = resp.json()
             except Exception:
@@ -229,7 +225,6 @@ async def send_dm(body: DMRequest):
     return {"status": "sent", "recipient_psid": recipient_psid}
 
 
-# --- Local-only mock webhook (no signature) -----------------------------------
 class MockEvent(BaseModel):
     sender_psid: str = "TEST_USER_PSID"
     recipient_id: str = "TEST_PAGE_ID"
@@ -237,7 +232,6 @@ class MockEvent(BaseModel):
 
 
 async def mock_webhook(ev: MockEvent):
-    # Simulate a minimal message event shape
     simulated = {
         "entry": [
             {
@@ -258,12 +252,7 @@ async def mock_webhook(ev: MockEvent):
     return {"status": "mocked", "psid": ev.sender_psid}
 
 
-# --- Profile lookup ----------------------------------------------------------
 async def _get_ig_sender_username(psid: Optional[str]) -> Optional[str]:
-    """Resolve IG sender username from PSID using Graph API.
-
-    Best-effort: returns None on any failure. Caches results for PROFILE_TTL_SEC.
-    """
     if not psid:
         return None
     # Env checks
@@ -275,7 +264,6 @@ async def _get_ig_sender_username(psid: Optional[str]) -> Optional[str]:
     if cached and (now - cached.get("ts", 0) < PROFILE_TTL_SEC):
         return cached.get("username") or cached.get("name")
 
-    # Query Graph: /{psid}?fields=username,name
     url = f"{GRAPH_BASE_URL}/{psid}"
     params = {"fields": "username,name", "access_token": PAGE_TOKEN}
     try:
