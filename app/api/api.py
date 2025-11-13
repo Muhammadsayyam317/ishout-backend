@@ -16,5 +16,5 @@ api_router.include_router(chat_router, prefix="/api")
 api_router.include_router(auth_router, prefix="/api/auth")
 api_router.include_router(admin_router, prefix="/api/admin", tags=["Admin"])
 api_router.include_router(meta_router, prefix="/api/meta", tags=["Meta"])
-api_router.include_router(ws_router, tags=["WebSockets"])  # Pure websocket paths
-api_router.include_router(notify_router)  # REST helper to trigger notifications
+api_router.include_router(ws_router, prefix="/api/ws", tags=["WebSockets"])
+api_router.include_router(notify_router, prefix="/api/notify", tags=["Notifications"])

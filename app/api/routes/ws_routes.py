@@ -3,10 +3,10 @@ from typing import Optional, Dict, Any
 from app.core.auth import get_current_user_from_token
 from app.services.websocket_manager import ws_manager
 
-router = APIRouter()
+router = APIRouter(prefix="/api/ws", tags=["WebSockets"])
 
 
-@router.websocket("/ws")
+@router.websocket("/general-ws")
 async def websocket_root(websocket: WebSocket, token: Optional[str] = Query(None)):
     """General websocket endpoint.
 
@@ -40,7 +40,9 @@ async def websocket_root(websocket: WebSocket, token: Optional[str] = Query(None
         while True:
             data = await websocket.receive_json()
             if isinstance(data, dict) and data.get("action") == "stats":
-                await websocket.send_json({"type": "stats", **(await ws_manager.stats())})
+                await websocket.send_json(
+                    {"type": "stats", **(await ws_manager.stats())}
+                )
                 continue
             # Echo
             await websocket.send_json({"type": "echo", "received": data})
@@ -56,7 +58,9 @@ async def websocket_root(websocket: WebSocket, token: Optional[str] = Query(None
 
 
 @router.websocket("/ws/notifications")
-async def websocket_notifications(websocket: WebSocket, token: Optional[str] = Query(None)):
+async def websocket_notifications(
+    websocket: WebSocket, token: Optional[str] = Query(None)
+):
     """Dedicated notifications channel.
 
     Server pushes only. Clients typically just connect & wait.
@@ -82,7 +86,9 @@ async def websocket_notifications(websocket: WebSocket, token: Optional[str] = Q
         while True:
             data = await websocket.receive_json()
             if isinstance(data, dict) and data.get("action") == "stats":
-                await websocket.send_json({"type": "stats", **(await ws_manager.stats())})
+                await websocket.send_json(
+                    {"type": "stats", **(await ws_manager.stats())}
+                )
                 continue
             # Ignore other incoming messages (could extend later)
             await websocket.send_json({"type": "noop"})
