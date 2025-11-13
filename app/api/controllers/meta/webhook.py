@@ -5,28 +5,35 @@ import hashlib
 from typing import Any, Dict, List, Optional, Tuple
 
 import httpx
+import time
 from fastapi import HTTPException, Request, BackgroundTasks
 from fastapi import status
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field
+from app.services.notification_service import broadcast_to_role
 
 # --- Config via env -----------------------------------------------------------
 VERIFY_TOKEN = os.getenv("META_VERIFY_TOKEN", "replace-me")
-APP_SECRET   = os.getenv("META_APP_SECRET", "replace-me")
-PAGE_TOKEN   = os.getenv("PAGE_ACCESS_TOKEN", "replace-me")
-GRAPH_VER    = os.getenv("IG_GRAPH_API_VERSION", "v23.0")
+APP_SECRET = os.getenv("META_APP_SECRET", "replace-me")
+PAGE_TOKEN = os.getenv("PAGE_ACCESS_TOKEN", "replace-me")
+GRAPH_VER = os.getenv("IG_GRAPH_API_VERSION", "v23.0")
 
 GRAPH_SEND_URL = f"https://graph.facebook.com/{GRAPH_VER}/me/messages"
+GRAPH_BASE_URL = f"https://graph.facebook.com/{GRAPH_VER}"
 
 # --- In-memory demo stores (swap with your DB layer) --------------------------
 CONVERSATIONS = {}  # key: (ig_page_id, user_psid) -> metadata
-MESSAGES = []       # append-only event log
+MESSAGES = []  # append-only event log
+# simple profile cache to map PSID -> username/name
+PROFILE_CACHE: Dict[str, Dict[str, Any]] = {}
+PROFILE_TTL_SEC = 60 * 60  # 1 hour
 
 
 # --- Helpers ------------------------------------------------------------------
 def _compute_signature(raw_body: bytes) -> str:
     digest = hmac.new(APP_SECRET.encode("utf-8"), raw_body, hashlib.sha256).hexdigest()
     return f"sha256={digest}"
+
 
 def _verify_signature(request_signature: Optional[str], raw_body: bytes) -> None:
     if not APP_SECRET or APP_SECRET == "replace-me":
@@ -37,6 +44,7 @@ def _verify_signature(request_signature: Optional[str], raw_body: bytes) -> None
     expected = _compute_signature(raw_body)
     if not hmac.compare_digest(request_signature, expected):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid signature")
+
 
 def _extract_events(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
     events: List[Dict[str, Any]] = []
@@ -56,51 +64,76 @@ def _extract_events(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
                 events.append(ev)
     return events
 
+
 def _upsert_conversation(ig_page_id: str, psid: str) -> Tuple[str, str]:
     key = (ig_page_id, psid)
     if key not in CONVERSATIONS:
-        CONVERSATIONS[key] = {"ig_page_id": ig_page_id, "psid": psid, "last_event_ts": None}
+        CONVERSATIONS[key] = {
+            "ig_page_id": ig_page_id,
+            "psid": psid,
+            "last_event_ts": None,
+        }
     return key
 
-def _handle_message_event(ev: Dict[str, Any]) -> None:
+
+async def _handle_message_event_async(ev: Dict[str, Any]) -> None:
     sender = ev.get("sender", {}).get("id")
     recipient = ev.get("recipient", {}).get("id")
     timestamp = ev.get("timestamp")
-    message   = ev.get("message")
-    reaction  = ev.get("reaction")
-    delivery  = ev.get("delivery")
-    read      = ev.get("read")
+    message = ev.get("message")
+    reaction = ev.get("reaction")
+    delivery = ev.get("delivery")
+    read = ev.get("read")
 
     ig_page_id = recipient or ev.get("_entry_id") or "unknown"
-    user_psid  = sender or "unknown"
+    user_psid = sender or "unknown"
 
     key = _upsert_conversation(ig_page_id, user_psid)
     CONVERSATIONS[key]["last_event_ts"] = timestamp
 
-    MESSAGES.append({
-        "ig_page_id": ig_page_id,
-        "user_psid": user_psid,
-        "timestamp": timestamp,
-        "type": (
-            "message" if message else
-            "reaction" if reaction else
-            "delivery" if delivery else
-            "read" if read else
-            "other"
-        ),
-        "payload": ev,
-    })
+    MESSAGES.append(
+        {
+            "ig_page_id": ig_page_id,
+            "user_psid": user_psid,
+            "timestamp": timestamp,
+            "type": (
+                "message"
+                if message
+                else (
+                    "reaction"
+                    if reaction
+                    else "delivery" if delivery else "read" if read else "other"
+                )
+            ),
+            "payload": ev,
+        }
+    )
+
+    from_username: Optional[str] = await _get_ig_sender_username(user_psid)
+    if message and message.get("text"):
+        await broadcast_to_role(
+            "admin",
+            {
+                "type": "ig_reply",
+                "from_psid": user_psid,
+                "to_page_id": ig_page_id,
+                "text": message.get("text"),
+                "timestamp": timestamp,
+                "from_username": from_username,
+            },
+        )
 
 
-# --- Webhook entry (GET verify + POST deliver) --------------------------------
 async def webhook(request: Request, background: Optional[BackgroundTasks] = None):
     if request.method == "GET":
-        mode           = request.query_params.get("hub.mode")
-        hub_challenge  = request.query_params.get("hub.challenge")
+        mode = request.query_params.get("hub.mode")
+        hub_challenge = request.query_params.get("hub.challenge")
         hub_verify_tok = request.query_params.get("hub.verify_token")
 
         if mode == "subscribe" and hub_challenge and hub_verify_tok == VERIFY_TOKEN:
-            return PlainTextResponse(content=hub_challenge, status_code=status.HTTP_200_OK)
+            return PlainTextResponse(
+                content=hub_challenge, status_code=status.HTTP_200_OK
+            )
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Verification failed")
 
     if request.method == "POST":
@@ -116,22 +149,24 @@ async def webhook(request: Request, background: Optional[BackgroundTasks] = None
 
         if background:
             for ev in events:
-                background.add_task(_handle_message_event, ev)
+                background.add_task(_handle_message_event_async, ev)
         else:
             for ev in events:
-                _handle_message_event(ev)
+                await _handle_message_event_async(ev)
 
-        return JSONResponse(status_code=200, content={"status": "ok", "received": len(events)})
+        return JSONResponse(
+            status_code=200, content={"status": "ok", "received": len(events)}
+        )
 
     return JSONResponse(status_code=405, content={"message": "Method not allowed"})
 
 
-# --- Debug: inspect state -----------------------------------------------------
 class StateResponse(BaseModel):
     conversations: int
     messages: int
     sample_conversations: List[Dict[str, Any]]
     sample_messages: List[Dict[str, Any]]
+
 
 async def debug_state(limit: int = 5):
     conv_list = [
@@ -149,19 +184,27 @@ async def debug_state(limit: int = 5):
 
 # --- Send API: DM endpoint ----------------------------------------------------
 class DMRequest(BaseModel):
-    psid: Optional[str] = Field(default=None, description="Recipient PSID. If omitted, uses the most recent sender.")
+    psid: Optional[str] = Field(
+        default=None,
+        description="Recipient PSID. If omitted, uses the most recent sender.",
+    )
     text: str
+
 
 async def send_dm(body: DMRequest):
     # Choose recipient: given PSID or the last one we saw via webhook
     recipient_psid = body.psid
     if not recipient_psid:
         if not MESSAGES:
-            raise HTTPException(status.HTTP_400_BAD_REQUEST, "No recent PSID seen; provide 'psid'.")
+            raise HTTPException(
+                status.HTTP_400_BAD_REQUEST, "No recent PSID seen; provide 'psid'."
+            )
         recipient_psid = MESSAGES[-1]["user_psid"]
 
     if not PAGE_TOKEN or PAGE_TOKEN == "replace-me":
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "PAGE_ACCESS_TOKEN not configured")
+        raise HTTPException(
+            status.HTTP_401_UNAUTHORIZED, "PAGE_ACCESS_TOKEN not configured"
+        )
 
     payload = {
         "messaging_product": "instagram",
@@ -192,19 +235,58 @@ class MockEvent(BaseModel):
     recipient_id: str = "TEST_PAGE_ID"
     text: Optional[str] = "ping"
 
+
 async def mock_webhook(ev: MockEvent):
     # Simulate a minimal message event shape
     simulated = {
-        "entry": [{
-            "id": ev.recipient_id,
-            "messaging": [{
-                "sender": {"id": ev.sender_psid},
-                "recipient": {"id": ev.recipient_id},
-                "timestamp": 0,
-                "message": {"mid": "mid.mock", "text": ev.text},
-            }]
-        }]
+        "entry": [
+            {
+                "id": ev.recipient_id,
+                "messaging": [
+                    {
+                        "sender": {"id": ev.sender_psid},
+                        "recipient": {"id": ev.recipient_id},
+                        "timestamp": 0,
+                        "message": {"mid": "mid.mock", "text": ev.text},
+                    }
+                ],
+            }
+        ]
     }
     for e in _extract_events(simulated):
-        _handle_message_event(e)
+        await _handle_message_event_async(e)
     return {"status": "mocked", "psid": ev.sender_psid}
+
+
+# --- Profile lookup ----------------------------------------------------------
+async def _get_ig_sender_username(psid: Optional[str]) -> Optional[str]:
+    """Resolve IG sender username from PSID using Graph API.
+
+    Best-effort: returns None on any failure. Caches results for PROFILE_TTL_SEC.
+    """
+    if not psid:
+        return None
+    # Env checks
+    if not PAGE_TOKEN or PAGE_TOKEN == "replace-me":
+        return None
+
+    now = time.time()
+    cached = PROFILE_CACHE.get(psid)
+    if cached and (now - cached.get("ts", 0) < PROFILE_TTL_SEC):
+        return cached.get("username") or cached.get("name")
+
+    # Query Graph: /{psid}?fields=username,name
+    url = f"{GRAPH_BASE_URL}/{psid}"
+    params = {"fields": "username,name", "access_token": PAGE_TOKEN}
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(url, params=params)
+            if resp.status_code == 200:
+                data = resp.json()
+                username = data.get("username")
+                name = data.get("name")
+                PROFILE_CACHE[psid] = {"username": username, "name": name, "ts": now}
+                return username or name
+    except Exception:
+        pass
+    return None
