@@ -7,10 +7,6 @@ router = APIRouter()
 
 @router.delete("/delete-influencer", tags=["Admin"])
 async def delete_influencer_route(request: DeleteInfluencerRequest):
-    """Delete influencer data and embeddings from the platform collection.
-
-    Accepts one of: document_id (preferred), username, or url.
-    """
     try:
         result = await delete_from_vector_store(
             platform=request.platform,
