@@ -10,7 +10,7 @@ from fastapi import HTTPException, Request, BackgroundTasks
 from fastapi import status
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field
-from app.services.notification_service import broadcast_to_role, broadcast_notification
+from app.services.websocket_manager import ws_manager
 
 # --- Config via env -----------------------------------------------------------
 VERIFY_TOKEN = os.getenv("META_VERIFY_TOKEN", "replace-me")
@@ -111,7 +111,8 @@ async def _handle_message_event_async(ev: Dict[str, Any]) -> None:
 
     from_username: Optional[str] = await _get_ig_sender_username(user_psid)
     if message and message.get("text"):
-        await broadcast_notification(
+        # Broadcast directly to all WebSocket connections (including /api/ws/notifications)
+        await ws_manager.broadcast(
             {
                 "type": "ig_reply",
                 "from_psid": user_psid,
@@ -121,17 +122,6 @@ async def _handle_message_event_async(ev: Dict[str, Any]) -> None:
                 "from_username": from_username,
             }
         )
-        # await broadcast_to_role(
-        #     "admin",
-        #     {
-        #         "type": "ig_reply",
-        #         "from_psid": user_psid,
-        #         "to_page_id": ig_page_id,
-        #         "text": message.get("text"),
-        #         "timestamp": timestamp,
-        #         "from_username": from_username,
-        #     },
-        # )
 
 
 async def webhook(request: Request, background: Optional[BackgroundTasks] = None):

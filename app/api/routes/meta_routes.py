@@ -9,7 +9,6 @@ from app.api.controllers.meta.webhook import (
 )
 from fastapi.responses import Response
 from app.api.controllers.meta.privacy_policy import get_privacy_policy
-from app.services.websocket_manager import ws_manager
 
 router = APIRouter()
 VERIFY_TOKEN = "longrandomstring123"
@@ -23,7 +22,6 @@ router.add_api_route(
 )
 
 
-# GET verification
 @router.get("/meta")
 async def verify_webhook(request: Request):
     params = request.query_params
@@ -39,17 +37,14 @@ async def verify_webhook(request: Request):
     return Response(status_code=403)
 
 
-# POST notifications (from Meta)
 @router.post("/meta")
 async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
     body = await request.json()
     print("📩 Incoming Meta Webhook POST:", body)
-    # Pass the webhook to the controller which handles message processing and broadcasting
     await webhook(request, background_tasks)
     return {"status": "received"}
 
 
-# Debug endpoints (consider protecting with auth in prod)
 @router.get("/debug/state")
 async def meta_debug_state(limit: int = 5):
     return await debug_state(limit)
