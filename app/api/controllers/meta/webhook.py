@@ -12,11 +12,10 @@ from pydantic import BaseModel, Field
 from app.services.websocket_manager import ws_manager
 from app.config import config
 
-# --- Config via config object -----------------------------------------------------------
-VERIFY_TOKEN = config.META_VERIFY_TOKEN or "replace-me"
-APP_SECRET = config.META_APP_SECRET or "replace-me"
-PAGE_TOKEN = config.PAGE_ACCESS_TOKEN or "replace-me"
-GRAPH_VER = config.IG_GRAPH_API_VERSION or "v23.0"
+VERIFY_TOKEN = config.META_VERIFY_TOKEN
+APP_SECRET = config.META_APP_SECRET
+PAGE_TOKEN = config.PAGE_ACCESS_TOKEN
+GRAPH_VER = config.IG_GRAPH_API_VERSION
 
 GRAPH_SEND_URL = f"https://graph.facebook.com/{GRAPH_VER}/me/messages"
 GRAPH_BASE_URL = f"https://graph.facebook.com/{GRAPH_VER}"
@@ -34,26 +33,19 @@ def _compute_signature(raw_body: bytes) -> str:
 
 
 def _verify_signature(request_signature: Optional[str], raw_body: bytes) -> None:
-    # Check if APP_SECRET is configured
-    if not APP_SECRET or APP_SECRET == "replace-me" or APP_SECRET == "":
-        print(f"❌ APP_SECRET not configured (value: '{APP_SECRET}')")
+    if not APP_SECRET:
+        print("APP_SECRET not configured")
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "App secret not configured")
-
-    # Check if signature header is present
     if not request_signature:
-        print("❌ Missing X-Hub-Signature-256 header")
+        print(" Missing X-Hub-Signature-256 header")
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing X-Hub-Signature-256")
-
-    # Compute and verify signature
     expected = _compute_signature(raw_body)
+
     if not hmac.compare_digest(request_signature, expected):
-        print("❌ Signature mismatch")
-        print(f"   Received: {request_signature[:50]}...")
-        print(f"   Expected: {expected[:50]}...")
-        print(f"   Body length: {len(raw_body)} bytes")
+        print("Signature mismatch")
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid signature")
 
-    print("✅ Signature verification passed")
+    print("Signature verification passed")
 
 
 def _extract_events(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
