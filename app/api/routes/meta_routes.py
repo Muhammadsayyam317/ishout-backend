@@ -48,16 +48,17 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
         for change in entry.get("changes", []):
             value = change.get("value", {})
             if "message" in value:
-                await ws_manager.broadcast(
-                    {
-                        "type": "ig_reply",
-                        "from_username": value.get("from", {}).get(
-                            "username", "unknown"
-                        ),
-                        "text": value["message"].get("text", ""),
-                        "timestamp": value.get("timestamp"),
-                    }
-                )
+                await webhook(request, background_tasks)
+                # await ws_manager.broadcast(
+                #     {
+                #         "type": "ig_reply",
+                #         "from_username": value.get("from", {}).get(
+                #             "username", "unknown"
+                #         ),
+                #         "text": value["message"].get("text", ""),
+                #         "timestamp": value.get("timestamp"),
+                #     }
+                # )
 
     return {"status": "received"}
 
