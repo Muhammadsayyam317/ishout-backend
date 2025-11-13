@@ -44,22 +44,8 @@ async def verify_webhook(request: Request):
 async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
     body = await request.json()
     print("📩 Incoming Meta Webhook POST:", body)
-    for entry in body.get("entry", []):
-        for change in entry.get("changes", []):
-            value = change.get("value", {})
-            if "message" in value:
-                await webhook(request, background_tasks)
-                # await ws_manager.broadcast(
-                #     {
-                #         "type": "ig_reply",
-                #         "from_username": value.get("from", {}).get(
-                #             "username", "unknown"
-                #         ),
-                #         "text": value["message"].get("text", ""),
-                #         "timestamp": value.get("timestamp"),
-                #     }
-                # )
-
+    # Pass the webhook to the controller which handles message processing and broadcasting
+    await webhook(request, background_tasks)
     return {"status": "received"}
 
 

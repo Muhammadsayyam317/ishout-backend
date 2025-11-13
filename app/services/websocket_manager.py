@@ -25,12 +25,16 @@ class WebSocketManager:
         self._user_connections: Dict[str, Set[WebSocket]] = {}
         # role -> set of websockets
         self._role_connections: Dict[str, Set[WebSocket]] = {}
+        # all connected websockets (including anonymous)
+        self._all_connections: Set[WebSocket] = set()
         # lock for mutation
         self._lock = asyncio.Lock()
 
     async def connect(self, websocket: WebSocket, user_id: Optional[str], role: Optional[str]) -> None:
         await websocket.accept()
         async with self._lock:
+            # Always track all connections
+            self._all_connections.add(websocket)
             if user_id:
                 self._user_connections.setdefault(user_id, set()).add(websocket)
             if role:
@@ -38,6 +42,8 @@ class WebSocketManager:
 
     async def disconnect(self, websocket: WebSocket, user_id: Optional[str], role: Optional[str]) -> None:
         async with self._lock:
+            # Remove from all connections
+            self._all_connections.discard(websocket)
             if user_id and user_id in self._user_connections:
                 self._user_connections[user_id].discard(websocket)
                 if not self._user_connections[user_id]:
@@ -62,14 +68,12 @@ class WebSocketManager:
         return delivered
 
     async def broadcast(self, message: Any) -> int:
-        """Broadcast to all connected sockets (across all users)."""
+        """Broadcast to all connected sockets (across all users, including anonymous)."""
         async with self._lock:
-            # flatten all sets
-            unique_sockets: Set[WebSocket] = set()
-            for s in self._user_connections.values():
-                unique_sockets.update(s)
+            # Use all connections including anonymous
+            sockets = list(self._all_connections)
         delivered = 0
-        for ws in unique_sockets:
+        for ws in sockets:
             try:
                 await ws.send_json(message)
                 delivered += 1
@@ -93,7 +97,8 @@ class WebSocketManager:
         async with self._lock:
             return {
                 "users": len(self._user_connections),
-                "connections": sum(len(s) for s in self._user_connections.values()),
+                "authenticated_connections": sum(len(s) for s in self._user_connections.values()),
+                "total_connections": len(self._all_connections),
                 "roles": {r: len(s) for r, s in self._role_connections.items()},
             }
 
