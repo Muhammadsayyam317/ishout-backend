@@ -19,40 +19,40 @@ async def verify_webhook(request: Request):
     params = dict(request.query_params)
     print("🔍 Meta verification params:", params)
 
-    mode = params.get("hub.mode")
-    token = params.get("hub.verify_token")
+    mode = params.get("hub.mode") == "subscribe"
+    token = params.get("hub.verify_token") == config.META_VERIFY_TOKEN
     challenge = params.get("hub.challenge")
 
-    if mode == "subscribe" and token == config.META_VERIFY_TOKEN:
-        print("✅ Meta Webhook verified successfully.")
+    if mode and token and challenge:
+        print("Webhook verified successfully.")
         return Response(content=challenge, status_code=200)
 
-    print("❌ Meta Webhook verification failed.")
+    print("Webhook verification failed.")
     return Response(status_code=403)
 
 
 @router.post("/meta")
 async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
     body = await request.json()
-    print("📩 Incoming Meta Webhook POST:", body)
+    print("Incoming webhook:", body)
 
-    # Loop through all entries and changes
     for entry in body.get("entry", []):
         for change in entry.get("changes", []):
             value = change.get("value", {})
-
-            # Only handle messages
             if "message" in value:
-                msg_data = {
-                    "type": "ig_reply",
-                    "from_psid": value.get("from", {}).get("id"),
-                    "to_page_id": value.get("to", {}).get("id"),
-                    "from_username": value.get("from", {}).get("username", "unknown"),
-                    "text": value["message"].get("text", ""),
-                    "timestamp": value.get("timestamp"),
-                }
+                await ws_manager.broadcast(
+                    {
+                        "type": "ig_reply",
+                        "from_psid": value.get("from", {}).get("id"),
+                        "to_page_id": value.get("to", {}).get("id"),
+                        "from_username": value.get("from", {}).get(
+                            "username",
+                        ),
+                        "text": value["message"].get("text", ""),
+                        "timestamp": value.get("timestamp"),
+                    }
+                )
 
-                await ws_manager.broadcast(msg_data)
     return JSONResponse({"status": "received"})
 
 
