@@ -45,6 +45,11 @@ class Config(BaseModel):
     INSTAGRAM_REDIRECT_URL: str = Field(default=os.getenv("INSTAGRAM_REDIRECT_URL"))
     INSTAGRAM_ACCESS_TOKEN: str = Field(default=os.getenv("INSTAGRAM_ACCESS_TOKEN"))
 
+    META_VERIFY_TOKEN: str = Field(default=os.getenv("META_VERIFY_TOKEN"))
+    META_APP_SECRET: str = Field(default=os.getenv("META_APP_SECRET"))
+    PAGE_ACCESS_TOKEN: str = Field(default=os.getenv("PAGE_ACCESS_TOKEN"))
+    IG_GRAPH_API_VERSION: str = Field(default=os.getenv("IG_GRAPH_API_VERSION"))
+
 
 # config singleton instance
 config = Config()

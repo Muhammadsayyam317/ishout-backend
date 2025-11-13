@@ -9,9 +9,9 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse
 from app.services.websocket_manager import ws_manager
+from app.config import config
 
 router = APIRouter()
-VERIFY_TOKEN = "longrandomstring123"
 
 
 @router.get("/meta")
@@ -23,7 +23,7 @@ async def verify_webhook(request: Request):
     token = params.get("hub.verify_token")
     challenge = params.get("hub.challenge")
 
-    if mode == "subscribe" and token == VERIFY_TOKEN:
+    if mode == "subscribe" and token == config.META_VERIFY_TOKEN:
         print("✅ Meta Webhook verified successfully.")
         return Response(content=challenge, status_code=200)
 

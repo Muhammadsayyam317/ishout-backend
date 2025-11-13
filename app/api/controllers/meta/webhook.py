@@ -1,4 +1,3 @@
-import os
 import json
 import hmac
 import hashlib
@@ -11,12 +10,13 @@ from fastapi import status
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 from app.services.websocket_manager import ws_manager
+from app.config import config
 
-# --- Config via env -----------------------------------------------------------
-VERIFY_TOKEN = os.getenv("META_VERIFY_TOKEN", "replace-me")
-APP_SECRET = os.getenv("META_APP_SECRET", "replace-me")
-PAGE_TOKEN = os.getenv("PAGE_ACCESS_TOKEN", "replace-me")
-GRAPH_VER = os.getenv("IG_GRAPH_API_VERSION", "v23.0")
+# --- Config via config object -----------------------------------------------------------
+VERIFY_TOKEN = config.META_VERIFY_TOKEN or "replace-me"
+APP_SECRET = config.META_APP_SECRET or "replace-me"
+PAGE_TOKEN = config.PAGE_ACCESS_TOKEN or "replace-me"
+GRAPH_VER = config.IG_GRAPH_API_VERSION or "v23.0"
 
 GRAPH_SEND_URL = f"https://graph.facebook.com/{GRAPH_VER}/me/messages"
 GRAPH_BASE_URL = f"https://graph.facebook.com/{GRAPH_VER}"
@@ -34,14 +34,26 @@ def _compute_signature(raw_body: bytes) -> str:
 
 
 def _verify_signature(request_signature: Optional[str], raw_body: bytes) -> None:
-    if not APP_SECRET or APP_SECRET == "replace-me":
+    # Check if APP_SECRET is configured
+    if not APP_SECRET or APP_SECRET == "replace-me" or APP_SECRET == "":
+        print(f"❌ APP_SECRET not configured (value: '{APP_SECRET}')")
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "App secret not configured")
+
+    # Check if signature header is present
     if not request_signature:
+        print("❌ Missing X-Hub-Signature-256 header")
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Missing X-Hub-Signature-256")
 
+    # Compute and verify signature
     expected = _compute_signature(raw_body)
     if not hmac.compare_digest(request_signature, expected):
+        print("❌ Signature mismatch")
+        print(f"   Received: {request_signature[:50]}...")
+        print(f"   Expected: {expected[:50]}...")
+        print(f"   Body length: {len(raw_body)} bytes")
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid signature")
+
+    print("✅ Signature verification passed")
 
 
 def _extract_events(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -135,11 +147,27 @@ async def webhook(request: Request, background: Optional[BackgroundTasks] = None
 
     if request.method == "POST":
         raw_body = await request.body()
-        _verify_signature(request.headers.get("X-Hub-Signature-256"), raw_body)
+        signature_header = request.headers.get("X-Hub-Signature-256")
+
+        # Log incoming request info for debugging
+        client_ip = request.client.host if request.client else "unknown"
+        print(
+            f"📥 Webhook POST from {client_ip}, body size: {len(raw_body)} bytes, signature: {'present' if signature_header else 'missing'}"
+        )
+
+        try:
+            _verify_signature(signature_header, raw_body)
+        except HTTPException as e:
+            # Re-raise the exception but log more context
+            print(
+                f"❌ Webhook signature verification failed from {client_ip}: {e.detail}"
+            )
+            raise
 
         try:
             payload = json.loads(raw_body.decode("utf-8"))
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
+            print(f"❌ Invalid JSON in webhook body: {e}")
             raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid JSON")
 
         print("📩 Incoming Meta Webhook POST:", payload)
