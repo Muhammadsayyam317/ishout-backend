@@ -23,45 +23,43 @@ router.add_api_route(
 )
 
 
+# GET verification
 @router.get("/meta")
 async def verify_webhook(request: Request):
     params = request.query_params
     mode = params.get("hub.mode")
     token = params.get("hub.verify_token")
     challenge = params.get("hub.challenge")
+
     if mode == "subscribe" and token == VERIFY_TOKEN:
-        print("Meta Webhook verified successfully.")
+        print("✅ Meta Webhook verified successfully.")
         return Response(content=challenge, status_code=200)
-    else:
-        print(" Meta Webhook verification failed.")
-        return Response(status_code=403)
+
+    print("❌ Meta Webhook verification failed.")
+    return Response(status_code=403)
 
 
+# POST notifications (from Meta)
 @router.post("/meta")
-async def meta_webhook(
-    request: Request, background_tasks: BackgroundTasks = BackgroundTasks()
-):
-    return await webhook(request, background_tasks)
+async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
+    body = await request.json()
+    print("📩 Incoming Meta Webhook POST:", body)
+    for entry in body.get("entry", []):
+        for change in entry.get("changes", []):
+            value = change.get("value", {})
+            if "message" in value:
+                await ws_manager.broadcast(
+                    {
+                        "type": "ig_reply",
+                        "from_username": value.get("from", {}).get(
+                            "username", "unknown"
+                        ),
+                        "text": value["message"].get("text", ""),
+                        "timestamp": value.get("timestamp"),
+                    }
+                )
 
-
-# @router.post("/meta")
-# async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
-#     body = await request.json()
-#     print("📩 Incoming Meta Webhook:", body)
-
-#     for entry in body.get("entry", []):
-#         for messaging in entry.get("messaging", []):
-#             message = messaging.get("message", {})
-#             sender = messaging.get("sender", {}).get("id")
-#             if message and "text" in message:
-#                 await ws_manager.broadcast(
-#                     {
-#                         "type": "ig_reply",
-#                         "from_psid": sender,
-#                         "text": message["text"],
-#                     }
-#                 )
-#     return {"status": "ok"}
+    return {"status": "received"}
 
 
 # Debug endpoints (consider protecting with auth in prod)
