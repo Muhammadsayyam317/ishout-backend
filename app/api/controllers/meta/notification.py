@@ -19,10 +19,8 @@ from app.core.auth import verify_token
 # Profile cache to avoid repeated API calls
 PROFILE_CACHE: Dict[str, Dict] = {}
 PROFILE_TTL_SEC = 3600  # Cache for 1 hour
-
-# Message deduplication to prevent processing same message twice
 PROCESSED_MESSAGES: set = set()
-MESSAGE_CACHE_TTL_SEC = 3600  # Keep message IDs for 1 hour
+MESSAGE_CACHE_TTL_SEC = 3600
 
 
 async def _get_ig_username(
@@ -37,8 +35,6 @@ async def _get_ig_username(
     if cached and now - cached.get("ts", 0) < PROFILE_TTL_SEC:
         return cached.get("username") or cached.get("name")
 
-    # Method 1: Try direct PSID query with extended fields (as per Instagram Graph API docs)
-    # Based on Stack Overflow example: fields=name,username,profile_pic,follower_count,...
     graph_url = f"https://graph.facebook.com/{config.IG_GRAPH_API_VERSION}/{psid}"
     params = {
         "fields": "name,username,profile_pic,follower_count,is_user_follow_business,is_business_follow_user",
@@ -59,14 +55,11 @@ async def _get_ig_username(
                         "follower_count": data.get("follower_count"),
                         "ts": now,
                     }
-                    print(
-                        f"✅ Successfully fetched username for PSID {psid}: {username}"
-                    )
+                    print(f" Successfully fetched username for PSID {psid}: {username}")
                     return username
             elif resp.status_code == 403:
-                # Try with minimal fields as fallback
                 print(
-                    f"⚠️ Extended fields access denied (403) for {psid}, trying minimal fields..."
+                    f" Extended fields access denied (403) for {psid}, trying minimal fields..."
                 )
                 fallback_params = {
                     "fields": "username,name",
@@ -85,7 +78,7 @@ async def _get_ig_username(
                             "ts": now,
                         }
                         print(
-                            f"✅ Successfully fetched username with minimal fields: {username}"
+                            f" Successfully fetched username with minimal fields: {username}"
                         )
                         return username
                 else:
@@ -96,7 +89,7 @@ async def _get_ig_username(
                         )
                         else {}
                     )
-                    print(f"⚠️ Direct PSID access denied (403) for {psid}")
+                    print(f" Direct PSID access denied (403) for {psid}")
                     print(
                         f"   Error: {error_data.get('error', {}).get('message', 'Unknown error')}"
                     )
@@ -111,12 +104,12 @@ async def _get_ig_username(
                     )
                     else {}
                 )
-                print(f"⚠️ Failed to fetch username for PSID {psid}: {resp.status_code}")
+                print(f" Failed to fetch username for PSID {psid}: {resp.status_code}")
                 print(
                     f"   Error: {error_data.get('error', {}).get('message', 'Unknown error')}"
                 )
     except Exception as e:
-        print(f"⚠️ Error fetching username for PSID {psid}: {str(e)}")
+        print(f" Error fetching username for PSID {psid}: {str(e)}")
 
     return None
 
@@ -140,11 +133,9 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
         return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
 
     print("📩 Incoming Webhook Body:", json.dumps(body, indent=2))
-
-    # Clean old message IDs from cache (older than 1 hour)
     current_time = time.time()
     if hasattr(handle_webhook, "_last_cleanup"):
-        if current_time - handle_webhook._last_cleanup > 3600:  # Clean every hour
+        if current_time - handle_webhook._last_cleanup > 3600:
             PROCESSED_MESSAGES.clear()
             handle_webhook._last_cleanup = current_time
     else:
@@ -157,7 +148,7 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
             if "message" in value:
                 message_id = value["message"].get("mid")
                 if message_id and message_id in PROCESSED_MESSAGES:
-                    print(f"⏭️ Skipping duplicate message: {message_id}")
+                    print(f"Skipping duplicate message: {message_id}")
                     continue
 
                 if message_id:
@@ -168,9 +159,9 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                 text = value["message"].get("text", "")
 
                 print("=========== IG MESSAGE RECEIVED (Direct) ===========")
-                print(f"👤 Username: {username}")
-                print(f"🆔 PSID: {psid}")
-                print(f"💬 Message: {text}")
+                print(f" Username: {username}")
+                print(f" PSID: {psid}")
+                print(f" Message: {text}")
                 print("===========================================")
 
                 background_tasks.add_task(
@@ -192,7 +183,7 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                 message_id = message.get("mid")
                 # Skip if message already processed
                 if message_id and message_id in PROCESSED_MESSAGES:
-                    print(f"⏭️ Skipping duplicate message: {message_id}")
+                    print(f"Skipping duplicate message: {message_id}")
                     continue
 
                 if message_id:
@@ -208,10 +199,10 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                 display_name = username or f"User_{psid[:8]}"
 
                 print("=========== IG MESSAGE RECEIVED (Messaging) ===========")
-                print(f"👤 Username: {display_name}")
-                print(f"🆔 PSID: {psid}")
-                print(f"📄 Page ID: {page_id}")
-                print(f"💬 Message: {text}")
+                print(f" Username: {display_name}")
+                print(f" PSID: {psid}")
+                print(f" Page ID: {page_id}")
+                print(f" Message: {text}")
                 print("===========================================")
 
                 background_tasks.add_task(
