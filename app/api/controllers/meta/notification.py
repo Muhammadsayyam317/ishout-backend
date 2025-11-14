@@ -23,8 +23,8 @@ PROCESSED_MESSAGES: set = set()
 MESSAGE_CACHE_TTL_SEC = 3600
 
 
-async def _get_ig_username(psid: str, page_id: str):
-    """Fetch username using Conversations API only (simple, no caching)."""
+async def _get_ig_user(psid: str, page_id: str):
+    """Fetch Instagram user info (username + profile pic) via Conversations API only."""
 
     if not psid or not page_id:
         return None
@@ -32,7 +32,7 @@ async def _get_ig_username(psid: str, page_id: str):
     url = f"https://graph.facebook.com/{config.IG_GRAPH_API_VERSION}/{page_id}/conversations"
 
     params = {
-        "fields": "participants{id,username,name,profile_pic_url,followers_count}",
+        "fields": "participants{id,username,name}",
         "access_token": config.PAGE_ACCESS_TOKEN,
         "limit": 25,
     }
@@ -42,7 +42,7 @@ async def _get_ig_username(psid: str, page_id: str):
             resp = await client.get(url, params=params)
 
             if resp.status_code != 200:
-                print(f"⚠️ Conversations API error {resp.status_code}")
+                print(f"Conversations API error {resp.status_code}")
                 return None
 
             data = resp.json()
@@ -53,11 +53,10 @@ async def _get_ig_username(psid: str, page_id: str):
                 for p in participants:
                     if p.get("id") == psid:
                         username = p.get("username") or p.get("name")
-                        return {
-                            "username": username,
-                            "profile_pic_url": p.get("profile_pic_url"),
-                            "followers_count": p.get("followers_count"),
-                        }
+
+                        print(f"Username: {username}")
+
+                        return username
 
     except Exception as e:
         print(f"⚠️ Username fetch failed: {str(e)}")
@@ -80,45 +79,55 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
     try:
         body = await request.json()
     except json.JSONDecodeError:
-        print("Invalid JSON")
-        return JSONResponse({"error": "Invalid JSON"}, status_code=400)
+        print(" Invalid JSON received")
+        return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
 
-    print("📩 Incoming Webhook:", json.dumps(body, indent=2))
+    print("📩 Incoming Webhook Body:", json.dumps(body, indent=2))
+    current_time = time.time()
+    if hasattr(handle_webhook, "_last_cleanup"):
+        if current_time - handle_webhook._last_cleanup > 3600:
+            PROCESSED_MESSAGES.clear()
+            handle_webhook._last_cleanup = current_time
+    else:
+        handle_webhook._last_cleanup = current_time
+
     for entry in body.get("entry", []):
         for change in entry.get("changes", []):
             value = change.get("value", {})
 
             if "message" in value:
+                message_id = value["message"].get("mid")
+                if message_id and message_id in PROCESSED_MESSAGES:
+                    print(f"Skipping duplicate message: {message_id}")
+                    continue
+
+                if message_id:
+                    PROCESSED_MESSAGES.add(message_id)
+
+                username = await _get_ig_user(
+                    value.get("from", {}).get("id"), value.get("to", {}).get("id")
+                )
                 psid = value.get("from", {}).get("id")
-                page_id = value.get("to", {}).get("id")
                 text = value["message"].get("text", "")
 
-                username = await _get_ig_username(psid, page_id)
-                display = username["username"] or f"User_{psid[:6]}"
-                profile_pic_url = (
-                    username["profile_pic_url"] if username["profile_pic_url"] else None
-                )
-
-                print("\n======== IG MESSAGE RECEIVED ========")
-                print(" Profile Pic URL :", profile_pic_url)
-                print(" Username :", display)
-                print(" PSID     :", psid)
-                print(" Message  :", text)
-                print("=====================================\n")
+                print("=========== IG MESSAGE RECEIVED (Direct) ===========")
+                print(f" Username: {username}")
+                print(f" PSID: {psid}")
+                print(f" Message: {text}")
+                print("===========================================")
 
                 background_tasks.add_task(
                     ws_manager.broadcast,
                     {
                         "type": "ig_reply",
                         "from_psid": psid,
-                        "from_username": display,
-                        "from_profile_pic_url": profile_pic_url,
+                        "to_page_id": value.get("to", {}).get("id"),
+                        "from_username": username["username"],
+                        "from_profile_pic_url": username["profile_pic_url"],
                         "text": text,
-                        "page_id": page_id,
-                        "timestamp": time.time(),
+                        "timestamp": value.get("timestamp", time.time()),
                     },
                 )
-
     return JSONResponse({"status": "received"})
 
 
