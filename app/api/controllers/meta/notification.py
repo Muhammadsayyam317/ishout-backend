@@ -1,6 +1,6 @@
 import json
 import time
-from typing import Optional, Dict
+from typing import Dict
 import httpx
 from fastapi import (
     BackgroundTasks,
@@ -16,9 +16,8 @@ from app.services.websocket_manager import ws_manager
 from app.config import config
 from app.core.auth import verify_token
 
-# Profile cache to avoid repeated API calls
 PROFILE_CACHE: Dict[str, Dict] = {}
-PROFILE_TTL_SEC = 3600  # Cache for 1 hour
+PROFILE_TTL_SEC = 3600
 PROCESSED_MESSAGES: set = set()
 MESSAGE_CACHE_TTL_SEC = 3600
 
@@ -59,7 +58,7 @@ async def _get_ig_user(psid: str, page_id: str):
                         return username
 
     except Exception as e:
-        print(f"⚠️ Username fetch failed: {str(e)}")
+        print(f"Error fetching username: {str(e)}")
 
     return None
 
@@ -82,7 +81,7 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
         print(" Invalid JSON received")
         return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
 
-    print("📩 Incoming Webhook Body:", json.dumps(body, indent=2))
+    print("Incoming Webhook Body:", json.dumps(body, indent=2))
     current_time = time.time()
     if hasattr(handle_webhook, "_last_cleanup"):
         if current_time - handle_webhook._last_cleanup > 3600:
