@@ -23,114 +23,44 @@ PROCESSED_MESSAGES: set = set()
 MESSAGE_CACHE_TTL_SEC = 3600
 
 
-async def _get_ig_username(
-    psid: Optional[str], page_id: Optional[str] = None
-) -> Optional[str]:
-    """Fetch Instagram username from PSID using Graph API with caching.
+async def _get_ig_username(psid: str, page_id: str):
+    """Fetch username using Conversations API only (simple, no caching)."""
 
-    Note: With Standard Access to instagram_manage_messages, direct PSID queries
-    may not work. We try multiple methods:
-    1. Conversations API (works with Standard Access)
-    2. Direct PSID query (requires Advanced Access)
-    """
-    if not psid or not config.PAGE_ACCESS_TOKEN:
+    if not psid or not page_id:
         return None
 
-    now = time.time()
-    cached = PROFILE_CACHE.get(psid)
-    if cached and now - cached.get("ts", 0) < PROFILE_TTL_SEC:
-        return cached.get("username") or cached.get("name")
+    url = f"https://graph.facebook.com/{config.IG_GRAPH_API_VERSION}/{page_id}/conversations"
 
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        # Method 1: Try Conversations API (works with Standard Access)
-        if page_id:
-            try:
-                conversations_url = f"https://graph.facebook.com/{config.IG_GRAPH_API_VERSION}/{page_id}/conversations"
-                conv_params = {
-                    "user_id": psid,
-                    "fields": "participants",
-                    "access_token": config.PAGE_ACCESS_TOKEN,
-                }
+    params = {
+        "fields": "participants{id,username,name,profile_pic_url,followers_count}",
+        "access_token": config.PAGE_ACCESS_TOKEN,
+        "limit": 25,
+    }
 
-                conv_resp = await client.get(conversations_url, params=conv_params)
-                if conv_resp.status_code == 200:
-                    conv_data = conv_resp.json()
-                    # Try to extract username from conversation participants
-                    conversations = conv_data.get("data", [])
-                    for conv in conversations:
-                        participants = conv.get("participants", {}).get("data", [])
-                        for participant in participants:
-                            if participant.get("id") == psid:
-                                username = participant.get(
-                                    "username"
-                                ) or participant.get("name")
-                                if username:
-                                    PROFILE_CACHE[psid] = {
-                                        "username": participant.get("username"),
-                                        "name": participant.get("name"),
-                                        "ts": now,
-                                    }
-                                    print(
-                                        f"✅ Fetched username via Conversations API: {username}"
-                                    )
-                                    return username
-            except Exception as e:
-                print(f"⚠️ Conversations API failed for PSID {psid}: {str(e)}")
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.get(url, params=params)
 
-        # Method 2: Try direct PSID query (requires Advanced Access)
-        graph_url = f"https://graph.facebook.com/{config.IG_GRAPH_API_VERSION}/{psid}"
-        params = {
-            "fields": "name,username,profile_pic,follower_count,is_user_follow_business,is_business_follow_user",
-            "access_token": config.PAGE_ACCESS_TOKEN,
-        }
+            if resp.status_code != 200:
+                print(f"⚠️ Conversations API error {resp.status_code}")
+                return None
 
-        try:
-            resp = await client.get(graph_url, params=params)
-            if resp.status_code == 200:
-                data = resp.json()
-                username = data.get("username") or data.get("name")
-                if username:
-                    PROFILE_CACHE[psid] = {
-                        "username": data.get("username"),
-                        "name": data.get("name"),
-                        "profile_pic": data.get("profile_pic"),
-                        "follower_count": data.get("follower_count"),
-                        "ts": now,
-                    }
-                    print(
-                        f"✅ Successfully fetched username for PSID {psid}: {username}"
-                    )
-                    return username
-            elif resp.status_code == 403:
-                # Standard Access doesn't allow direct PSID queries
-                error_data = (
-                    resp.json()
-                    if resp.headers.get("content-type", "").startswith(
-                        "application/json"
-                    )
-                    else {}
-                )
-                error_msg = error_data.get("error", {}).get("message", "Unknown error")
-                print(f"⚠️ Direct PSID access denied (403) for {psid}")
-                print(f"   Error: {error_msg}")
-                print(
-                    "   Note: Advanced Access required for direct user profile queries"
-                )
-                print(f"   Using fallback display name: User_{psid[:8]}")
-            else:
-                error_data = (
-                    resp.json()
-                    if resp.headers.get("content-type", "").startswith(
-                        "application/json"
-                    )
-                    else {}
-                )
-                print(f" Failed to fetch username for PSID {psid}: {resp.status_code}")
-                print(
-                    f"   Error: {error_data.get('error', {}).get('message', 'Unknown error')}"
-                )
-        except Exception as e:
-            print(f"⚠️ Error fetching username for PSID {psid}: {str(e)}")
+            data = resp.json()
+
+            for conv in data.get("data", []):
+                participants = conv.get("participants", {}).get("data", [])
+
+                for p in participants:
+                    if p.get("id") == psid:
+                        username = p.get("username") or p.get("name")
+                        return {
+                            "username": username,
+                            "profile_pic_url": p.get("profile_pic_url"),
+                            "followers_count": p.get("followers_count"),
+                        }
+
+    except Exception as e:
+        print(f"⚠️ Username fetch failed: {str(e)}")
 
     return None
 
@@ -150,91 +80,42 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
     try:
         body = await request.json()
     except json.JSONDecodeError:
-        print(" Invalid JSON received")
-        return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
+        print("Invalid JSON")
+        return JSONResponse({"error": "Invalid JSON"}, status_code=400)
 
-    print("📩 Incoming Webhook Body:", json.dumps(body, indent=2))
-    current_time = time.time()
-    if hasattr(handle_webhook, "_last_cleanup"):
-        if current_time - handle_webhook._last_cleanup > 3600:
-            PROCESSED_MESSAGES.clear()
-            handle_webhook._last_cleanup = current_time
-    else:
-        handle_webhook._last_cleanup = current_time
-
+    print("📩 Incoming Webhook:", json.dumps(body, indent=2))
     for entry in body.get("entry", []):
         for change in entry.get("changes", []):
             value = change.get("value", {})
 
             if "message" in value:
-                message_id = value["message"].get("mid")
-                if message_id and message_id in PROCESSED_MESSAGES:
-                    print(f"Skipping duplicate message: {message_id}")
-                    continue
-
-                if message_id:
-                    PROCESSED_MESSAGES.add(message_id)
-
-                username = value.get("from", {}).get("username")
                 psid = value.get("from", {}).get("id")
+                page_id = value.get("to", {}).get("id")
                 text = value["message"].get("text", "")
 
-                print("=========== IG MESSAGE RECEIVED (Direct) ===========")
-                print(f" Username: {username}")
-                print(f" PSID: {psid}")
-                print(f" Message: {text}")
-                print("===========================================")
-
-                background_tasks.add_task(
-                    ws_manager.broadcast,
-                    {
-                        "type": "ig_reply",
-                        "from_psid": psid,
-                        "to_page_id": value.get("to", {}).get("id"),
-                        "from_username": username,
-                        "text": text,
-                        "timestamp": value.get("timestamp", time.time()),
-                    },
+                username = await _get_ig_username(psid, page_id)
+                display = username["username"] or f"User_{psid[:6]}"
+                profile_pic_url = (
+                    username["profile_pic_url"] if username["profile_pic_url"] else None
                 )
 
-        # Handle Facebook Messenger/Instagram format: entry[].messaging[]
-        for messaging_event in entry.get("messaging", []):
-            message = messaging_event.get("message")
-            if message and message.get("text"):
-                message_id = message.get("mid")
-                # Skip if message already processed
-                if message_id and message_id in PROCESSED_MESSAGES:
-                    print(f"Skipping duplicate message: {message_id}")
-                    continue
-
-                if message_id:
-                    PROCESSED_MESSAGES.add(message_id)
-
-                sender = messaging_event.get("sender", {})
-                recipient = messaging_event.get("recipient", {})
-                psid = sender.get("id")
-                page_id = recipient.get("id")
-                text = message.get("text", "")
-                timestamp = messaging_event.get("timestamp", time.time())
-                username = await _get_ig_username(psid, page_id)
-                display_name = username or f"User_{psid[:8]}"
-
-                print("=========== IG MESSAGE RECEIVED (Messaging) ===========")
-                print(f" Username: {display_name}")
-                print(f" PSID: {psid}")
-                print(f" Page ID: {page_id}")
-                print(f" Message: {text}")
-                print("===========================================")
+                print("\n======== IG MESSAGE RECEIVED ========")
+                print(" Profile Pic URL :", profile_pic_url)
+                print(" Username :", display)
+                print(" PSID     :", psid)
+                print(" Message  :", text)
+                print("=====================================\n")
 
                 background_tasks.add_task(
                     ws_manager.broadcast,
                     {
                         "type": "ig_reply",
                         "from_psid": psid,
-                        "to_page_id": page_id,
-                        "from_username": display_name,
+                        "from_username": display,
+                        "from_profile_pic_url": profile_pic_url,
                         "text": text,
-                        "timestamp": timestamp,
+                        "page_id": page_id,
+                        "timestamp": time.time(),
                     },
                 )
 
