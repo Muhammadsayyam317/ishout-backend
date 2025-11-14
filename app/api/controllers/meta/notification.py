@@ -37,10 +37,11 @@ async def _get_ig_username(
     if cached and now - cached.get("ts", 0) < PROFILE_TTL_SEC:
         return cached.get("username") or cached.get("name")
 
-    # Method 1: Try direct PSID query (works for Facebook Messenger, may not work for Instagram)
+    # Method 1: Try direct PSID query with extended fields (as per Instagram Graph API docs)
+    # Based on Stack Overflow example: fields=name,username,profile_pic,follower_count,...
     graph_url = f"https://graph.facebook.com/{config.IG_GRAPH_API_VERSION}/{psid}"
     params = {
-        "fields": "username,name",
+        "fields": "name,username,profile_pic,follower_count,is_user_follow_business,is_business_follow_user",
         "access_token": config.PAGE_ACCESS_TOKEN,
     }
 
@@ -54,19 +55,68 @@ async def _get_ig_username(
                     PROFILE_CACHE[psid] = {
                         "username": data.get("username"),
                         "name": data.get("name"),
+                        "profile_pic": data.get("profile_pic"),
+                        "follower_count": data.get("follower_count"),
                         "ts": now,
                     }
+                    print(
+                        f"✅ Successfully fetched username for PSID {psid}: {username}"
+                    )
                     return username
             elif resp.status_code == 403:
+                # Try with minimal fields as fallback
                 print(
-                    f"Direct PSID access denied (403) for {psid} - Instagram API restriction"
+                    f"⚠️ Extended fields access denied (403) for {psid}, trying minimal fields..."
                 )
-                print("💡 Instagram doesn't allow direct user profile queries via PSID")
+                fallback_params = {
+                    "fields": "username,name",
+                    "access_token": config.PAGE_ACCESS_TOKEN,
+                }
+                fallback_resp = await client.get(graph_url, params=fallback_params)
+                if fallback_resp.status_code == 200:
+                    fallback_data = fallback_resp.json()
+                    username = fallback_data.get("username") or fallback_data.get(
+                        "name"
+                    )
+                    if username:
+                        PROFILE_CACHE[psid] = {
+                            "username": fallback_data.get("username"),
+                            "name": fallback_data.get("name"),
+                            "ts": now,
+                        }
+                        print(
+                            f"✅ Successfully fetched username with minimal fields: {username}"
+                        )
+                        return username
+                else:
+                    error_data = (
+                        fallback_resp.json()
+                        if fallback_resp.headers.get("content-type", "").startswith(
+                            "application/json"
+                        )
+                        else {}
+                    )
+                    print(f"⚠️ Direct PSID access denied (403) for {psid}")
+                    print(
+                        f"   Error: {error_data.get('error', {}).get('message', 'Unknown error')}"
+                    )
+                    print(
+                        f"   Error Type: {error_data.get('error', {}).get('type', 'Unknown')}"
+                    )
+            else:
+                error_data = (
+                    resp.json()
+                    if resp.headers.get("content-type", "").startswith(
+                        "application/json"
+                    )
+                    else {}
+                )
+                print(f"⚠️ Failed to fetch username for PSID {psid}: {resp.status_code}")
                 print(
-                    "💡 Username will show as PSID until user sends a message with username in webhook"
+                    f"   Error: {error_data.get('error', {}).get('message', 'Unknown error')}"
                 )
     except Exception as e:
-        print(f"Error fetching username for PSID {psid}: {str(e)}")
+        print(f"⚠️ Error fetching username for PSID {psid}: {str(e)}")
 
     return None
 

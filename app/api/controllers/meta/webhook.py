@@ -39,9 +39,9 @@ async def _get_ig_username(psid: Optional[str]) -> Optional[str]:
                 }
                 return username
             else:
-                print(f"⚠️ Failed to fetch username for PSID {psid}: {resp.status_code}")
+                print(f"Failed to fetch username for PSID {psid}: {resp.status_code}")
     except Exception as e:
-        print(f"⚠️ Error fetching username for PSID {psid}: {str(e)}")
+        print(f"Error fetching username for PSID {psid}: {str(e)}")
 
     return None
 
@@ -64,7 +64,6 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
         return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
 
     for entry in body.get("entry", []):
-        # Handle Instagram Direct format: entry[].changes[].value
         for change in entry.get("changes", []):
             value = change.get("value", {})
             if "message" in value:
