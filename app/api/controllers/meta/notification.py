@@ -119,7 +119,6 @@ async def _get_ig_username(
             except Exception as e:
                 print(f"Error: Conversations API failed for PSID {psid}: {str(e)}")
 
-        # Method 2: Try direct PSID query (requires Advanced Access)
         graph_url = f"https://graph.facebook.com/{config.IG_GRAPH_API_VERSION}/{psid}"
         params = {
             "fields": "name,username,profile_pic,follower_count,is_user_follow_business,is_business_follow_user",
@@ -224,44 +223,44 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                 )
 
         # Handle Facebook Messenger/Instagram format: entry[].messaging[]
-        for messaging_event in entry.get("messaging", []):
-            message = messaging_event.get("message")
-            if message and message.get("text"):
-                message_id = message.get("mid")
-                if message_id and message_id in PROCESSED_MESSAGES:
-                    print(f"Skipping duplicate message: {message_id}")
-                    continue
+        # for messaging_event in entry.get("messaging", []):
+        #     message = messaging_event.get("message")
+        #     if message and message.get("text"):
+        #         message_id = message.get("mid")
+        #         if message_id and message_id in PROCESSED_MESSAGES:
+        #             print(f"Skipping duplicate message: {message_id}")
+        #             continue
 
-                if message_id:
-                    PROCESSED_MESSAGES.add(message_id)
+        #         if message_id:
+        #             PROCESSED_MESSAGES.add(message_id)
 
-                sender = messaging_event.get("sender", {})
-                recipient = messaging_event.get("recipient", {})
-                psid = sender.get("id")
-                page_id = recipient.get("id")
-                text = message.get("text", "")
-                timestamp = messaging_event.get("timestamp", time.time())
-                username = await _get_ig_username(psid, page_id)
-                display_name = username or f"User_{psid[:8]}"
+        #         sender = messaging_event.get("sender", {})
+        #         recipient = messaging_event.get("recipient", {})
+        #         psid = sender.get("id")
+        #         page_id = recipient.get("id")
+        #         text = message.get("text", "")
+        #         timestamp = messaging_event.get("timestamp", time.time())
+        #         username = await _get_ig_username(psid, page_id)
+        #         display_name = username or f"User_{psid[:8]}"
 
-                print("=========== IG MESSAGE RECEIVED (Messaging) ===========")
-                print(f" Username: {display_name}")
-                print(f" PSID: {psid}")
-                print(f" Page ID: {page_id}")
-                print(f" Message: {text}")
-                print("===========================================")
+        #         print("=========== IG MESSAGE RECEIVED (Messaging) ===========")
+        #         print(f" Username: {display_name}")
+        #         print(f" PSID: {psid}")
+        #         print(f" Page ID: {page_id}")
+        #         print(f" Message: {text}")
+        #         print("===========================================")
 
-                background_tasks.add_task(
-                    ws_manager.broadcast,
-                    {
-                        "type": "ig_reply",
-                        "from_psid": psid,
-                        "to_page_id": page_id,
-                        "from_username": display_name,
-                        "text": text,
-                        "timestamp": timestamp,
-                    },
-                )
+        #         background_tasks.add_task(
+        #             ws_manager.broadcast,
+        #             {
+        #                 "type": "ig_reply",
+        #                 "from_psid": psid,
+        #                 "to_page_id": page_id,
+        #                 "from_username": display_name,
+        #                 "text": text,
+        #                 "timestamp": timestamp,
+        #             },
+        #         )
 
     return JSONResponse({"status": "received"})
 
