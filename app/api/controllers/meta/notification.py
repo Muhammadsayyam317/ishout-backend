@@ -3,7 +3,6 @@ import time
 from typing import Optional, Dict
 import httpx
 from fastapi import (
-    APIRouter,
     BackgroundTasks,
     Request,
     Response,
@@ -21,21 +20,24 @@ from app.core.auth import verify_token
 PROFILE_CACHE: Dict[str, Dict] = {}
 PROFILE_TTL_SEC = 3600  # Cache for 1 hour
 
-router = APIRouter()
+# Message deduplication to prevent processing same message twice
+PROCESSED_MESSAGES: set = set()
+MESSAGE_CACHE_TTL_SEC = 3600  # Keep message IDs for 1 hour
 
 
-async def _get_ig_username(psid: Optional[str]) -> Optional[str]:
+async def _get_ig_username(
+    psid: Optional[str], page_id: Optional[str] = None
+) -> Optional[str]:
     """Fetch Instagram username from PSID using Graph API with caching."""
     if not psid or not config.PAGE_ACCESS_TOKEN:
         return None
 
-    # Check cache first
     now = time.time()
     cached = PROFILE_CACHE.get(psid)
     if cached and now - cached.get("ts", 0) < PROFILE_TTL_SEC:
         return cached.get("username") or cached.get("name")
 
-    # Fetch from Graph API
+    # Method 1: Try direct PSID query (works for Facebook Messenger, may not work for Instagram)
     graph_url = f"https://graph.facebook.com/{config.IG_GRAPH_API_VERSION}/{psid}"
     params = {
         "fields": "username,name",
@@ -48,17 +50,23 @@ async def _get_ig_username(psid: Optional[str]) -> Optional[str]:
             if resp.status_code == 200:
                 data = resp.json()
                 username = data.get("username") or data.get("name")
-                # Cache the result
-                PROFILE_CACHE[psid] = {
-                    "username": data.get("username"),
-                    "name": data.get("name"),
-                    "ts": now,
-                }
-                return username
-            else:
-                print(f"⚠️ Failed to fetch username for PSID {psid}: {resp.status_code}")
+                if username:
+                    PROFILE_CACHE[psid] = {
+                        "username": data.get("username"),
+                        "name": data.get("name"),
+                        "ts": now,
+                    }
+                    return username
+            elif resp.status_code == 403:
+                print(
+                    f"Direct PSID access denied (403) for {psid} - Instagram API restriction"
+                )
+                print("💡 Instagram doesn't allow direct user profile queries via PSID")
+                print(
+                    "💡 Username will show as PSID until user sends a message with username in webhook"
+                )
     except Exception as e:
-        print(f"⚠️ Error fetching username for PSID {psid}: {str(e)}")
+        print(f"Error fetching username for PSID {psid}: {str(e)}")
 
     return None
 
@@ -83,12 +91,28 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
 
     print("📩 Incoming Webhook Body:", json.dumps(body, indent=2))
 
+    # Clean old message IDs from cache (older than 1 hour)
+    current_time = time.time()
+    if hasattr(handle_webhook, "_last_cleanup"):
+        if current_time - handle_webhook._last_cleanup > 3600:  # Clean every hour
+            PROCESSED_MESSAGES.clear()
+            handle_webhook._last_cleanup = current_time
+    else:
+        handle_webhook._last_cleanup = current_time
+
     for entry in body.get("entry", []):
-        # Handle Instagram Direct format: entry[].changes[].value
         for change in entry.get("changes", []):
             value = change.get("value", {})
 
             if "message" in value:
+                message_id = value["message"].get("mid")
+                if message_id and message_id in PROCESSED_MESSAGES:
+                    print(f"⏭️ Skipping duplicate message: {message_id}")
+                    continue
+
+                if message_id:
+                    PROCESSED_MESSAGES.add(message_id)
+
                 username = value.get("from", {}).get("username")
                 psid = value.get("from", {}).get("id")
                 text = value["message"].get("text", "")
@@ -115,18 +139,26 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
         for messaging_event in entry.get("messaging", []):
             message = messaging_event.get("message")
             if message and message.get("text"):
+                message_id = message.get("mid")
+                # Skip if message already processed
+                if message_id and message_id in PROCESSED_MESSAGES:
+                    print(f"⏭️ Skipping duplicate message: {message_id}")
+                    continue
+
+                if message_id:
+                    PROCESSED_MESSAGES.add(message_id)
+
                 sender = messaging_event.get("sender", {})
                 recipient = messaging_event.get("recipient", {})
                 psid = sender.get("id")
                 page_id = recipient.get("id")
                 text = message.get("text", "")
                 timestamp = messaging_event.get("timestamp", time.time())
-
-                # Fetch username from Graph API
-                username = await _get_ig_username(psid)
+                username = await _get_ig_username(psid, page_id)
+                display_name = username or f"User_{psid[:8]}"
 
                 print("=========== IG MESSAGE RECEIVED (Messaging) ===========")
-                print(f"👤 Username: {username or 'Unknown'}")
+                print(f"👤 Username: {display_name}")
                 print(f"🆔 PSID: {psid}")
                 print(f"📄 Page ID: {page_id}")
                 print(f"💬 Message: {text}")
@@ -138,7 +170,7 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                         "type": "ig_reply",
                         "from_psid": psid,
                         "to_page_id": page_id,
-                        "from_username": username,
+                        "from_username": display_name,
                         "text": text,
                         "timestamp": timestamp,
                     },
@@ -148,7 +180,6 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
 
 
 async def websocket_notifications(websocket: WebSocket):
-    # Get token from query parameters
     token = websocket.query_params.get("token")
 
     if not token:
@@ -157,16 +188,12 @@ async def websocket_notifications(websocket: WebSocket):
             code=status.WS_1008_POLICY_VIOLATION, reason="Missing token"
         )
         return
-
-    # Verify token before accepting connection
     user_id = None
     role = None
     try:
         payload = verify_token(token)
         user_id = payload.get("user_id")
         role = payload.get("role")
-
-        # Only allow admin users
         if role != "admin":
             await websocket.accept()
             await websocket.close(
@@ -184,7 +211,6 @@ async def websocket_notifications(websocket: WebSocket):
         )
         return
 
-    # Token is valid, connect (this will accept the connection)
     await ws_manager.connect(websocket, user_id=user_id, role=role)
     try:
         while True:

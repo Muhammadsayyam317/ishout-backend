@@ -9,21 +9,17 @@ from app.config import config
 
 # Profile cache to avoid repeated API calls
 PROFILE_CACHE: Dict[str, Dict] = {}
-PROFILE_TTL_SEC = 3600  # Cache for 1 hour
+PROFILE_TTL_SEC = 3600
 
 
 async def _get_ig_username(psid: Optional[str]) -> Optional[str]:
     """Fetch Instagram username from PSID using Graph API with caching."""
     if not psid or not config.PAGE_ACCESS_TOKEN:
         return None
-
-    # Check cache first
     now = time.time()
     cached = PROFILE_CACHE.get(psid)
     if cached and now - cached.get("ts", 0) < PROFILE_TTL_SEC:
         return cached.get("username") or cached.get("name")
-
-    # Fetch from Graph API
     graph_url = f"https://graph.facebook.com/{config.IG_GRAPH_API_VERSION}/{psid}"
     params = {
         "fields": "username,name",
@@ -36,7 +32,6 @@ async def _get_ig_username(psid: Optional[str]) -> Optional[str]:
             if resp.status_code == 200:
                 data = resp.json()
                 username = data.get("username") or data.get("name")
-                # Cache the result
                 PROFILE_CACHE[psid] = {
                     "username": data.get("username"),
                     "name": data.get("name"),
