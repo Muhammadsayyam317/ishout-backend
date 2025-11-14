@@ -5,7 +5,6 @@ import httpx
 from fastapi import (
     BackgroundTasks,
     Request,
-    Response,
     WebSocket,
     WebSocketDisconnect,
     HTTPException,
@@ -23,8 +22,6 @@ MESSAGE_CACHE_TTL_SEC = 3600
 
 
 async def _get_ig_user(psid: str, page_id: str):
-    """Fetch Instagram user info (username + profile pic) via Conversations API only."""
-
     if not psid or not page_id:
         return None
 
@@ -41,9 +38,7 @@ async def _get_ig_user(psid: str, page_id: str):
             resp = await client.get(url, params=params)
 
             if resp.status_code != 200:
-                print(f"Conversations API error {resp.status_code}")
                 return None
-
             data = resp.json()
 
             for conv in data.get("data", []):
@@ -52,26 +47,22 @@ async def _get_ig_user(psid: str, page_id: str):
                 for p in participants:
                     if p.get("id") == psid:
                         username = p.get("username") or p.get("name")
-
-                        print(f"Username: {username}")
-
                         return username
 
     except Exception as e:
         print(f"Error fetching username: {str(e)}")
-
     return None
 
 
-async def verify_webhook(request: Request):
-    params = request.query_params
-    mode = params.get("hub.mode")
-    token = params.get("hub.verify_token")
-    challenge = params.get("hub.challenge")
+# async def verify_webhook(request: Request):
+#     params = request.query_params
+#     mode = params.get("hub.mode")
+#     token = params.get("hub.verify_token")
+#     challenge = params.get("hub.challenge")
 
-    if mode == "subscribe" and token == config.META_VERIFY_TOKEN:
-        return Response(content=challenge, status_code=200)
-    return Response(status_code=403)
+#     if mode == "subscribe" and token == config.META_VERIFY_TOKEN:
+#         return Response(content=challenge, status_code=200)
+#     return Response(status_code=403)
 
 
 async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
@@ -93,13 +84,10 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
     for entry in body.get("entry", []):
         for change in entry.get("changes", []):
             value = change.get("value", {})
-
             if "message" in value:
                 message_id = value["message"].get("mid")
                 if message_id and message_id in PROCESSED_MESSAGES:
-                    print(f"Skipping duplicate message: {message_id}")
                     continue
-
                 if message_id:
                     PROCESSED_MESSAGES.add(message_id)
 
