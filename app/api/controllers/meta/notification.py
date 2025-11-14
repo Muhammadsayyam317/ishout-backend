@@ -7,10 +7,13 @@ from fastapi import (
     Response,
     WebSocket,
     WebSocketDisconnect,
+    HTTPException,
+    status,
 )
 from fastapi.responses import JSONResponse
 from app.services.websocket_manager import ws_manager
 from app.config import config
+from app.core.auth import verify_token
 
 router = APIRouter()
 
@@ -52,7 +55,44 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
 
 
 async def websocket_notifications(websocket: WebSocket):
-    await ws_manager.connect(websocket, user_id=None, role="admin")
+    # Get token from query parameters
+    token = websocket.query_params.get("token")
+
+    if not token:
+        await websocket.accept()
+        await websocket.close(
+            code=status.WS_1008_POLICY_VIOLATION, reason="Missing token"
+        )
+        return
+
+    # Verify token before accepting connection
+    user_id = None
+    role = None
+    try:
+        payload = verify_token(token)
+        user_id = payload.get("user_id")
+        role = payload.get("role")
+
+        # Only allow admin users
+        if role != "admin":
+            await websocket.accept()
+            await websocket.close(
+                code=status.WS_1008_POLICY_VIOLATION, reason="Admin access required"
+            )
+            return
+    except HTTPException as e:
+        await websocket.accept()
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason=e.detail)
+        return
+    except Exception:
+        await websocket.accept()
+        await websocket.close(
+            code=status.WS_1008_POLICY_VIOLATION, reason="Invalid token"
+        )
+        return
+
+    # Token is valid, connect (this will accept the connection)
+    await ws_manager.connect(websocket, user_id=user_id, role=role)
     try:
         while True:
             data = await websocket.receive_json()
@@ -63,9 +103,9 @@ async def websocket_notifications(websocket: WebSocket):
             else:
                 await websocket.send_json({"type": "noop"})
     except WebSocketDisconnect:
-        await ws_manager.disconnect(websocket, user_id=None, role="admin")
+        await ws_manager.disconnect(websocket, user_id=user_id, role=role)
     except Exception:
-        await ws_manager.disconnect(websocket, user_id=None, role="admin")
+        await ws_manager.disconnect(websocket, user_id=user_id, role=role)
         try:
             await websocket.close(code=1011)
         except Exception:
