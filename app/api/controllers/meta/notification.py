@@ -38,7 +38,7 @@ async def _get_ig_username(
             try:
                 conversations_url = f"https://graph.facebook.com/{config.IG_GRAPH_API_VERSION}/{page_id}/conversations"
                 conv_params = {
-                    "fields": "participants{id,name,username}",
+                    "fields": "participants{id,name,username,profile_pic}",
                     "access_token": config.PAGE_ACCESS_TOKEN,
                     "limit": 25,
                 }
@@ -63,13 +63,18 @@ async def _get_ig_username(
                                 username = participant.get(
                                     "username"
                                 ) or participant.get("name")
+
                                 if username:
                                     PROFILE_CACHE[psid] = {
                                         "username": participant.get("username"),
+                                        "profile_pic": participant.get("profile_pic"),
                                         "name": participant.get("name"),
                                         "ts": now,
                                     }
-                                    return username
+                                    return {
+                                        "username": username,
+                                        "profile_pic": participant.get("profile_pic"),
+                                    }
 
                     paging = conv_data.get("paging", {}).get("next")
                     if paging:
@@ -93,13 +98,18 @@ async def _get_ig_username(
                                         if username:
                                             PROFILE_CACHE[psid] = {
                                                 "username": participant.get("username"),
+                                                "profile_pic": participant.get(
+                                                    "profile_pic"
+                                                ),
                                                 "name": participant.get("name"),
                                                 "ts": now,
                                             }
-                                            print(
-                                                f"Fetched username via Conversations API (page 2): {username}"
-                                            )
-                                            return username
+                                            return {
+                                                "username": username,
+                                                "profile_pic": participant.get(
+                                                    "profile_pic"
+                                                ),
+                                            }
                 elif conv_resp.status_code == 403:
                     error_data = (
                         conv_resp.json()
@@ -108,20 +118,17 @@ async def _get_ig_username(
                         )
                         else {}
                     )
-                    print(f"Conversations API access denied (403) for page {page_id}")
-                    print(
-                        f"   Error: {error_data.get('error', {}).get('message', 'Unknown error')}"
-                    )
-                else:
-                    print(
-                        f"Conversations API returned status {conv_resp.status_code} for page {page_id}"
+                    HTTPException(
+                        f"Conversations API access denied (403) for page {page_id}"
                     )
             except Exception as e:
-                print(f"Error: Conversations API failed for PSID {psid}: {str(e)}")
+                HTTPException(
+                    f"Error: Conversations API failed for PSID {psid}: {str(e)}"
+                )
 
         graph_url = f"https://graph.facebook.com/{config.IG_GRAPH_API_VERSION}/{psid}"
         params = {
-            "fields": "name,username,profile_pic,follower_count,is_user_follow_business,is_business_follow_user",
+            "fields": "name,username,profile_pic_url,follower_count",
             "access_token": config.PAGE_ACCESS_TOKEN,
         }
 
@@ -175,10 +182,7 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
     try:
         body = await request.json()
     except json.JSONDecodeError:
-        print(" Invalid JSON received")
-        return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
-
-    print("📩 Incoming Webhook Body:", json.dumps(body, indent=2))
+        HTTPException(" Invalid JSON received")
     current_time = time.time()
     if hasattr(handle_webhook, "_last_cleanup"):
         if current_time - handle_webhook._last_cleanup > 3600:
@@ -194,73 +198,28 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
             if "message" in value:
                 message_id = value["message"].get("mid")
                 if message_id and message_id in PROCESSED_MESSAGES:
-                    print(f"Skipping duplicate message: {message_id}")
-                    continue
+                    HTTPException(f"Skipping duplicate message: {message_id}")
 
                 if message_id:
                     PROCESSED_MESSAGES.add(message_id)
 
                 username = value.get("from", {}).get("username")
                 psid = value.get("from", {}).get("id")
+                to_page_id = value.get("to", {}).get("id")
                 text = value["message"].get("text", "")
-
-                print("=========== IG MESSAGE RECEIVED (Direct) ===========")
-                print(f" Username: {username}")
-                print(f" PSID: {psid}")
-                print(f" Message: {text}")
-                print("===========================================")
-
+                profile_pic = value.get("from", {}).get("profile_pic")
                 background_tasks.add_task(
                     ws_manager.broadcast,
                     {
                         "type": "ig_reply",
                         "from_psid": psid,
-                        "to_page_id": value.get("to", {}).get("id"),
+                        "to_page_id": to_page_id,
                         "from_username": username,
+                        "from_profile_pic": profile_pic,
                         "text": text,
                         "timestamp": value.get("timestamp", time.time()),
                     },
                 )
-
-        # Handle Facebook Messenger/Instagram format: entry[].messaging[]
-        # for messaging_event in entry.get("messaging", []):
-        #     message = messaging_event.get("message")
-        #     if message and message.get("text"):
-        #         message_id = message.get("mid")
-        #         if message_id and message_id in PROCESSED_MESSAGES:
-        #             print(f"Skipping duplicate message: {message_id}")
-        #             continue
-
-        #         if message_id:
-        #             PROCESSED_MESSAGES.add(message_id)
-
-        #         sender = messaging_event.get("sender", {})
-        #         recipient = messaging_event.get("recipient", {})
-        #         psid = sender.get("id")
-        #         page_id = recipient.get("id")
-        #         text = message.get("text", "")
-        #         timestamp = messaging_event.get("timestamp", time.time())
-        #         username = await _get_ig_username(psid, page_id)
-        #         display_name = username or f"User_{psid[:8]}"
-
-        #         print("=========== IG MESSAGE RECEIVED (Messaging) ===========")
-        #         print(f" Username: {display_name}")
-        #         print(f" PSID: {psid}")
-        #         print(f" Page ID: {page_id}")
-        #         print(f" Message: {text}")
-        #         print("===========================================")
-
-        #         background_tasks.add_task(
-        #             ws_manager.broadcast,
-        #             {
-        #                 "type": "ig_reply",
-        #                 "from_psid": psid,
-        #                 "to_page_id": page_id,
-        #                 "from_username": display_name,
-        #                 "text": text,
-        #                 "timestamp": timestamp,
-        #             },
-        #         )
 
     return JSONResponse({"status": "received"})
 
