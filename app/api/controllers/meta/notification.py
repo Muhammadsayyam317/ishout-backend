@@ -39,6 +39,7 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
     print("📩 Incoming Webhook Body:", json.dumps(body, indent=2))
 
     for entry in body.get("entry", []):
+        # Handle Instagram Direct format: entry[].changes[].value
         for change in entry.get("changes", []):
             value = change.get("value", {})
 
@@ -47,7 +48,7 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                 psid = value.get("from", {}).get("id")
                 text = value["message"].get("text", "")
 
-                print("=========== IG MESSAGE RECEIVED ===========")
+                print("=========== IG MESSAGE RECEIVED (Direct) ===========")
                 print(f"👤 Username: {username}")
                 print(f"🆔 PSID: {psid}")
                 print(f"💬 Message: {text}")
@@ -62,6 +63,35 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                         "from_username": username,
                         "text": text,
                         "timestamp": value.get("timestamp", time.time()),
+                    },
+                )
+
+        # Handle Facebook Messenger/Instagram format: entry[].messaging[]
+        for messaging_event in entry.get("messaging", []):
+            message = messaging_event.get("message")
+            if message and message.get("text"):
+                sender = messaging_event.get("sender", {})
+                recipient = messaging_event.get("recipient", {})
+                psid = sender.get("id")
+                page_id = recipient.get("id")
+                text = message.get("text", "")
+                timestamp = messaging_event.get("timestamp", time.time())
+
+                print("=========== IG MESSAGE RECEIVED (Messaging) ===========")
+                print(f"🆔 PSID: {psid}")
+                print(f"📄 Page ID: {page_id}")
+                print(f"💬 Message: {text}")
+                print("===========================================")
+
+                background_tasks.add_task(
+                    ws_manager.broadcast,
+                    {
+                        "type": "ig_reply",
+                        "from_psid": psid,
+                        "to_page_id": page_id,
+                        "from_username": None,  # Username not available in messaging format
+                        "text": text,
+                        "timestamp": timestamp,
                     },
                 )
 

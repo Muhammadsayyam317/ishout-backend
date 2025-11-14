@@ -24,6 +24,7 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
         return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
 
     for entry in body.get("entry", []):
+        # Handle Instagram Direct format: entry[].changes[].value
         for change in entry.get("changes", []):
             value = change.get("value", {})
             if "message" in value:
@@ -36,6 +37,24 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                         "from_username": value.get("from", {}).get("username"),
                         "text": value["message"].get("text", ""),
                         "timestamp": value.get("timestamp", time.time()),
+                    },
+                )
+
+        # Handle Facebook Messenger/Instagram format: entry[].messaging[]
+        for messaging_event in entry.get("messaging", []):
+            message = messaging_event.get("message")
+            if message and message.get("text"):
+                sender = messaging_event.get("sender", {})
+                recipient = messaging_event.get("recipient", {})
+                background_tasks.add_task(
+                    ws_manager.broadcast,
+                    {
+                        "type": "ig_reply",
+                        "from_psid": sender.get("id"),
+                        "to_page_id": recipient.get("id"),
+                        "from_username": None,  # Username not available in messaging format
+                        "text": message.get("text", ""),
+                        "timestamp": messaging_event.get("timestamp", time.time()),
                     },
                 )
 
