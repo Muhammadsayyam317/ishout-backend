@@ -33,20 +33,34 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
     try:
         body = await request.json()
     except json.JSONDecodeError:
+        print(" Invalid JSON received")
         return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
+
+    print("📩 Incoming Webhook Body:", json.dumps(body, indent=2))
 
     for entry in body.get("entry", []):
         for change in entry.get("changes", []):
             value = change.get("value", {})
+
             if "message" in value:
+                username = value.get("from", {}).get("username")
+                psid = value.get("from", {}).get("id")
+                text = value["message"].get("text", "")
+
+                print("=========== IG MESSAGE RECEIVED ===========")
+                print(f"👤 Username: {username}")
+                print(f"🆔 PSID: {psid}")
+                print(f"💬 Message: {text}")
+                print("===========================================")
+
                 background_tasks.add_task(
                     ws_manager.broadcast,
                     {
                         "type": "ig_reply",
-                        "from_psid": value.get("from", {}).get("id"),
+                        "from_psid": psid,
                         "to_page_id": value.get("to", {}).get("id"),
-                        "from_username": value.get("from", {}).get("username"),
-                        "text": value["message"].get("text", ""),
+                        "from_username": username,
+                        "text": text,
                         "timestamp": value.get("timestamp", time.time()),
                     },
                 )
