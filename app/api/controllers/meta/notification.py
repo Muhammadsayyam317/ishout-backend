@@ -16,6 +16,7 @@ from app.services.websocket_manager import ws_manager
 from app.config import config
 from app.core.auth import verify_token
 
+
 PROFILE_CACHE: Dict[str, Dict] = {}
 PROFILE_TTL_SEC = 3600
 PROCESSED_MESSAGES: set = set()
@@ -34,6 +35,7 @@ async def _get_ig_username(
         return cached.get("username") or cached.get("name")
 
     async with httpx.AsyncClient(timeout=10.0) as client:
+
         if page_id:
             try:
                 conversations_url = f"https://graph.facebook.com/{config.IG_GRAPH_API_VERSION}/{page_id}/conversations"
@@ -47,9 +49,9 @@ async def _get_ig_username(
                 if conv_resp.status_code == 200:
                     conv_data = conv_resp.json()
                     conversations = conv_data.get("data", [])
-
                     for conv in conversations:
                         participants = conv.get("participants", {})
+
                         if isinstance(participants, dict):
                             participants_list = participants.get("data", [])
                         elif isinstance(participants, list):
@@ -69,6 +71,9 @@ async def _get_ig_username(
                                         "name": participant.get("name"),
                                         "ts": now,
                                     }
+                                    print(
+                                        f"👤 Fetched username via Conversations API: {username}"
+                                    )
                                     return username
 
                     paging = conv_data.get("paging", {}).get("next")
@@ -97,7 +102,7 @@ async def _get_ig_username(
                                                 "ts": now,
                                             }
                                             print(
-                                                f"Fetched username via Conversations API (page 2): {username}"
+                                                f"👤 Fetched username via Conversations API (page 2): {username}"
                                             )
                                             return username
                 elif conv_resp.status_code == 403:
@@ -108,16 +113,9 @@ async def _get_ig_username(
                         )
                         else {}
                     )
-                    print(f"Conversations API access denied (403) for page {page_id}")
-                    print(
-                        f"   Error: {error_data.get('error', {}).get('message', 'Unknown error')}"
-                    )
-                else:
-                    print(
-                        f"Conversations API returned status {conv_resp.status_code} for page {page_id}"
-                    )
+
             except Exception as e:
-                print(f"Error: Conversations API failed for PSID {psid}: {str(e)}")
+                print(f" Conversations API failed for PSID {psid}: {str(e)}")
 
         graph_url = f"https://graph.facebook.com/{config.IG_GRAPH_API_VERSION}/{psid}"
         params = {
@@ -150,17 +148,14 @@ async def _get_ig_username(
                     )
                     else {}
                 )
-                return JSONResponse(
-                    {
-                        "error": f"Failed to fetch username for PSID {psid}: {resp.status_code}"
-                    },
-                    status_code=400,
+                print(f" Failed to fetch username for PSID {psid}: {resp.status_code}")
+                print(
+                    f"   Error: {error_data.get('error', {}).get('message', 'Unknown error')}"
                 )
         except Exception as e:
-            return JSONResponse(
-                {"error": f"Error fetching username for PSID {psid}: {str(e)}"},
-                status_code=500,
-            )
+            print(f" Error fetching username for PSID {psid}: {str(e)}")
+
+    return None
 
 
 async def verify_webhook(request: Request):
@@ -203,18 +198,65 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                 if message_id:
                     PROCESSED_MESSAGES.add(message_id)
 
-                username = value.get("from", {}).get("username")
                 psid = value.get("from", {}).get("id")
                 text = value["message"].get("text", "")
+                username = await _get_ig_username(psid, value.get("to", {}).get("id"))
+                display_name = username or f"User_{psid[:6]}"
+                print("=========== IG MESSAGE RECEIVED (Direct) ===========")
+                print(f" Username: {display_name}")
+                print(f" PSID: {psid}")
+                print(f" Message: {text}")
+                print("===========================================")
+
                 background_tasks.add_task(
                     ws_manager.broadcast,
                     {
                         "type": "ig_reply",
                         "from_psid": psid,
                         "to_page_id": value.get("to", {}).get("id"),
-                        "from_username": username,
+                        "from_username": display_name,
                         "text": text,
                         "timestamp": value.get("timestamp", time.time()),
+                    },
+                )
+
+        # Handle Facebook Messenger/Instagram format: entry[].messaging[]
+        for messaging_event in entry.get("messaging", []):
+            message = messaging_event.get("message")
+            if message and message.get("text"):
+                message_id = message.get("mid")
+                if message_id and message_id in PROCESSED_MESSAGES:
+                    print(f"Skipping duplicate message: {message_id}")
+                    continue
+
+                if message_id:
+                    PROCESSED_MESSAGES.add(message_id)
+
+                sender = messaging_event.get("sender", {})
+                recipient = messaging_event.get("recipient", {})
+                psid = sender.get("id")
+                page_id = recipient.get("id")
+                text = message.get("text", "")
+                timestamp = messaging_event.get("timestamp", time.time())
+                username = await _get_ig_username(psid, page_id)
+                display_name = username or f"User_{psid[:8]}"
+
+                print("=========== IG MESSAGE RECEIVED (Messaging) ===========")
+                print(f" Username: {display_name}")
+                print(f" PSID: {psid}")
+                print(f" Page ID: {page_id}")
+                print(f" Message: {text}")
+                print("===========================================")
+
+                background_tasks.add_task(
+                    ws_manager.broadcast,
+                    {
+                        "type": "ig_reply",
+                        "from_psid": psid,
+                        "to_page_id": page_id,
+                        "from_username": display_name,
+                        "text": text,
+                        "timestamp": timestamp,
                     },
                 )
 
