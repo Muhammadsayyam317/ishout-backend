@@ -1,10 +1,11 @@
 import json
 import time
-from typing import Dict
+from typing import Optional, Dict
 import httpx
 from fastapi import (
     BackgroundTasks,
     Request,
+    Response,
     WebSocket,
     WebSocketDisconnect,
     HTTPException,
@@ -21,48 +22,154 @@ PROCESSED_MESSAGES: set = set()
 MESSAGE_CACHE_TTL_SEC = 3600
 
 
-async def _get_ig_user(psid: str, page_id: str):
-    if not psid or not page_id:
+async def _get_ig_username(
+    psid: Optional[str], page_id: Optional[str] = None
+) -> Optional[str]:
+    if not psid or not config.PAGE_ACCESS_TOKEN:
         return None
 
-    url = f"https://graph.facebook.com/{config.IG_GRAPH_API_VERSION}/{page_id}/conversations"
+    now = time.time()
+    cached = PROFILE_CACHE.get(psid)
+    if cached and now - cached.get("ts", 0) < PROFILE_TTL_SEC:
+        return cached.get("username") or cached.get("name")
 
-    params = {
-        "fields": "participants{id,username,name}",
-        "access_token": config.PAGE_ACCESS_TOKEN,
-        "limit": 25,
-    }
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        if page_id:
+            try:
+                conversations_url = f"https://graph.facebook.com/{config.IG_GRAPH_API_VERSION}/{page_id}/conversations"
+                conv_params = {
+                    "fields": "participants{id,name,username}",
+                    "access_token": config.PAGE_ACCESS_TOKEN,
+                    "limit": 25,
+                }
 
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            resp = await client.get(url, params=params)
+                conv_resp = await client.get(conversations_url, params=conv_params)
+                if conv_resp.status_code == 200:
+                    conv_data = conv_resp.json()
+                    conversations = conv_data.get("data", [])
 
-            if resp.status_code != 200:
-                return None
-            data = resp.json()
+                    for conv in conversations:
+                        participants = conv.get("participants", {})
+                        if isinstance(participants, dict):
+                            participants_list = participants.get("data", [])
+                        elif isinstance(participants, list):
+                            participants_list = participants
+                        else:
+                            continue
 
-            for conv in data.get("data", []):
-                participants = conv.get("participants", {}).get("data", [])
+                        for participant in participants_list:
+                            participant_id = participant.get("id")
+                            if participant_id == psid:
+                                username = participant.get(
+                                    "username"
+                                ) or participant.get("name")
+                                if username:
+                                    PROFILE_CACHE[psid] = {
+                                        "username": participant.get("username"),
+                                        "name": participant.get("name"),
+                                        "ts": now,
+                                    }
+                                    return username
 
-                for p in participants:
-                    if p.get("id") == psid:
-                        username = p.get("username") or p.get("name")
-                        return username
+                    paging = conv_data.get("paging", {}).get("next")
+                    if paging:
+                        next_resp = await client.get(paging)
+                        if next_resp.status_code == 200:
+                            next_data = next_resp.json()
+                            for conv in next_data.get("data", []):
+                                participants = conv.get("participants", {})
+                                if isinstance(participants, dict):
+                                    participants_list = participants.get("data", [])
+                                elif isinstance(participants, list):
+                                    participants_list = participants
+                                else:
+                                    continue
 
-    except Exception as e:
-        print(f"Error fetching username: {str(e)}")
+                                for participant in participants_list:
+                                    if participant.get("id") == psid:
+                                        username = participant.get(
+                                            "username"
+                                        ) or participant.get("name")
+                                        if username:
+                                            PROFILE_CACHE[psid] = {
+                                                "username": participant.get("username"),
+                                                "name": participant.get("name"),
+                                                "ts": now,
+                                            }
+                                            print(
+                                                f"Fetched username via Conversations API (page 2): {username}"
+                                            )
+                                            return username
+                elif conv_resp.status_code == 403:
+                    error_data = (
+                        conv_resp.json()
+                        if conv_resp.headers.get("content-type", "").startswith(
+                            "application/json"
+                        )
+                        else {}
+                    )
+                    print(f"Conversations API access denied (403) for page {page_id}")
+                    print(
+                        f"   Error: {error_data.get('error', {}).get('message', 'Unknown error')}"
+                    )
+                else:
+                    print(
+                        f"Conversations API returned status {conv_resp.status_code} for page {page_id}"
+                    )
+            except Exception as e:
+                print(f"Error: Conversations API failed for PSID {psid}: {str(e)}")
+
+        # Method 2: Try direct PSID query (requires Advanced Access)
+        graph_url = f"https://graph.facebook.com/{config.IG_GRAPH_API_VERSION}/{psid}"
+        params = {
+            "fields": "name,username,profile_pic,follower_count,is_user_follow_business,is_business_follow_user",
+            "access_token": config.PAGE_ACCESS_TOKEN,
+        }
+
+        try:
+            resp = await client.get(graph_url, params=params)
+            if resp.status_code == 200:
+                data = resp.json()
+                username = data.get("username") or data.get("name")
+                if username:
+                    PROFILE_CACHE[psid] = {
+                        "username": data.get("username"),
+                        "name": data.get("name"),
+                        "profile_pic": data.get("profile_pic"),
+                        "follower_count": data.get("follower_count"),
+                        "ts": now,
+                    }
+                    print(f"Successfully fetched username for PSID {psid}: {username}")
+                    return username
+            elif resp.status_code == 403:
+                pass
+            else:
+                error_data = (
+                    resp.json()
+                    if resp.headers.get("content-type", "").startswith(
+                        "application/json"
+                    )
+                    else {}
+                )
+                print(f" Failed to fetch username for PSID {psid}: {resp.status_code}")
+                print(
+                    f"Error: {error_data.get('error', {}).get('message', 'Unknown error')}"
+                )
+        except Exception as e:
+            print(f"Error fetching username for PSID {psid}: {str(e)}")
+
     return None
 
 
-# async def verify_webhook(request: Request):
-#     params = request.query_params
-#     mode = params.get("hub.mode")
-#     token = params.get("hub.verify_token")
-#     challenge = params.get("hub.challenge")
+async def verify_webhook(request: Request):
+    params = request.query_params
+    mode = params.get("hub.mode")
+    token = params.get("hub.verify_token")
+    challenge = params.get("hub.challenge")
 
-#     if mode == "subscribe" and token == config.META_VERIFY_TOKEN:
-#         return Response(content=challenge, status_code=200)
-#     return Response(status_code=403)
+    if mode == "subscribe" and token == config.META_VERIFY_TOKEN:
+        return Response(content=challenge, status_code=200)
+    return Response(status_code=403)
 
 
 async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
@@ -72,7 +179,7 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
         print(" Invalid JSON received")
         return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
 
-    print("Incoming Webhook Body:", json.dumps(body, indent=2))
+    print("📩 Incoming Webhook Body:", json.dumps(body, indent=2))
     current_time = time.time()
     if hasattr(handle_webhook, "_last_cleanup"):
         if current_time - handle_webhook._last_cleanup > 3600:
@@ -84,16 +191,17 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
     for entry in body.get("entry", []):
         for change in entry.get("changes", []):
             value = change.get("value", {})
+
             if "message" in value:
                 message_id = value["message"].get("mid")
                 if message_id and message_id in PROCESSED_MESSAGES:
+                    print(f"Skipping duplicate message: {message_id}")
                     continue
+
                 if message_id:
                     PROCESSED_MESSAGES.add(message_id)
 
-                username = await _get_ig_user(
-                    value.get("from", {}).get("id"), value.get("to", {}).get("id")
-                )
+                username = value.get("from", {}).get("username")
                 psid = value.get("from", {}).get("id")
                 text = value["message"].get("text", "")
 
@@ -109,12 +217,52 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                         "type": "ig_reply",
                         "from_psid": psid,
                         "to_page_id": value.get("to", {}).get("id"),
-                        "from_username": username["username"],
-                        "from_profile_pic_url": username["profile_pic_url"],
+                        "from_username": username,
                         "text": text,
                         "timestamp": value.get("timestamp", time.time()),
                     },
                 )
+
+        # Handle Facebook Messenger/Instagram format: entry[].messaging[]
+        for messaging_event in entry.get("messaging", []):
+            message = messaging_event.get("message")
+            if message and message.get("text"):
+                message_id = message.get("mid")
+                if message_id and message_id in PROCESSED_MESSAGES:
+                    print(f"Skipping duplicate message: {message_id}")
+                    continue
+
+                if message_id:
+                    PROCESSED_MESSAGES.add(message_id)
+
+                sender = messaging_event.get("sender", {})
+                recipient = messaging_event.get("recipient", {})
+                psid = sender.get("id")
+                page_id = recipient.get("id")
+                text = message.get("text", "")
+                timestamp = messaging_event.get("timestamp", time.time())
+                username = await _get_ig_username(psid, page_id)
+                display_name = username or f"User_{psid[:8]}"
+
+                print("=========== IG MESSAGE RECEIVED (Messaging) ===========")
+                print(f" Username: {display_name}")
+                print(f" PSID: {psid}")
+                print(f" Page ID: {page_id}")
+                print(f" Message: {text}")
+                print("===========================================")
+
+                background_tasks.add_task(
+                    ws_manager.broadcast,
+                    {
+                        "type": "ig_reply",
+                        "from_psid": psid,
+                        "to_page_id": page_id,
+                        "from_username": display_name,
+                        "text": text,
+                        "timestamp": timestamp,
+                    },
+                )
+
     return JSONResponse({"status": "received"})
 
 
