@@ -247,66 +247,61 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                     )
 
         # Handle Facebook Messenger/Instagram format: entry[].messaging[]
-        for messaging_event in entry.get("messaging", []):
-            message = messaging_event.get("message")
-            # Process if message has text or attachments
-            if message and (message.get("text") or message.get("attachments")):
-                message_id = message.get("mid")
-                if message_id and message_id in PROCESSED_MESSAGES:
-                    print(f"Skipping duplicate message: {message_id}")
-                    continue
+        # for messaging_event in entry.get("messaging", []):
+        #     message = messaging_event.get("message")
+        #     # Process if message has text or attachments
+        #     if message and (message.get("text") or message.get("attachments")):
+        #         message_id = message.get("mid")
+        #         if message_id and message_id in PROCESSED_MESSAGES:
+        #             print(f"Skipping duplicate message: {message_id}")
+        #             continue
 
-                if message_id:
-                    PROCESSED_MESSAGES.add(message_id)
+        #         if message_id:
+        #             PROCESSED_MESSAGES.add(message_id)
 
-                sender = messaging_event.get("sender", {})
-                recipient = messaging_event.get("recipient", {})
-                psid = sender.get("id")
-                page_id = recipient.get("id")
-                text = message.get("text", "")
-                attachments = message.get("attachments", [])
-                timestamp = messaging_event.get("timestamp", time.time())
+        #         sender = messaging_event.get("sender", {})
+        #         recipient = messaging_event.get("recipient", {})
+        #         psid = sender.get("id")
+        #         page_id = recipient.get("id")
+        #         text = message.get("text", "")
+        #         attachments = message.get("attachments", [])
+        #         timestamp = messaging_event.get("timestamp", time.time())
 
-                # Process attachments
-                attachment_list = []
-                for attachment in attachments:
-                    attachment_list.append(
-                        {
-                            "type": attachment.get("type"),
-                            "url": attachment.get("payload", {}).get("url"),
-                        }
-                    )
+        #         # Process attachments
+        #         attachment_list = []
+        #         for attachment in attachments:
+        #             attachment_list.append(
+        #                 {
+        #                     "type": attachment.get("type"),
+        #                     "url": attachment.get("payload", {}).get("url"),
+        #                 }
+        #             )
 
-                username = await _get_ig_username(psid, page_id)
-                display_name = username or f"User_{psid[:8]}"
+        #         username = await _get_ig_username(psid, page_id)
+        #         display_name = username or f"User_{psid[:8]}"
 
-                print("=========== IG MESSAGE RECEIVED (Messaging) ===========")
-                print(f" Username: {display_name}")
-                print(f" PSID: {psid}")
-                print(f" Page ID: {page_id}")
-                print(f" Message: {text}")
-                if attachments:
-                    print(
-                        f" Attachments: {len(attachments)} ({', '.join([a.get('type', 'unknown') for a in attachments])})"
-                    )
-                print("===========================================")
+        #         if attachments:
+        #             print(
+        #                 f" Attachments: {len(attachments)} ({', '.join([a.get('type', 'unknown') for a in attachments])})"
+        #             )
+        #         print("===========================================")
 
-                broadcast_data = {
-                    "type": "ig_reply",
-                    "from_psid": psid,
-                    "to_page_id": page_id,
-                    "from_username": display_name,
-                    "text": text,
-                    "timestamp": timestamp,
-                }
+        #         broadcast_data = {
+        #             "type": "ig_reply",
+        #             "from_psid": psid,
+        #             "to_page_id": page_id,
+        #             "from_username": display_name,
+        #             "text": text,
+        #             "timestamp": timestamp,
+        #         }
 
-                if attachments:
-                    broadcast_data["attachments"] = attachment_list
+        #         if attachments:
+        #             broadcast_data["attachments"] = attachment_list
 
-                background_tasks.add_task(
-                    ws_manager.broadcast,
-                    broadcast_data,
-                )
+        #         background_tasks.add_task(
+        #             ws_manager.broadcast,
+        #             broadcast_data,
+        #         )
 
     return JSONResponse({"status": "received"})
 
