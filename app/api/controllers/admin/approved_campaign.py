@@ -14,13 +14,11 @@ async def approved_campaign(
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
 
-        status_value = CampaignStatus.COMPLETED
+        status_value = CampaignStatus.APPROVED
         query = {"status": status_value}
 
-        # Only fetch fields we need to compute counts and metadata
         projection = {
             "name": 1,
-            "description": 1,
             "platform": 1,
             "category": 1,
             "followers": 1,
