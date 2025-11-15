@@ -8,6 +8,7 @@ class CampaignStatus(str, Enum):
     PENDING = "pending"
     PROCESSING = "processing"
     APPROVED = "approved"
+    COMPLETED = "completed"
     REJECTED = "rejected"
 
 
