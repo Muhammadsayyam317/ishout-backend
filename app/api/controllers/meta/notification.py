@@ -199,31 +199,58 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                     PROCESSED_MESSAGES.add(message_id)
 
                 psid = value.get("from", {}).get("id")
-                text = value["message"].get("text", "")
-                username = await _get_ig_username(psid, value.get("to", {}).get("id"))
-                display_name = username or f"User_{psid[:6]}"
-                print("=========== IG MESSAGE RECEIVED (Direct) ===========")
-                print(f" Username: {display_name}")
-                print(f" PSID: {psid}")
-                print(f" Message: {text}")
-                print("===========================================")
+                message_data = value["message"]
+                text = message_data.get("text", "")
+                attachments = message_data.get("attachments", [])
 
-                background_tasks.add_task(
-                    ws_manager.broadcast,
-                    {
+                # Process attachments
+                attachment_list = []
+                for attachment in attachments:
+                    attachment_list.append(
+                        {
+                            "type": attachment.get("type"),
+                            "url": attachment.get("payload", {}).get("url"),
+                        }
+                    )
+
+                # Only process if there's text or attachments
+                if text or attachments:
+                    username = await _get_ig_username(
+                        psid, value.get("to", {}).get("id")
+                    )
+                    display_name = username or f"User_{psid[:6]}"
+                    print("=========== IG MESSAGE RECEIVED (Direct) ===========")
+                    print(f" Username: {display_name}")
+                    print(f" PSID: {psid}")
+                    print(f" Message: {text}")
+                    if attachments:
+                        print(
+                            f" Attachments: {len(attachments)} ({', '.join([a.get('type', 'unknown') for a in attachments])})"
+                        )
+                    print("===========================================")
+
+                    broadcast_data = {
                         "type": "ig_reply",
                         "from_psid": psid,
                         "to_page_id": value.get("to", {}).get("id"),
                         "from_username": display_name,
                         "text": text,
                         "timestamp": value.get("timestamp", time.time()),
-                    },
-                )
+                    }
+
+                    if attachments:
+                        broadcast_data["attachments"] = attachment_list
+
+                    background_tasks.add_task(
+                        ws_manager.broadcast,
+                        broadcast_data,
+                    )
 
         # Handle Facebook Messenger/Instagram format: entry[].messaging[]
         for messaging_event in entry.get("messaging", []):
             message = messaging_event.get("message")
-            if message and message.get("text"):
+            # Process if message has text or attachments
+            if message and (message.get("text") or message.get("attachments")):
                 message_id = message.get("mid")
                 if message_id and message_id in PROCESSED_MESSAGES:
                     print(f"Skipping duplicate message: {message_id}")
@@ -237,7 +264,19 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                 psid = sender.get("id")
                 page_id = recipient.get("id")
                 text = message.get("text", "")
+                attachments = message.get("attachments", [])
                 timestamp = messaging_event.get("timestamp", time.time())
+
+                # Process attachments
+                attachment_list = []
+                for attachment in attachments:
+                    attachment_list.append(
+                        {
+                            "type": attachment.get("type"),
+                            "url": attachment.get("payload", {}).get("url"),
+                        }
+                    )
+
                 username = await _get_ig_username(psid, page_id)
                 display_name = username or f"User_{psid[:8]}"
 
@@ -246,18 +285,27 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                 print(f" PSID: {psid}")
                 print(f" Page ID: {page_id}")
                 print(f" Message: {text}")
+                if attachments:
+                    print(
+                        f" Attachments: {len(attachments)} ({', '.join([a.get('type', 'unknown') for a in attachments])})"
+                    )
                 print("===========================================")
+
+                broadcast_data = {
+                    "type": "ig_reply",
+                    "from_psid": psid,
+                    "to_page_id": page_id,
+                    "from_username": display_name,
+                    "text": text,
+                    "timestamp": timestamp,
+                }
+
+                if attachments:
+                    broadcast_data["attachments"] = attachment_list
 
                 background_tasks.add_task(
                     ws_manager.broadcast,
-                    {
-                        "type": "ig_reply",
-                        "from_psid": psid,
-                        "to_page_id": page_id,
-                        "from_username": display_name,
-                        "text": text,
-                        "timestamp": timestamp,
-                    },
+                    broadcast_data,
                 )
 
     return JSONResponse({"status": "received"})
