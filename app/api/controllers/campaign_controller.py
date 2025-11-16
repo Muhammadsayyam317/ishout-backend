@@ -3,7 +3,6 @@ from datetime import datetime, timezone
 from bson import ObjectId
 from fastapi import HTTPException
 from app.models.campaign_influencers_model import (
-    CampaignInfluencerStatus,
     CampaignInfluencersRequest,
     CampaignInfluencersResponse,
 )
@@ -140,11 +139,12 @@ async def get_all_campaigns(
         query = {}
         if status:
             try:
-                # Validate against enum values
                 valid_status = {
                     CampaignStatus.PENDING,
                     CampaignStatus.PROCESSING,
+                    CampaignStatus.APPROVED,
                     CampaignStatus.COMPLETED,
+                    CampaignStatus.REJECTED,
                 }
                 if status not in valid_status and status not in {
                     s.value for s in valid_status
@@ -164,13 +164,8 @@ async def get_all_campaigns(
                     detail=f"Invalid status: {str(e)}",
                 ) from e
 
-        # Calculate pagination
         skip = (page - 1) * page_size
-
-        # Get total count for pagination metadata
         total_count = await campaigns_collection.count_documents(query)
-
-        # Get paginated campaigns (await to_list for Motor)
         campaigns = await (
             campaigns_collection.find(query)
             .sort("created_at", -1)
@@ -179,12 +174,10 @@ async def get_all_campaigns(
             .to_list(length=None)
         )
 
-        # Convert ObjectId to string and populate user details
         formatted_campaigns = []
         for campaign in campaigns:
             campaign["_id"] = str(campaign["_id"])
 
-            # Populate user details
             user_id = campaign.get("user_id")
             if user_id:
                 user_details = await _populate_user_details(user_id)
