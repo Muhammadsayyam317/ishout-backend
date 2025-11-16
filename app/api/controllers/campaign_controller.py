@@ -554,6 +554,12 @@ async def approve_single_influencer(
         data = {
             "campaign_id": ObjectId(request_data.campaign_id),
             "influencer_id": ObjectId(request_data.influencer_id),
+            "username": request_data.username,
+            "picture": request_data.picture,
+            "engagementRate": request_data.engagementRate,
+            "bio": request_data.bio,
+            "followers": request_data.followers,
+            "country": request_data.country,
             "platform": request_data.platform,
             "status": request_data.status.value,
         }
@@ -564,8 +570,15 @@ async def approve_single_influencer(
                     "campaign_id": ObjectId(request_data.campaign_id),
                     "influencer_id": ObjectId(request_data.influencer_id),
                     "platform": request_data.platform,
+                    "username": request_data.username,
+                    "picture": request_data.picture,
+                    "engagementRate": request_data.engagementRate,
+                    "bio": request_data.bio,
+                    "followers": request_data.followers,
+                    "country": request_data.country,
+                    "status": request_data.status.value,
                 },
-                {"$set": {"status": request_data.status.value}},
+                {"$set": data},
             )
         else:
             await collection.insert_one(data)

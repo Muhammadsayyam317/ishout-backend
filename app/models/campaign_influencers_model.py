@@ -11,7 +11,13 @@ class CampaignInfluencerStatus(str, Enum):
 class CampaignInfluencersRequest(BaseModel):
     campaign_id: str
     influencer_id: str
+    username: str
+    picture: str
+    engagementRate: str
+    bio: str
     platform: str
+    followers: str
+    country: str
     status: CampaignInfluencerStatus
 
 
