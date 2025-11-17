@@ -13,10 +13,10 @@ class CampaignInfluencersRequest(BaseModel):
     influencer_id: str
     username: str
     picture: str
-    engagementRate: str
+    engagementRate: float
     bio: str
     platform: str
-    followers: str
+    followers: int
     country: str
     status: CampaignInfluencerStatus
 
