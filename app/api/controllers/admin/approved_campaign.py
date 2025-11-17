@@ -1,8 +1,11 @@
+from bson import ObjectId
 from fastapi import Depends, HTTPException
 
 from app.db.connection import get_db
 from app.middleware.auth_middleware import require_admin_access
+from app.models.campaign_influencers_model import CampaignInfluencerStatus
 from app.models.campaign_model import CampaignStatus
+from app.utils.helpers import convert_objectid
 
 
 async def approved_campaign(
@@ -85,3 +88,33 @@ async def approved_campaign(
         raise HTTPException(
             status_code=500, detail=f"Error in approved campaign: {str(e)}"
         ) from e
+
+
+async def approved_campaign_by_id(
+    campaign_id: str,
+    current_user: dict = Depends(require_admin_access),
+):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    try:
+        db = get_db()
+        campaigns_collection = db.get_collection("campaign_influencers")
+
+        cursor = campaigns_collection.find(
+            {
+                "campaign_id": ObjectId(campaign_id),
+                "status": CampaignInfluencerStatus.APPROVED.value,
+            }
+        )
+
+        influencers = await cursor.to_list(length=None)
+        cleaned = [convert_objectid(i) for i in influencers]
+
+        return {
+            "approved_influencers": cleaned,
+            "total": len(cleaned),
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
