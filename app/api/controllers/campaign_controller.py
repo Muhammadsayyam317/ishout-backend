@@ -538,11 +538,12 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
 
 
 async def approve_single_influencer(
-    request_data: CampaignInfluencersRequest,
-) -> CampaignInfluencersResponse:
+    request_data: CampaignInfluencersRequest, user_role: str
+):
     try:
         db = get_db()
         collection = db.get_collection("campaign_influencers")
+
         existing = await collection.find_one(
             {
                 "campaign_id": ObjectId(request_data.campaign_id),
@@ -551,46 +552,65 @@ async def approve_single_influencer(
             }
         )
 
-        data = {
-            "campaign_id": ObjectId(request_data.campaign_id),
-            "influencer_id": ObjectId(request_data.influencer_id),
+        update_fields = {
             "username": request_data.username,
             "picture": request_data.picture,
             "engagementRate": request_data.engagementRate,
             "bio": request_data.bio,
             "followers": request_data.followers,
             "country": request_data.country,
-            "platform": request_data.platform,
             "status": request_data.status.value,
         }
 
+        if user_role == "admin":
+            update_fields["admin_approved"] = True
+
+        if user_role == "company":
+            update_fields["company_approved"] = True
+
         if existing:
+            update_fields.setdefault(
+                "admin_approved", existing.get("admin_approved", False)
+            )
+            update_fields.setdefault(
+                "company_approved", existing.get("company_approved", False)
+            )
+
             await collection.update_one(
                 {
                     "campaign_id": ObjectId(request_data.campaign_id),
                     "influencer_id": ObjectId(request_data.influencer_id),
                     "platform": request_data.platform,
-                    "username": request_data.username,
-                    "picture": request_data.picture,
-                    "engagementRate": request_data.engagementRate,
-                    "bio": request_data.bio,
-                    "followers": request_data.followers,
-                    "country": request_data.country,
-                    "status": request_data.status.value,
                 },
-                {"$set": data},
+                {"$set": update_fields},
             )
         else:
-            await collection.insert_one(data)
+            update_fields.update(
+                {
+                    "campaign_id": ObjectId(request_data.campaign_id),
+                    "influencer_id": ObjectId(request_data.influencer_id),
+                    "platform": request_data.platform,
+                    "admin_approved": user_role == "admin",
+                    "company_approved": user_role == "company",
+                }
+            )
+            await collection.insert_one(update_fields)
 
-        return CampaignInfluencersResponse(
-            message=f"Influencer {request_data.status.value} successfully",
-            status=request_data.status,
+        updated = await collection.find_one(
+            {
+                "campaign_id": ObjectId(request_data.campaign_id),
+                "influencer_id": ObjectId(request_data.influencer_id),
+                "platform": request_data.platform,
+            }
         )
+
+        return {
+            "message": f"Influencer updated successfully {updated.get('admin_approved')} {updated.get('company_approved')}",
+        }
 
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error in approve single influencer: {str(e)}"
+            status_code=500, detail=f"Error approving influencer: {str(e)}"
         )
 
 

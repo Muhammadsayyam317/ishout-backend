@@ -88,7 +88,7 @@ async def approve_single_influencer_route(
 ):
     """Approve or reject a single influencer (admin only)"""
     try:
-        return await approve_single_influencer(request_data)
+        return await approve_single_influencer(request_data, current_user["role"])
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
