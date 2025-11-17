@@ -1,6 +1,9 @@
 from fastapi import APIRouter, HTTPException, Depends
-from typing import Optional
-from app.api.controllers.admin.approved_campaign import approved_campaign
+from typing import List, Optional
+from app.api.controllers.admin.approved_campaign import (
+    approved_campaign,
+    approved_campaign_by_id,
+)
 from app.api.controllers.admin.campaign_byId import campaign_by_id_controller
 from app.api.controllers.admin.delete_campaign import delete_campaign_ById
 from app.api.controllers.campaign_controller import (
@@ -19,6 +22,8 @@ from app.models.campaign_model import (
 )
 from app.middleware.auth_middleware import require_admin_access
 
+# from app.services.email_service import send_mail
+
 router = APIRouter()
 
 
@@ -29,7 +34,6 @@ async def get_all_campaigns_route(
     page_size: int = 10,
     current_user: dict = Depends(require_admin_access),
 ):
-    """Get all campaigns (admin only). Optional query params: status=pending|processing|completed, page=1, page_size=10"""
     try:
         return await get_all_campaigns(status, page, page_size)
     except Exception as e:
@@ -65,6 +69,13 @@ async def get_processing_campaigns_route(
 router.add_api_route(
     path="/approved-campaign",
     endpoint=approved_campaign,
+    methods=["GET"],
+    tags=["Admin"],
+)
+
+router.add_api_route(
+    path="/approved-campaign/{campaign_id}",
+    endpoint=approved_campaign_by_id,
     methods=["GET"],
     tags=["Admin"],
 )
@@ -150,3 +161,13 @@ router.add_api_route(
     methods=["DELETE"],
     tags=["Admin"],
 )
+
+
+# @router.post("/send-email", tags=["Admin"])
+# async def send_email_route(
+#     to: List[str],
+#     subject: str,
+#     html: str,
+#     current_user: dict = Depends(require_admin_access),
+# ):
+#     return await send_mail(to, subject, html)
