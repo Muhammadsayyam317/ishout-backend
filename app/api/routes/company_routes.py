@@ -1,11 +1,13 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional
-from app.api.controllers.admin.approved_campaign import companyApprovedSingleInfluencer
+from app.api.controllers.admin.approved_campaign import (
+    companyApprovedSingleInfluencer,
+)
 from app.api.controllers.auth_controller import (
-    get_user_profile,
     get_user_campaigns,
 )
 
+from app.api.controllers.company.approved_influencers import companyApprovedCampaignById
 from app.middleware.auth_middleware import require_company_user_access
 from app.api.controllers.campaign_controller import (
     create_campaign,
@@ -19,15 +21,6 @@ from app.models.campaign_model import (
 from app.tools.search_influencers import search_influencers
 
 router = APIRouter()
-
-
-@router.get("/profile", tags=["User"])
-async def get_profile_route(current_user: dict = Depends(require_company_user_access)):
-    """Get current user profile (Company users only)"""
-    try:
-        return await get_user_profile(current_user["user_id"])
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/campaigns", tags=["Company"])
@@ -54,7 +47,7 @@ async def get_user_campaigns_route(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/campaigns/reject-influencers", tags=["User"])
+@router.put("/campaigns/reject-influencers", tags=["Company"])
 async def reject_influencers_route(
     request_data: UserRejectInfluencersRequest,
     current_user: dict = Depends(require_company_user_access),
@@ -78,7 +71,7 @@ router.add_api_route(
 )
 
 
-@router.get("/campaigns/{campaign_id}/approved-influencers", tags=["User"])
+@router.get("/campaigns/{campaign_id}/approved-influencers", tags=["Company"])
 async def get_campaign_approved_influencers_route(
     campaign_id: str, current_user: dict = Depends(require_company_user_access)
 ):
@@ -127,7 +120,7 @@ router.add_api_route(
 )
 router.add_api_route(
     path="/approved-campaigns/{user_id}",
-    endpoint=companyApprovedSingleInfluencer,
+    endpoint=companyApprovedCampaignById,
     methods=["GET"],
     tags=["Company"],
 )

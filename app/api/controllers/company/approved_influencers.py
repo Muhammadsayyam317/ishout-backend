@@ -5,7 +5,7 @@ from app.models.campaign_model import CampaignStatus
 from app.utils.helpers import convert_objectid
 
 
-async def get_company_approved_influencers(
+async def companyApprovedCampaignById(
     user_id: str,
     page: int = 1,
     page_size: int = 10,
@@ -17,6 +17,7 @@ async def get_company_approved_influencers(
         influencers_collection = db.get_collection("campaign_influencers")
         query = {
             "admin_approved": True,
+            "company_approved": False,
             "status": CampaignStatus.APPROVED.value,
         }
         skip = (page - 1) * page_size
@@ -26,8 +27,10 @@ async def get_company_approved_influencers(
             .skip(skip)
             .limit(page_size)
         )
+
         influencers = await cursor.to_list(length=page_size)
         influencers = [convert_objectid(doc) for doc in influencers]
+
         total = await influencers_collection.count_documents(query)
         total_pages = (total + page_size - 1) // page_size
 

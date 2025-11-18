@@ -1,9 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional
-from app.api.controllers.admin.approved_campaign import (
-    approved_campaign,
-    approved_campaign_by_id,
-)
+from app.api.controllers.admin.approved_campaign import approved_campaign
 from app.api.controllers.admin.campaign_byId import campaign_by_id_controller
 from app.api.controllers.admin.delete_campaign import delete_campaign_ById
 from app.api.controllers.campaign_controller import (
@@ -73,12 +70,12 @@ router.add_api_route(
     tags=["Admin"],
 )
 
-router.add_api_route(
-    path="/approved-campaign/{campaign_id}",
-    endpoint=approved_campaign_by_id,
-    methods=["GET"],
-    tags=["Admin"],
-)
+# router.add_api_route(
+#     path="/approved-campaign/{campaign_id}",
+#     endpoint=approvedAdminCampaignById,
+#     methods=["GET"],
+#     tags=["Admin"],
+# )
 
 
 # @router.patch("/campaigns/update-influencer-status", tags=["Admin"])
