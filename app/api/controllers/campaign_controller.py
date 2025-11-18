@@ -533,8 +533,9 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
         }
 
     except Exception as e:
-        print(f"Error in get_campaign_by_id: {str(e)}")
-        return {"error": str(e)}
+        raise HTTPException(
+            status_code=500, detail=f"Error in get_campaign_by_id: {str(e)}"
+        ) from e
 
 
 async def approve_single_influencer(
@@ -562,19 +563,24 @@ async def approve_single_influencer(
             "status": request_data.status.value,
         }
 
-        if user_role == "admin":
-            update_fields["admin_approved"] = True
-
-        if user_role == "company":
-            update_fields["company_approved"] = True
-
         if existing:
-            update_fields.setdefault(
-                "admin_approved", existing.get("admin_approved", False)
-            )
-            update_fields.setdefault(
-                "company_approved", existing.get("company_approved", False)
-            )
+            # Preserve existing approval statuses and update only the relevant one
+            if user_role == "admin":
+                update_fields["admin_approved"] = True
+                # Preserve existing company_approved status
+                update_fields["company_approved"] = existing.get(
+                    "company_approved", False
+                )
+            elif user_role == "company":
+                update_fields["company_approved"] = True
+                # Preserve existing admin_approved status
+                update_fields["admin_approved"] = existing.get("admin_approved", False)
+            else:
+                # If role is neither admin nor company, preserve both
+                update_fields["admin_approved"] = existing.get("admin_approved", False)
+                update_fields["company_approved"] = existing.get(
+                    "company_approved", False
+                )
 
             await collection.update_one(
                 {
@@ -585,6 +591,7 @@ async def approve_single_influencer(
                 {"$set": update_fields},
             )
         else:
+            # New record - set approval based on role
             update_fields.update(
                 {
                     "campaign_id": ObjectId(request_data.campaign_id),
@@ -605,7 +612,9 @@ async def approve_single_influencer(
         )
 
         return {
-            "message": f"Influencer updated successfully {updated.get('admin_approved')} {updated.get('company_approved')}",
+            "message": f"Influencer updated successfully. Admin approved: {updated.get('admin_approved', False)}, Company approved: {updated.get('company_approved', False)}",
+            "admin_approved": updated.get("admin_approved", False),
+            "company_approved": updated.get("company_approved", False),
         }
 
     except Exception as e:
