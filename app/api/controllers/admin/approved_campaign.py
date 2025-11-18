@@ -3,7 +3,10 @@ from fastapi import Depends, HTTPException
 
 from app.db.connection import get_db
 from app.middleware.auth_middleware import require_admin_access
-from app.models.campaign_influencers_model import CampaignInfluencerStatus
+from app.models.campaign_influencers_model import (
+    CampaignInfluencerStatus,
+    CampaignInfluencersRequest,
+)
 from app.models.campaign_model import CampaignStatus
 from app.utils.helpers import convert_objectid
 
@@ -101,10 +104,13 @@ async def approved_campaign_by_id(
         db = get_db()
         campaigns_collection = db.get_collection("campaign_influencers")
 
+        # Filter for influencers that are approved by BOTH admin and company
         cursor = campaigns_collection.find(
             {
                 "campaign_id": ObjectId(campaign_id),
                 "status": CampaignInfluencerStatus.APPROVED.value,
+                "admin_approved": True,
+                # "company_approved": True,
             }
         )
 
@@ -118,3 +124,56 @@ async def approved_campaign_by_id(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+async def company_approve_influencer(
+    request_data: CampaignInfluencersRequest,
+):
+    try:
+        db = get_db()
+        collection = db.get_collection("campaign_influencers")
+        existing = await collection.find_one(
+            {
+                "campaign_id": ObjectId(request_data.campaign_id),
+                "influencer_id": ObjectId(request_data.influencer_id),
+                "platform": request_data.platform,
+            }
+        )
+
+        # Prepare fields to update (common fields)
+        update_fields = {
+            "username": request_data.username,
+            "picture": request_data.picture,
+            "engagementRate": request_data.engagementRate,
+            "bio": request_data.bio,
+            "followers": request_data.followers,
+            "country": request_data.country,
+            "status": request_data.status.value,
+            "company_approved": True,
+        }
+        if existing:
+            await collection.update_one(
+                {
+                    "campaign_id": ObjectId(request_data.campaign_id),
+                    "influencer_id": ObjectId(request_data.influencer_id),
+                    "platform": request_data.platform,
+                },
+                {"$set": update_fields},
+            )
+        else:
+            update_fields.update(
+                {
+                    "campaign_id": ObjectId(request_data.campaign_id),
+                    "influencer_id": ObjectId(request_data.influencer_id),
+                    "platform": request_data.platform,
+                    "admin_approved": False,
+                }
+            )
+            await collection.insert_one(update_fields)
+
+        return {"message": "Influencer approved successfully"}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error approving influencer: {str(e)}"
+        )

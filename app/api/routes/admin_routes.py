@@ -7,6 +7,7 @@ from app.api.controllers.admin.approved_campaign import (
 from app.api.controllers.admin.campaign_byId import campaign_by_id_controller
 from app.api.controllers.admin.delete_campaign import delete_campaign_ById
 from app.api.controllers.campaign_controller import (
+    company_approved_campaign_influencers,
     get_all_campaigns,
     approve_single_influencer,
     admin_generate_influencers,
@@ -86,9 +87,8 @@ async def approve_single_influencer_route(
     request_data: CampaignInfluencersRequest,
     current_user: dict = Depends(require_admin_access),
 ):
-    """Approve or reject a single influencer (admin only)"""
     try:
-        return await approve_single_influencer(request_data, current_user["role"])
+        return await approve_single_influencer(request_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -159,6 +159,13 @@ router.add_api_route(
     path="/delete-campaign/{campaign_id}",
     endpoint=delete_campaign_ById,
     methods=["DELETE"],
+    tags=["Admin"],
+)
+
+router.add_api_route(
+    path="/company-approved-influencers",
+    endpoint=company_approved_campaign_influencers,
+    methods=["GET"],
     tags=["Admin"],
 )
 

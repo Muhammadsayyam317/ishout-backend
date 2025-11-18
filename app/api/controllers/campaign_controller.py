@@ -3,8 +3,8 @@ from datetime import datetime, timezone
 from bson import ObjectId
 from fastapi import HTTPException
 from app.models.campaign_influencers_model import (
+    CampaignInfluencerStatus,
     CampaignInfluencersRequest,
-    CampaignInfluencersResponse,
 )
 from app.models.campaign_model import (
     CreateCampaignRequest,
@@ -16,6 +16,7 @@ from app.models.influencers_model import FindInfluencerRequest
 from app.api.controllers.influencers_controller import find_influencers_by_campaign
 from app.db.connection import get_db
 from app.config import config
+from app.utils.helpers import convert_objectid
 
 
 async def _populate_user_details(user_id: str) -> Dict[str, Any]:
@@ -112,9 +113,8 @@ async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]
             "created_at": datetime.now(timezone.utc),
             "updated_at": datetime.now(timezone.utc),
         }
-        result = await campaigns_collection.insert_one(campaign_doc)
+        await campaigns_collection.insert_one(campaign_doc)
         return {
-            "campaign_id": str(result.inserted_id),
             "message": "Campaign created successfully",
         }
 
@@ -534,12 +534,11 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
 
 
 async def approve_single_influencer(
-    request_data: CampaignInfluencersRequest, user_role: str
+    request_data: CampaignInfluencersRequest,
 ):
     try:
         db = get_db()
         collection = db.get_collection("campaign_influencers")
-
         existing = await collection.find_one(
             {
                 "campaign_id": ObjectId(request_data.campaign_id),
@@ -547,7 +546,6 @@ async def approve_single_influencer(
                 "platform": request_data.platform,
             }
         )
-
         update_fields = {
             "username": request_data.username,
             "picture": request_data.picture,
@@ -556,23 +554,9 @@ async def approve_single_influencer(
             "followers": request_data.followers,
             "country": request_data.country,
             "status": request_data.status.value,
+            "admin_approved": True,
         }
-
         if existing:
-            if user_role == "admin":
-                update_fields["admin_approved"] = True
-                update_fields["company_approved"] = existing.get(
-                    "company_approved", False
-                )
-            elif user_role == "company":
-                update_fields["company_approved"] = True
-                update_fields["admin_approved"] = existing.get("admin_approved", False)
-            else:
-                update_fields["admin_approved"] = existing.get("admin_approved", False)
-                update_fields["company_approved"] = existing.get(
-                    "company_approved", False
-                )
-
             await collection.update_one(
                 {
                     "campaign_id": ObjectId(request_data.campaign_id),
@@ -587,14 +571,12 @@ async def approve_single_influencer(
                     "campaign_id": ObjectId(request_data.campaign_id),
                     "influencer_id": ObjectId(request_data.influencer_id),
                     "platform": request_data.platform,
-                    "admin_approved": user_role == "admin",
-                    "company_approved": user_role == "company",
+                    "company_approved": False,
                 }
             )
             await collection.insert_one(update_fields)
-        return {
-            "message": "Influencer approved successfully",
-        }
+
+        return {"message": "Influencer approved successfully"}
 
     except Exception as e:
         raise HTTPException(
@@ -940,4 +922,46 @@ async def reject_and_regenerate_influencers(request_data) -> Dict[str, Any]:
         raise HTTPException(
             status_code=500,
             detail=f"Error in reject and regenerate influencers: {str(e)}",
+        ) from e
+
+
+async def company_approved_campaign_influencers(
+    page: int = 1,
+    page_size: int = 10,
+):
+    if page < 1 or page_size < 1:
+        raise HTTPException(status_code=400, detail="Invalid pagination parameters")
+    try:
+        db = get_db()
+        collection = db.get_collection("campaign_influencers")
+        cursor = collection.find(
+            {
+                "admin_approved": True,
+                "company_approved": True,
+                "status": CampaignInfluencerStatus.APPROVED.value,
+            }
+        ).sort("updated_at", -1)
+
+        cursor = cursor.skip((page - 1) * page_size).limit(page_size)
+        influencers = await cursor.to_list(length=page_size)
+        influencers = [convert_objectid(doc) for doc in influencers]
+        total = await collection.count_documents(
+            {
+                "admin_approved": True,
+                "company_approved": True,
+                "status": CampaignInfluencerStatus.APPROVED.value,
+            }
+        )
+        total_pages = (total + page_size - 1) // page_size
+        return {
+            "influencers": influencers,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages,
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error in company approved campaign influencers: {str(e)}",
         ) from e
