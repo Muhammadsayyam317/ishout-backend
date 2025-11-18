@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException
+from fastapi import HTTPException
 
 from app.db.connection import get_db
 from app.models.campaign_model import CampaignStatus
