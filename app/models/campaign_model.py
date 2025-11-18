@@ -21,12 +21,10 @@ class InfluencerReference(BaseModel):
 
 class CreateCampaignRequest(BaseModel):
     name: Optional[str] = None
-    description: Optional[str] = None
     platform: List[str]
     category: List[str]
     followers: List[str]
     country: List[str]
-    influencer_ids: List[str] = []
     user_id: Optional[str] = None
     limit: Optional[int] = 10
 
