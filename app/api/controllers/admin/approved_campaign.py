@@ -126,7 +126,7 @@ async def approved_campaign_by_id(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-async def company_approve_influencer(
+async def companyApprovedSingleInfluencer(
     request_data: CampaignInfluencersRequest,
 ):
     try:
@@ -139,8 +139,6 @@ async def company_approve_influencer(
                 "platform": request_data.platform,
             }
         )
-
-        # Prepare fields to update (common fields)
         update_fields = {
             "username": request_data.username,
             "picture": request_data.picture,

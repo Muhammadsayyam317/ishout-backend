@@ -533,7 +533,7 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
         ) from e
 
 
-async def approve_single_influencer(
+async def AdminApprovedSingleInfluencer(
     request_data: CampaignInfluencersRequest,
 ):
     try:

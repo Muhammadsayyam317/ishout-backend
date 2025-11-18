@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
-from typing import List, Optional
+from typing import Optional
 from app.api.controllers.admin.approved_campaign import (
     approved_campaign,
     approved_campaign_by_id,
@@ -7,15 +7,14 @@ from app.api.controllers.admin.approved_campaign import (
 from app.api.controllers.admin.campaign_byId import campaign_by_id_controller
 from app.api.controllers.admin.delete_campaign import delete_campaign_ById
 from app.api.controllers.campaign_controller import (
+    AdminApprovedSingleInfluencer,
     company_approved_campaign_influencers,
     get_all_campaigns,
-    approve_single_influencer,
     admin_generate_influencers,
     update_campaign_status,
     get_campaign_generated_influencers,
     reject_and_regenerate_influencers,
 )
-from app.models.campaign_influencers_model import CampaignInfluencersRequest
 from app.models.campaign_model import (
     AdminGenerateInfluencersRequest,
     CampaignStatusUpdateRequest,
@@ -82,15 +81,23 @@ router.add_api_route(
 )
 
 
-@router.patch("/campaigns/update-influencer-status", tags=["Admin"])
-async def approve_single_influencer_route(
-    request_data: CampaignInfluencersRequest,
-    current_user: dict = Depends(require_admin_access),
-):
-    try:
-        return await approve_single_influencer(request_data)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# @router.patch("/campaigns/update-influencer-status", tags=["Admin"])
+# async def approve_single_influencer_route(
+#     request_data: CampaignInfluencersRequest,
+#     current_user: dict = Depends(require_admin_access),
+# ):
+#     try:
+#         return await approve_single_influencer(request_data)
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+
+router.add_api_route(
+    path="/campaigns/update-influencer-status",
+    endpoint=AdminApprovedSingleInfluencer,
+    methods=["PATCH"],
+    tags=["Admin"],
+)
 
 
 @router.post("/campaigns/generate-influencers/{campaign_id}", tags=["Admin"])

@@ -1,30 +1,21 @@
 from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional
+from app.api.controllers.admin.approved_campaign import companyApprovedSingleInfluencer
 from app.api.controllers.auth_controller import (
     get_user_profile,
-    update_user_profile,
-    change_password,
     get_user_campaigns,
 )
-from app.api.controllers.company.approved_influencers import (
-    get_company_approved_influencers,
-)
-from app.models.user_model import (
-    PasswordChangeRequest,
-    UserUpdateRequest,
-)
+
 from app.middleware.auth_middleware import require_company_user_access
 from app.api.controllers.campaign_controller import (
     create_campaign,
     get_campaign_by_id,
     user_reject_influencers,
-    approve_single_influencer,
 )
 from app.models.campaign_model import (
     CreateCampaignRequest,
     UserRejectInfluencersRequest,
 )
-from app.models.campaign_influencers_model import CampaignInfluencersRequest
 from app.tools.search_influencers import search_influencers
 
 router = APIRouter()
@@ -39,31 +30,7 @@ async def get_profile_route(current_user: dict = Depends(require_company_user_ac
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.put("/profile", tags=["User"])
-async def update_profile_route(
-    request_data: UserUpdateRequest,
-    current_user: dict = Depends(require_company_user_access),
-):
-    """Update user profile (Company users only)"""
-    try:
-        return await update_user_profile(current_user["user_id"], request_data)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.put("/change-password", tags=["User"])
-async def change_password_route(
-    request_data: PasswordChangeRequest,
-    current_user: dict = Depends(require_company_user_access),
-):
-    """Change user password (Company users only)"""
-    try:
-        return await change_password(current_user["user_id"], request_data)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/campaigns", tags=["User"])
+@router.post("/campaigns", tags=["Company"])
 async def create_campaign_route(
     request_data: CreateCampaignRequest,
     current_user: dict = Depends(require_company_user_access),
@@ -75,7 +42,7 @@ async def create_campaign_route(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/campaigns", tags=["User"])
+@router.get("/campaigns", tags=["Company"])
 async def get_user_campaigns_route(
     status: Optional[str] = None,
     current_user: dict = Depends(require_company_user_access),
@@ -103,16 +70,12 @@ async def reject_influencers_route(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.patch("/campaigns/update-influencer-status", tags=["User"])
-async def approve_single_influencer_company_route(
-    request_data: CampaignInfluencersRequest,
-    current_user: dict = Depends(require_company_user_access),
-):
-    """Approve or reject a single influencer (Company users only)"""
-    try:
-        return await approve_single_influencer(request_data, current_user["role"])
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+router.add_api_route(
+    path="/campaigns/update-influencer-status",
+    endpoint=companyApprovedSingleInfluencer,
+    methods=["PATCH"],
+    tags=["Company"],
+)
 
 
 @router.get("/campaigns/{campaign_id}/approved-influencers", tags=["User"])
@@ -162,10 +125,9 @@ router.add_api_route(
     methods=["POST"],
     tags=["User"],
 )
-
 router.add_api_route(
     path="/approved-campaigns/{user_id}",
-    endpoint=get_company_approved_influencers,
+    endpoint=companyApprovedSingleInfluencer,
     methods=["GET"],
     tags=["Company"],
 )
