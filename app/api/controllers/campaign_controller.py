@@ -92,9 +92,7 @@ async def _populate_influencer_details(
         ) from e
 
 
-# Wrapper function for backward compatibility - delegates to service
 async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]:
-    """Create a new campaign"""
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
@@ -114,10 +112,7 @@ async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]
             "created_at": datetime.now(timezone.utc),
             "updated_at": datetime.now(timezone.utc),
         }
-
-        # Insert into campaigns collection
         result = await campaigns_collection.insert_one(campaign_doc)
-
         return {
             "campaign_id": str(result.inserted_id),
             "message": "Campaign created successfully",
@@ -564,19 +559,15 @@ async def approve_single_influencer(
         }
 
         if existing:
-            # Preserve existing approval statuses and update only the relevant one
             if user_role == "admin":
                 update_fields["admin_approved"] = True
-                # Preserve existing company_approved status
                 update_fields["company_approved"] = existing.get(
                     "company_approved", False
                 )
             elif user_role == "company":
                 update_fields["company_approved"] = True
-                # Preserve existing admin_approved status
                 update_fields["admin_approved"] = existing.get("admin_approved", False)
             else:
-                # If role is neither admin nor company, preserve both
                 update_fields["admin_approved"] = existing.get("admin_approved", False)
                 update_fields["company_approved"] = existing.get(
                     "company_approved", False
@@ -591,7 +582,6 @@ async def approve_single_influencer(
                 {"$set": update_fields},
             )
         else:
-            # New record - set approval based on role
             update_fields.update(
                 {
                     "campaign_id": ObjectId(request_data.campaign_id),
@@ -602,19 +592,8 @@ async def approve_single_influencer(
                 }
             )
             await collection.insert_one(update_fields)
-
-        updated = await collection.find_one(
-            {
-                "campaign_id": ObjectId(request_data.campaign_id),
-                "influencer_id": ObjectId(request_data.influencer_id),
-                "platform": request_data.platform,
-            }
-        )
-
         return {
-            "message": f"Influencer updated successfully. Admin approved: {updated.get('admin_approved', False)}, Company approved: {updated.get('company_approved', False)}",
-            "admin_approved": updated.get("admin_approved", False),
-            "company_approved": updated.get("company_approved", False),
+            "message": "Influencer approved successfully",
         }
 
     except Exception as e:
@@ -626,14 +605,11 @@ async def approve_single_influencer(
 async def user_reject_influencers(
     campaign_id: str, influencer_ids: List[str], user_id: str
 ) -> Dict[str, Any]:
-    """User rejects approved influencers and moves them to rejectedByUser array"""
     try:
         if not influencer_ids:
             return {"message": "No influencer IDs provided"}
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
-
-        # Ensure campaign exists and belongs to user
         campaign = await campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
         if not campaign:
             raise HTTPException(status_code=404, detail="Campaign not found")

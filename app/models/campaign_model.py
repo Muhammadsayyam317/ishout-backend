@@ -20,19 +20,15 @@ class InfluencerReference(BaseModel):
 
 
 class CreateCampaignRequest(BaseModel):
-    """Request model to create a new campaign"""
-
     name: Optional[str] = None
     description: Optional[str] = None
     platform: List[str]
     category: List[str]
     followers: List[str]
     country: List[str]
-    influencer_ids: List[str] = (
-        []
-    )  # Initially empty, populated when influencers are approved
-    user_id: Optional[str] = None  # User who created the campaign
-    limit: Optional[int] = 10  # Number of influencers to generate
+    influencer_ids: List[str] = []
+    user_id: Optional[str] = None
+    limit: Optional[int] = 10
 
 
 class CampaignResponse(BaseModel):
