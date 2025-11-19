@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from app.api.controllers.admin.approved_campaign import approved_campaign
 from app.api.controllers.admin.campaign_byId import campaign_by_id_controller
 from app.api.controllers.admin.delete_campaign import delete_campaign_ById
+from app.api.controllers.admin.delete_influencers import deleteInfluencerEmbedding
 from app.api.controllers.campaign_controller import (
     AdminApprovedSingleInfluencer,
     company_approved_campaign_influencers,
@@ -158,7 +159,12 @@ router.add_api_route(
     methods=["DELETE"],
     tags=["Admin"],
 )
-
+router.add_api_route(
+    path="/delete-influencer/{influencer_id}",
+    endpoint=deleteInfluencerEmbedding,
+    methods=["DELETE"],
+    tags=["Admin"],
+)
 router.add_api_route(
     path="/company-approved-influencers",
     endpoint=company_approved_campaign_influencers,
