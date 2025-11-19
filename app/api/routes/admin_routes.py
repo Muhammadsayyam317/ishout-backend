@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, Depends
-from typing import Optional
 from app.api.controllers.admin.approved_campaign import approved_campaign
 from app.api.controllers.admin.campaign_byId import campaign_by_id_controller
 from app.api.controllers.admin.delete_campaign import delete_campaign_ById
@@ -23,18 +22,12 @@ from app.middleware.auth_middleware import require_admin_access
 
 router = APIRouter()
 
-
-@router.get("/campaigns", tags=["Admin"])
-async def get_all_campaigns_route(
-    status: Optional[str] = None,
-    page: int = 1,
-    page_size: int = 10,
-    current_user: dict = Depends(require_admin_access),
-):
-    try:
-        return await get_all_campaigns(status, page, page_size)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+router.add_api_route(
+    path="/campaigns",
+    endpoint=get_all_campaigns,
+    methods=["GET"],
+    tags=["Admin"],
+)
 
 
 @router.get("/pending-campaigns", tags=["Admin"])

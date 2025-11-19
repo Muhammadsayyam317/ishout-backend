@@ -125,9 +125,10 @@ async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]
 
 
 async def get_all_campaigns(
-    status: Optional[str] = None, page: int = 1, page_size: int = 10
+    status: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 10,
 ) -> Dict[str, Any]:
-    """Get all campaigns with user details. Optionally filter by status with pagination support."""
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
@@ -146,9 +147,8 @@ async def get_all_campaigns(
                 }:
                     raise HTTPException(
                         status_code=400,
-                        detail="Invalid status. Use pending, processing, or completed.",
+                        detail="Invalid status. Use pending, processing, approved, completed, or rejected.",
                     )
-                # Normalize to string value
                 normalized = (
                     status.value if isinstance(status, CampaignStatus) else str(status)
                 )
@@ -161,68 +161,18 @@ async def get_all_campaigns(
 
         skip = (page - 1) * page_size
         total_count = await campaigns_collection.count_documents(query)
-        campaigns = await (
-            campaigns_collection.find(query)
+        campaigns = (
+            await campaigns_collection.find(query)
             .sort("created_at", -1)
             .skip(skip)
             .limit(page_size)
             .to_list(length=None)
         )
-
-        formatted_campaigns = []
-        for campaign in campaigns:
-            campaign["_id"] = str(campaign["_id"])
-
-            user_id = campaign.get("user_id")
-            if user_id:
-                user_details = await _populate_user_details(user_id)
-                campaign["user_details"] = user_details
-
-            # Replace generated_influencers with just count for performance
-            generated_influencers = campaign.get("generated_influencers", [])
-            if generated_influencers:
-                # If it's a list of IDs (new format), count them. If it's list of objects (legacy), count them too
-                count = len(generated_influencers)
-                campaign["generated_influencers"] = count
-                campaign["generated_influencers_count"] = count
-            else:
-                campaign["generated_influencers"] = 0
-                campaign["generated_influencers_count"] = 0
-
-            # Replace influencer_ids with just count for performance
-            influencer_ids = campaign.get("influencer_ids", [])
-            if influencer_ids:
-                campaign["influencer_ids"] = len(influencer_ids)
-                campaign["approved_influencers_count"] = len(influencer_ids)
-            else:
-                campaign["influencer_ids"] = 0
-                campaign["approved_influencers_count"] = 0
-
-            # Replace rejected_ids with just count for performance
-            rejected_ids = campaign.get("rejected_ids", [])
-            if rejected_ids:
-                campaign["rejected_ids"] = len(rejected_ids)
-                campaign["rejected_influencers_count"] = len(rejected_ids)
-            else:
-                campaign["rejected_ids"] = 0
-                campaign["rejected_influencers_count"] = 0
-
-            # Replace rejectedByUser with just count for performance
-            rejected_by_user_ids = campaign.get("rejectedByUser", [])
-            if rejected_by_user_ids:
-                campaign["rejectedByUser"] = len(rejected_by_user_ids)
-                campaign["rejected_by_user_count"] = len(rejected_by_user_ids)
-            else:
-                campaign["rejectedByUser"] = 0
-                campaign["rejected_by_user_count"] = 0
-
-            formatted_campaigns.append(campaign)
-
-        # Calculate pagination metadata
-        total_pages = (total_count + page_size - 1) // page_size  # Ceiling division
+        campaigns = [convert_objectid(doc) for doc in campaigns]
+        total_pages = (total_count + page_size - 1) // page_size
 
         return {
-            "campaigns": formatted_campaigns,
+            "campaigns": campaigns,
             "total": total_count,
             "page": page,
             "page_size": page_size,
@@ -232,8 +182,9 @@ async def get_all_campaigns(
         }
 
     except Exception as e:
-        print(f"Error in get_all_campaigns: {str(e)}")
-        return {"error": str(e)}
+        return HTTPException(
+            status_code=500, detail=f"Error in get_all_campaigns: {str(e)}"
+        )
 
 
 async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
