@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from bson import ObjectId
 
 from app.db.connection import get_db
 from app.models.campaign_model import CampaignStatus
@@ -13,25 +14,64 @@ async def companyApprovedCampaignById(
     try:
         if page < 1 or page_size < 1:
             raise HTTPException(status_code=400, detail="Invalid pagination parameters")
+
         db = get_db()
         influencers_collection = db.get_collection("campaign_influencers")
-        query = {
-            "admin_approved": True,
-            "company_approved": False,
-            "status": CampaignStatus.APPROVED.value,
-        }
+
         skip = (page - 1) * page_size
-        cursor = (
-            influencers_collection.find(query)
-            .sort("updated_at", -1)
-            .skip(skip)
-            .limit(page_size)
+
+        pipeline = [
+            {
+                "$lookup": {
+                    "from": "campaigns",
+                    "localField": "campaign_id",
+                    "foreignField": "_id",
+                    "as": "campaign",
+                }
+            },
+            {"$unwind": "$campaign"},
+            {
+                "$match": {
+                    "campaign.user_id": ObjectId(user_id),
+                    "admin_approved": True,
+                    "company_approved": False,
+                    "status": CampaignStatus.APPROVED.value,
+                }
+            },
+            {"$sort": {"updated_at": -1}},
+            {"$skip": skip},
+            {"$limit": page_size},
+        ]
+
+        results = await influencers_collection.aggregate(pipeline).to_list(length=None)
+        results = [convert_objectid(doc) for doc in results]
+
+        # Count total matching documents (without pagination)
+        count_pipeline = [
+            {
+                "$lookup": {
+                    "from": "campaigns",
+                    "localField": "campaign_id",
+                    "foreignField": "_id",
+                    "as": "campaign",
+                }
+            },
+            {"$unwind": "$campaign"},
+            {
+                "$match": {
+                    "campaign.user_id": ObjectId(user_id),
+                    "admin_approved": True,
+                    "company_approved": False,
+                    "status": CampaignStatus.APPROVED.value,
+                }
+            },
+            {"$count": "total"},
+        ]
+
+        total_result = await influencers_collection.aggregate(count_pipeline).to_list(
+            length=None
         )
-
-        influencers = await cursor.to_list(length=page_size)
-        influencers = [convert_objectid(doc) for doc in influencers]
-
-        total = await influencers_collection.count_documents(query)
+        total = total_result[0]["total"] if total_result else 0
         total_pages = (total + page_size - 1) // page_size
 
         return {
@@ -41,7 +81,7 @@ async def companyApprovedCampaignById(
             "total_pages": total_pages,
             "has_next": page < total_pages,
             "has_prev": page > 1,
-            "data": influencers,
+            "data": results,
         }
 
     except HTTPException:

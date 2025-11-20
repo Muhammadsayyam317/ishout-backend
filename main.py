@@ -9,7 +9,6 @@ from contextlib import asynccontextmanager
 import os
 from app.core.errors import register_exception_handlers
 
-# Removed premature database retrieval
 
 security = HTTPBearer(
     scheme_name="Bearer", description="Enter your Bearer token", auto_error=False

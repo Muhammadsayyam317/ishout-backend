@@ -11,7 +11,6 @@ from app.api.controllers.company.approved_influencers import companyApprovedCamp
 from app.middleware.auth_middleware import require_company_user_access
 from app.api.controllers.campaign_controller import (
     create_campaign,
-    get_campaign_by_id,
     user_reject_influencers,
 )
 from app.models.campaign_model import (
@@ -71,45 +70,40 @@ router.add_api_route(
 )
 
 
-@router.get("/campaigns/{campaign_id}/approved-influencers", tags=["Company"])
-async def get_campaign_approved_influencers_route(
-    campaign_id: str, current_user: dict = Depends(require_company_user_access)
-):
-    try:
-        campaign_data = await get_campaign_by_id(campaign_id)
-        if "error" in campaign_data:
-            raise HTTPException(status_code=400, detail="Campaign not found")
-        campaign = campaign_data.get("campaign", {})
-        if campaign.get("user_id") != current_user["user_id"]:
-            raise HTTPException(
-                status_code=403,
-                detail="You don't have permission to view this campaign",
-            )
+# @router.get("/approved-influencers/{user_id}", tags=["Company"])
+# async def get_campaign_approved_influencers_route(
+#     user_id: str, current_user: dict = Depends(require_company_user_access)
+# ):
+#     try:
+#         return await companyApprovedCampaignById(user_id)
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
 
-        return {
-            "campaign": {
-                "campaign_id": campaign_id,
-                "name": campaign.get("name"),
-                "description": campaign.get("description"),
-                "status": campaign.get("status"),
-                "platform": campaign.get("platform"),
-                "category": campaign.get("category"),
-                "followers": campaign.get("followers"),
-                "country": campaign.get("country"),
-                "created_at": campaign.get("created_at"),
-                "updated_at": campaign.get("updated_at"),
-            },
-            "approved_influencers": campaign_data.get("approved_influencers", []),
-            "rejected_by_user_influencers": campaign_data.get(
-                "rejected_by_user_influencers", []
-            ),
-            "total_approved": campaign_data.get("total_approved", 0),
-            "total_rejected_by_user": campaign_data.get("total_rejected_by_user", 0),
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+
+#         return {
+#             "campaign": {
+#                 "campaign_id": campaign_id,
+#                 "name": campaign.get("name"),
+#                 "description": campaign.get("description"),
+#                 "status": campaign.get("status"),
+#                 "platform": campaign.get("platform"),
+#                 "category": campaign.get("category"),
+#                 "followers": campaign.get("followers"),
+#                 "country": campaign.get("country"),
+#                 "created_at": campaign.get("created_at"),
+#                 "updated_at": campaign.get("updated_at"),
+#             },
+#             "approved_influencers": campaign_data.get("approved_influencers", []),
+#             "rejected_by_user_influencers": campaign_data.get(
+#                 "rejected_by_user_influencers", []
+#             ),
+#             "total_approved": campaign_data.get("total_approved", 0),
+#             "total_rejected_by_user": campaign_data.get("total_rejected_by_user", 0),
+#         }
+#     except HTTPException:
+#         raise
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
 
 
 router.add_api_route(
