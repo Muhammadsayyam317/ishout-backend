@@ -12,6 +12,7 @@ from app.api.controllers.campaign_controller import (
     get_campaign_generated_influencers,
     reject_and_regenerate_influencers,
 )
+from app.api.controllers.company.company_data import company_data
 from app.models.campaign_model import (
     AdminGenerateInfluencersRequest,
     CampaignStatusUpdateRequest,
@@ -26,6 +27,14 @@ router = APIRouter()
 router.add_api_route(
     path="/campaigns",
     endpoint=get_all_campaigns,
+    methods=["GET"],
+    tags=["Admin"],
+)
+
+
+router.add_api_route(
+    path="/company-data/{user_id}",
+    endpoint=company_data,
     methods=["GET"],
     tags=["Admin"],
 )
@@ -70,17 +79,6 @@ router.add_api_route(
 #     methods=["GET"],
 #     tags=["Admin"],
 # )
-
-
-# @router.patch("/campaigns/update-influencer-status", tags=["Admin"])
-# async def approve_single_influencer_route(
-#     request_data: CampaignInfluencersRequest,
-#     current_user: dict = Depends(require_admin_access),
-# ):
-#     try:
-#         return await approve_single_influencer(request_data)
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
 
 
 router.add_api_route(

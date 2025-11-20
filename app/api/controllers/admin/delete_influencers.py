@@ -1,4 +1,3 @@
-from bson import ObjectId
 from fastapi import HTTPException
 from app.config import config
 from app.db.connection import get_db
