@@ -1,46 +1,55 @@
 from bson import ObjectId
 from fastapi import HTTPException
+from app.config import config
 from app.db.connection import get_db
 from app.models.influencers_model import DeleteInfluencerRequest
-from app.services.embedding_service import delete_from_vector_store
+
+
+PLATFORM_COLLECTIONS = {
+    "instagram": config.MONGODB_ATLAS_COLLECTION_INSTAGRAM,
+    "tiktok": config.MONGODB_ATLAS_COLLECTION_TIKTOK,
+    "youtube": config.MONGODB_ATLAS_COLLECTION_YOUTUBE,
+}
 
 
 async def deleteInfluencerEmbedding(request: DeleteInfluencerRequest):
     try:
-        result = await delete_from_vector_store(
-            platform=request.platform,
-            influencer_id=request.influencer_id,
-        )
-        if result.get("deleted_count", 0) == 0:
+        if not request.platform or not request.influencer_id:
+            raise HTTPException(
+                status_code=400, detail="platform and influencer_id are required"
+            )
+
+        collection_name = PLATFORM_COLLECTIONS.get(request.platform.lower())
+        if not collection_name:
             raise HTTPException(
                 status_code=400,
-                detail="No matching document found to delete influencer",
+                detail=f"Invalid platform '{request.platform}'. Use instagram, tiktok, or youtube.",
             )
-        metadata_result = await _delete_influencer_metadata(request.influencer_id)
+
+        db = get_db()
+        platform_collection = db.get_collection(collection_name)
+        delete_result = await platform_collection.delete_one(
+            {"id": request.influencer_id}
+        )
+        if delete_result.deleted_count == 0:
+            raise HTTPException(
+                status_code=404, detail="Influencer not found in the specified platform"
+            )
+        metadata_collection = db.get_collection("campaign_influencers")
+        metadata_deleted_count = (
+            await metadata_collection.delete_many(
+                {"influencer_id": request.influencer_id}
+            )
+        ).deleted_count
 
         return {
-            "embedding": result,
-            "metadata_deleted_count": metadata_result.get("deleted_count", 0),
+            "message": "Influencer deleted successfully",
+            "platform_deleted_count": delete_result.deleted_count,
+            "metadata_deleted_count": metadata_deleted_count,
         }
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error in delete influencer embedding: {str(e)}"
-        ) from e
-
-
-async def _delete_influencer_metadata(influencer_id: str):
-    """Remove influencer metadata stored in campaign_influencers collection."""
-    try:
-        influencer_object_id = ObjectId(influencer_id)
-    except Exception:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid influencer_id format for metadata deletion",
         )
-
-    db = get_db()
-    collection = db.get_collection("campaign_influencers")
-    result = await collection.delete_many({"influencer_id": influencer_object_id})
-    return {"deleted_count": result.deleted_count}

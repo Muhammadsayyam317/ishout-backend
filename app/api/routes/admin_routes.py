@@ -160,7 +160,7 @@ router.add_api_route(
     tags=["Admin"],
 )
 router.add_api_route(
-    path="/delete-influencer/{influencer_id}",
+    path="/delete-influencer",
     endpoint=deleteInfluencerEmbedding,
     methods=["DELETE"],
     tags=["Admin"],
