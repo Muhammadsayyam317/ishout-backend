@@ -93,37 +93,35 @@ async def approved_campaign(
         ) from e
 
 
-# async def approvedAdminCampaignById(
-#     campaign_id: str,
-#     current_user: dict = Depends(require_admin_access),
-# ):
-#     if not current_user:
-#         raise HTTPException(status_code=401, detail="Unauthorized")
+async def approvedAdminCampaignById(
+    campaign_id: str,
+    current_user: dict = Depends(require_admin_access),
+):
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Unauthorized")
 
-#     try:
-#         db = get_db()
-#         campaigns_collection = db.get_collection("campaign_influencers")
+    try:
+        db = get_db()
+        campaigns_collection = db.get_collection("campaign_influencers")
+        cursor = campaigns_collection.find(
+            {
+                "campaign_id": ObjectId(campaign_id),
+                "status": CampaignInfluencerStatus.APPROVED.value,
+                "admin_approved": True,
+                "company_approved": False,
+            }
+        )
 
-#         # Filter for influencers that are approved by BOTH admin and company
-#         cursor = campaigns_collection.find(
-#             {
-#                 "campaign_id": ObjectId(campaign_id),
-#                 "status": CampaignInfluencerStatus.APPROVED.value,
-#                 "admin_approved": True,
-#                 "company_approved": False,
-#             }
-#         )
+        influencers = await cursor.to_list(length=None)
+        cleaned = [convert_objectid(i) for i in influencers]
 
-#         influencers = await cursor.to_list(length=None)
-#         cleaned = [convert_objectid(i) for i in influencers]
+        return {
+            "approved_influencers": cleaned,
+            "total": len(cleaned),
+        }
 
-#         return {
-#             "approved_influencers": cleaned,
-#             "total": len(cleaned),
-#         }
-
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 async def companyApprovedSingleInfluencer(

@@ -1,5 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends
-from app.api.controllers.admin.approved_campaign import approved_campaign
+from app.api.controllers.admin.approved_campaign import (
+    approved_campaign,
+    approvedAdminCampaignById,
+)
 from app.api.controllers.admin.campaign_byId import campaign_by_id_controller
 from app.api.controllers.admin.delete_campaign import delete_campaign_ById
 from app.api.controllers.admin.delete_influencers import deleteInfluencerEmbedding
@@ -19,8 +22,6 @@ from app.models.campaign_model import (
     RejectInfluencersRequest,
 )
 from app.middleware.auth_middleware import require_admin_access
-
-# from app.services.email_service import send_mail
 
 router = APIRouter()
 
@@ -73,12 +74,12 @@ router.add_api_route(
     tags=["Admin"],
 )
 
-# router.add_api_route(
-#     path="/approved-campaign/{campaign_id}",
-#     endpoint=approvedAdminCampaignById,
-#     methods=["GET"],
-#     tags=["Admin"],
-# )
+router.add_api_route(
+    path="/approved-campaign/{campaign_id}",
+    endpoint=approvedAdminCampaignById,
+    methods=["GET"],
+    tags=["Admin"],
+)
 
 
 router.add_api_route(
