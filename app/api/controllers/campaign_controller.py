@@ -108,6 +108,7 @@ async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]
             "followers": request_data.followers,
             "country": request_data.country,
             "user_id": request_data.user_id,
+            "company_name": request_data.company_name,
             "status": CampaignStatus.PENDING,
             "limit": request_data.limit,
             "created_at": datetime.now(timezone.utc),

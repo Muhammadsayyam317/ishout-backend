@@ -27,11 +27,10 @@ class CreateCampaignRequest(BaseModel):
     country: List[str]
     user_id: Optional[str] = None
     limit: Optional[int] = 10
+    company_name: Optional[str] = None
 
 
 class CampaignResponse(BaseModel):
-    """Response model for campaign data"""
-
     _id: str
     name: str
     description: Optional[str] = None
@@ -39,15 +38,10 @@ class CampaignResponse(BaseModel):
     category: List[str]
     followers: List[str]
     country: List[str]
-    influencer_ids: List[str]  # Legacy field for backward compatibility
-    influencer_references: List[InfluencerReference] = (
-        []
-    )  # New field with platform info
-    rejected_ids: List[str] = []  # Rejected by admin
-    rejectedByUser: List[str] = []  # Rejected by user
-    user_id: Optional[str] = None  # User who created the campaign
-    status: CampaignStatus = CampaignStatus.PENDING  # Campaign status
-    limit: Optional[int] = 10  # Number of influencers to generate
+    user_id: Optional[str] = None
+    company_name: Optional[str] = None
+    status: CampaignStatus = CampaignStatus.PENDING
+    limit: Optional[int] = 10
     created_at: datetime
     updated_at: datetime
 
