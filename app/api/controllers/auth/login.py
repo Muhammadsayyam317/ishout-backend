@@ -28,10 +28,7 @@ async def login_user(request_data: UserLoginRequest) -> Dict[str, Any]:
             email=user["email"],
             contact_person=user["contact_person"],
             phone=user.get("phone"),
-            industry=user.get("industry"),
-            company_size=user.get("company_size"),
             role=user["role"],
-            status=user["status"],
             created_at=user["created_at"],
             updated_at=user["updated_at"],
         )
@@ -41,6 +38,7 @@ async def login_user(request_data: UserLoginRequest) -> Dict[str, Any]:
             "access_token": access_token,
             "token_type": "bearer",
             "user": user_response.model_dump(),
+            "company_name": user_response.company_name,
         }
 
     except Exception as e:
