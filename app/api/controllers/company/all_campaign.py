@@ -1,6 +1,7 @@
 from typing import Dict, Any, Optional
 from fastapi import HTTPException
 from app.db.connection import get_db
+from app.utils.helpers import convert_objectid
 
 
 def _get_status_message(status: str) -> str:
@@ -19,15 +20,25 @@ async def all_campaigns(
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
         query = {"user_id": user_id}
+
         if status:
             query["status"] = status
 
+        skip = (page - 1) * page_size
+        total_count = await campaigns_collection.count_documents(query)
+        total_pages = (total_count + page_size - 1) // page_size
+
         campaigns = (
-            await campaigns_collection.find(query).sort("created_at", -1).to_list(None)
+            await campaigns_collection.find(query)
+            .sort("created_at", -1)
+            .skip(skip)
+            .limit(page_size)
+            .to_list(length=page_size)
         )
 
         user_campaigns = []
         for campaign in campaigns:
+            campaign = convert_objectid(campaign)
             campaign_dict = {
                 "campaign_id": str(campaign["_id"]),
                 "name": campaign["name"],
@@ -43,11 +54,7 @@ async def all_campaigns(
                 "created_at": campaign["created_at"],
                 "updated_at": campaign["updated_at"],
             }
-
             user_campaigns.append(campaign_dict)
-
-        total_count = await campaigns_collection.count_documents(query)
-        total_pages = (total_count + page_size - 1) // page_size
 
         return {
             "campaigns": user_campaigns,
