@@ -6,11 +6,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional
 from bson import ObjectId
 from app.models.user_model import (
-    CompanyRegistrationRequest,
-    UserLoginRequest,
     UserResponse,
-    UserRole,
-    UserStatus,
     PasswordChangeRequest,
     UserUpdateRequest,
 )
@@ -192,49 +188,44 @@ async def _get_campaign_lightweight(campaign_id: str) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-async def get_user_campaigns(
-    user_id: str, status: Optional[str] = None
-) -> Dict[str, Any]:
-    try:
-        db = get_db()
-        campaigns_collection = db.get_collection("campaigns")
-        query = {"user_id": user_id}
-        if status:
-            query["status"] = status if isinstance(status, str) else str(status)
-        campaigns = (
-            await campaigns_collection.find(query).sort("created_at", -1).to_list(None)
-        )
+# async def get_user_campaigns(
+#     user_id: str, status: Optional[str] = None
+# ) -> Dict[str, Any]:
+#     try:
+#         db = get_db()
+#         campaigns_collection = db.get_collection("campaigns")
+#         query = {"user_id": user_id}
+#         if status:
+#             query["status"] = status if isinstance(status, str) else str(status)
+#         campaigns = (
+#             await campaigns_collection.find(query).sort("created_at", -1).to_list(None)
+#         )
 
-        user_campaigns = []
-        for campaign in campaigns:
-            approved_count = len(campaign.get("influencer_ids", []))
-            rejected_count = len(campaign.get("rejected_ids", []))
-            generated_count = len(campaign.get("generated_influencers", []))
+#         user_campaigns = []
+#         for campaign in campaigns:
 
-            campaign_dict = {
-                "campaign_id": str(campaign["_id"]),
-                "name": campaign["name"],
-                "platform": campaign["platform"],
-                "category": campaign["category"],
-                "followers": campaign["followers"],
-                "country": campaign["country"],
-                "total_approved": approved_count,
-                "total_rejected": rejected_count,
-                "total_generated": generated_count,
-                "status": campaign.get("status", "pending"),
-                "status_message": _get_status_message(
-                    campaign.get("status", "pending")
-                ),
-                "created_at": campaign["created_at"],
-                "updated_at": campaign["updated_at"],
-            }
+#             campaign_dict = {
+#                 "campaign_id": str(campaign["_id"]),
+#                 "name": campaign["name"],
+#                 "platform": campaign["platform"],
+#                 "category": campaign["category"],
+#                 "followers": campaign["followers"],
+#                 "country": campaign["country"],
+#                 "limit": campaign["limit"],
+#                 "status": campaign.get("status", "pending"),
+#                 "status_message": _get_status_message(
+#                     campaign.get("status", "pending")
+#                 ),
+#                 "created_at": campaign["created_at"],
+#                 "updated_at": campaign["updated_at"],
+#             }
 
-            user_campaigns.append(campaign_dict)
+#             user_campaigns.append(campaign_dict)
 
-        return {"campaigns": user_campaigns, "total": len(user_campaigns)}
+#         return {"campaigns": user_campaigns, "total": len(user_campaigns)}
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
 
 
 def _get_status_message(status: str) -> str:

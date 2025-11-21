@@ -1,12 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends
-from typing import Optional
 from app.api.controllers.admin.approved_campaign import (
     companyApprovedSingleInfluencer,
 )
-from app.api.controllers.auth_controller import (
-    get_user_campaigns,
-)
-
+from app.api.controllers.company.all_campaign import all_campaigns
 from app.api.controllers.company.approved_influencers import companyApprovedCampaignById
 from app.middleware.auth_middleware import require_company_user_access
 from app.api.controllers.campaign_controller import (
@@ -34,16 +30,23 @@ async def create_campaign_route(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/campaigns", tags=["Company"])
-async def get_user_campaigns_route(
-    status: Optional[str] = None,
-    current_user: dict = Depends(require_company_user_access),
-):
-    """Get user's campaigns with approved influencers (Company users only). Optional query param: status"""
-    try:
-        return await get_user_campaigns(current_user["user_id"], status)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# @router.get("/campaigns", tags=["Company"])
+# async def get_user_campaigns_route(
+#     status: Optional[str] = None,
+#     current_user: dict = Depends(require_company_user_access),
+# ):
+#     """Get user's campaigns with approved influencers (Company users only). Optional query param: status"""
+#     try:
+#         return await get_user_campaigns(current_user["user_id"], status)
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+router.add_api_route(
+    path="/campaigns",
+    endpoint=all_campaigns,
+    methods=["GET"],
+    tags=["Company"],
+)
 
 
 @router.put("/campaigns/reject-influencers", tags=["Company"])
