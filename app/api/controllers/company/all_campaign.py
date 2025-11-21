@@ -18,14 +18,14 @@ async def all_campaigns(user_id: str, status: Optional[str] = None) -> Dict[str,
         campaigns_collection = db.get_collection("campaigns")
         query = {"user_id": user_id}
         if status:
-            query["status"] = status if isinstance(status, str) else str(status)
+            query["status"] = status
+
         campaigns = (
             await campaigns_collection.find(query).sort("created_at", -1).to_list(None)
         )
 
         user_campaigns = []
         for campaign in campaigns:
-
             campaign_dict = {
                 "campaign_id": str(campaign["_id"]),
                 "name": campaign["name"],
