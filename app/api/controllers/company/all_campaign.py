@@ -12,7 +12,9 @@ def _get_status_message(status: str) -> str:
     return status_messages.get(status, "Unknown status")
 
 
-async def all_campaigns(user_id: str, status: Optional[str] = None) -> Dict[str, Any]:
+async def all_campaigns(
+    user_id: str, status: Optional[str] = None, page: int = 1, page_size: int = 10
+) -> Dict[str, Any]:
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
@@ -44,7 +46,18 @@ async def all_campaigns(user_id: str, status: Optional[str] = None) -> Dict[str,
 
             user_campaigns.append(campaign_dict)
 
-        return {"campaigns": user_campaigns, "total": len(user_campaigns)}
+        total_count = await campaigns_collection.count_documents(query)
+        total_pages = (total_count + page_size - 1) // page_size
+
+        return {
+            "campaigns": user_campaigns,
+            "total": total_count,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages,
+            "has_next": page < total_pages,
+            "has_prev": page > 1,
+        }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

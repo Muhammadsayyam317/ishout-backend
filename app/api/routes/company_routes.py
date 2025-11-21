@@ -34,10 +34,12 @@ async def create_campaign_route(
 @router.get("/campaigns", tags=["Company"])
 async def get_user_campaigns_route(
     status: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 10,
     current_user: dict = Depends(require_company_user_access),
 ):
     try:
-        return await all_campaigns(current_user["user_id"], status)
+        return await all_campaigns(current_user["user_id"], status, page, page_size)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
