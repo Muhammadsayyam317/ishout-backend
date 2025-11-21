@@ -1,14 +1,11 @@
 from typing import Dict, Any
-from app.api.controllers.auth_controller import create_access_token
+from app.api.controllers.auth_controller import create_access_token, hash_password
 from app.db.connection import get_db
 from app.models.user_model import (
     CompanyRegistrationRequest,
     UserResponse,
     UserRole,
-    UserStatus,
 )
-from app.api.controllers.auth_controller import hash_password
-from datetime import datetime, timezone
 from fastapi import HTTPException
 
 
@@ -18,24 +15,15 @@ async def register_company(request_data: CompanyRegistrationRequest) -> Dict[str
         users_collection = db.get_collection("users")
         existing_user = await users_collection.find_one({"email": request_data.email})
         if existing_user:
-            return {"error": "User with this email already exists"}
+            return HTTPException(
+                status_code=400, detail="User with this email already exists"
+            )
         hashed_password = hash_password(request_data.password)
-
-        user_doc = {
-            "company_name": request_data.company_name,
-            "email": request_data.email,
-            "password": hashed_password,
-            "contact_person": request_data.contact_person,
-            "phone": request_data.phone,
-            "industry": request_data.industry,
-            "company_size": request_data.company_size,
-            "role": UserRole.COMPANY,
-            "status": UserStatus.ACTIVE,
-            "created_at": datetime.now(timezone.utc),
-            "updated_at": datetime.now(timezone.utc),
-        }
-        result = await users_collection.insert_one(user_doc)
-        user_id = str(result.inserted_id)
+        user = await users_collection.insert_one(
+            request_data.model_dump(exclude={"password"})
+            | {"password": hashed_password}
+        )
+        user_id = str(user.inserted_id)
         token_data = {
             "user_id": user_id,
             "email": request_data.email,
@@ -48,12 +36,9 @@ async def register_company(request_data: CompanyRegistrationRequest) -> Dict[str
             email=request_data.email,
             contact_person=request_data.contact_person,
             phone=request_data.phone,
-            industry=request_data.industry,
-            company_size=request_data.company_size,
             role=UserRole.COMPANY,
-            status=UserStatus.ACTIVE,
-            created_at=user_doc["created_at"],
-            updated_at=user_doc["updated_at"],
+            created_at=user["created_at"],
+            updated_at=user["updated_at"],
         )
 
         return {
