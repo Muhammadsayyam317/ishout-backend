@@ -39,7 +39,8 @@ async def search_youtube_influencers(
         )
         seen_usernames: Set[str] = set()
         all_results = []
-        per_combination_limit = max(50, limit) if limit > 0 else 50
+        target_limit = limit * 2 if limit > 0 else None
+        per_combination_limit = max(50, target_limit) if target_limit else 50
         for cat in categories:
             for cntry in countries:
                 for follower_range_str in followers_list:
@@ -77,7 +78,17 @@ async def search_youtube_influencers(
                         if username:
                             seen_usernames.add(username)
                         all_results.append(influencer_data)
-
-        return all_results
+                        # Stop collecting if we've reached the target limit
+                        if target_limit and len(all_results) >= target_limit:
+                            break
+                    if target_limit and len(all_results) >= target_limit:
+                        break
+                if target_limit and len(all_results) >= target_limit:
+                    break
+            if target_limit and len(all_results) >= target_limit:
+                break
+        
+        # Return limited results
+        return all_results[:target_limit] if target_limit else all_results
     except Exception as e:
         raise ValueError(f"Error searching YouTube influencers: {str(e)}")
