@@ -11,7 +11,7 @@ async def login_user(request_data: UserLoginRequest) -> Dict[str, Any]:
         users_collection = db.get_collection("users")
         user = await users_collection.find_one({"email": request_data.email})
         if not user:
-            return {"error": "Invalid email or password"}
+            raise HTTPException(status_code=401, detail="Invalid email or password")
         if user["status"] != UserStatus.ACTIVE:
             raise HTTPException(status_code=401, detail="Account is not active")
         if not verify_password(request_data.password, user["password"]):
@@ -28,8 +28,6 @@ async def login_user(request_data: UserLoginRequest) -> Dict[str, Any]:
             email=user["email"],
             contact_person=user["contact_person"],
             phone=user.get("phone"),
-            industry=user.get("industry"),
-            company_size=user.get("company_size"),
             role=user["role"],
             status=user["status"],
             created_at=user["created_at"],
@@ -41,6 +39,7 @@ async def login_user(request_data: UserLoginRequest) -> Dict[str, Any]:
             "access_token": access_token,
             "token_type": "bearer",
             "user": user_response.model_dump(),
+            "company_name": user_response.company_name,
         }
 
     except Exception as e:

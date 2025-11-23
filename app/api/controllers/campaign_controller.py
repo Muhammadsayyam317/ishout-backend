@@ -5,7 +5,6 @@ from fastapi import HTTPException
 from app.models.campaign_influencers_model import (
     CampaignInfluencerStatus,
     CampaignInfluencersRequest,
-    CampaignInfluencersResponse,
 )
 from app.models.campaign_model import (
     CreateCampaignRequest,
@@ -17,6 +16,7 @@ from app.models.influencers_model import FindInfluencerRequest
 from app.api.controllers.influencers_controller import find_influencers_by_campaign
 from app.db.connection import get_db
 from app.config import config
+from app.utils.helpers import convert_objectid
 
 
 async def _populate_user_details(user_id: str) -> Dict[str, Any]:
@@ -93,9 +93,7 @@ async def _populate_influencer_details(
         ) from e
 
 
-# Wrapper function for backward compatibility - delegates to service
 async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]:
-    """Create a new campaign"""
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
@@ -110,17 +108,14 @@ async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]
             "followers": request_data.followers,
             "country": request_data.country,
             "user_id": request_data.user_id,
+            "company_name": request_data.company_name,
             "status": CampaignStatus.PENDING,
             "limit": request_data.limit,
             "created_at": datetime.now(timezone.utc),
             "updated_at": datetime.now(timezone.utc),
         }
-
-        # Insert into campaigns collection
-        result = await campaigns_collection.insert_one(campaign_doc)
-
+        await campaigns_collection.insert_one(campaign_doc)
         return {
-            "campaign_id": str(result.inserted_id),
             "message": "Campaign created successfully",
         }
 
@@ -131,29 +126,30 @@ async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]
 
 
 async def get_all_campaigns(
-    status: Optional[str] = None, page: int = 1, page_size: int = 10
+    status: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 10,
 ) -> Dict[str, Any]:
-    """Get all campaigns with user details. Optionally filter by status with pagination support."""
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
         query = {}
         if status:
             try:
-                # Validate against enum values
                 valid_status = {
                     CampaignStatus.PENDING,
                     CampaignStatus.PROCESSING,
+                    CampaignStatus.APPROVED,
                     CampaignStatus.COMPLETED,
+                    CampaignStatus.REJECTED,
                 }
                 if status not in valid_status and status not in {
                     s.value for s in valid_status
                 }:
                     raise HTTPException(
                         status_code=400,
-                        detail="Invalid status. Use pending, processing, or completed.",
+                        detail="Invalid status. Use pending, processing, approved, completed, or rejected.",
                     )
-                # Normalize to string value
                 normalized = (
                     status.value if isinstance(status, CampaignStatus) else str(status)
                 )
@@ -164,77 +160,20 @@ async def get_all_campaigns(
                     detail=f"Invalid status: {str(e)}",
                 ) from e
 
-        # Calculate pagination
         skip = (page - 1) * page_size
-
-        # Get total count for pagination metadata
         total_count = await campaigns_collection.count_documents(query)
-
-        # Get paginated campaigns (await to_list for Motor)
-        campaigns = await (
-            campaigns_collection.find(query)
+        campaigns = (
+            await campaigns_collection.find(query)
             .sort("created_at", -1)
             .skip(skip)
             .limit(page_size)
             .to_list(length=None)
         )
-
-        # Convert ObjectId to string and populate user details
-        formatted_campaigns = []
-        for campaign in campaigns:
-            campaign["_id"] = str(campaign["_id"])
-
-            # Populate user details
-            user_id = campaign.get("user_id")
-            if user_id:
-                user_details = await _populate_user_details(user_id)
-                campaign["user_details"] = user_details
-
-            # Replace generated_influencers with just count for performance
-            generated_influencers = campaign.get("generated_influencers", [])
-            if generated_influencers:
-                # If it's a list of IDs (new format), count them. If it's list of objects (legacy), count them too
-                count = len(generated_influencers)
-                campaign["generated_influencers"] = count
-                campaign["generated_influencers_count"] = count
-            else:
-                campaign["generated_influencers"] = 0
-                campaign["generated_influencers_count"] = 0
-
-            # Replace influencer_ids with just count for performance
-            influencer_ids = campaign.get("influencer_ids", [])
-            if influencer_ids:
-                campaign["influencer_ids"] = len(influencer_ids)
-                campaign["approved_influencers_count"] = len(influencer_ids)
-            else:
-                campaign["influencer_ids"] = 0
-                campaign["approved_influencers_count"] = 0
-
-            # Replace rejected_ids with just count for performance
-            rejected_ids = campaign.get("rejected_ids", [])
-            if rejected_ids:
-                campaign["rejected_ids"] = len(rejected_ids)
-                campaign["rejected_influencers_count"] = len(rejected_ids)
-            else:
-                campaign["rejected_ids"] = 0
-                campaign["rejected_influencers_count"] = 0
-
-            # Replace rejectedByUser with just count for performance
-            rejected_by_user_ids = campaign.get("rejectedByUser", [])
-            if rejected_by_user_ids:
-                campaign["rejectedByUser"] = len(rejected_by_user_ids)
-                campaign["rejected_by_user_count"] = len(rejected_by_user_ids)
-            else:
-                campaign["rejectedByUser"] = 0
-                campaign["rejected_by_user_count"] = 0
-
-            formatted_campaigns.append(campaign)
-
-        # Calculate pagination metadata
-        total_pages = (total_count + page_size - 1) // page_size  # Ceiling division
+        campaigns = [convert_objectid(doc) for doc in campaigns]
+        total_pages = (total_count + page_size - 1) // page_size
 
         return {
-            "campaigns": formatted_campaigns,
+            "campaigns": campaigns,
             "total": total_count,
             "page": page,
             "page_size": page_size,
@@ -244,8 +183,9 @@ async def get_all_campaigns(
         }
 
     except Exception as e:
-        print(f"Error in get_all_campaigns: {str(e)}")
-        return {"error": str(e)}
+        return HTTPException(
+            status_code=500, detail=f"Error in get_all_campaigns: {str(e)}"
+        )
 
 
 async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
@@ -540,13 +480,14 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
         }
 
     except Exception as e:
-        print(f"Error in get_campaign_by_id: {str(e)}")
-        return {"error": str(e)}
+        raise HTTPException(
+            status_code=500, detail=f"Error in get_campaign_by_id: {str(e)}"
+        ) from e
 
 
-async def approve_single_influencer(
+async def AdminApprovedSingleInfluencer(
     request_data: CampaignInfluencersRequest,
-) -> CampaignInfluencersResponse:
+):
     try:
         db = get_db()
         collection = db.get_collection("campaign_influencers")
@@ -557,14 +498,17 @@ async def approve_single_influencer(
                 "platform": request_data.platform,
             }
         )
-
-        data = {
-            "campaign_id": ObjectId(request_data.campaign_id),
-            "influencer_id": ObjectId(request_data.influencer_id),
-            "platform": request_data.platform,
+        update_fields = {
+            "username": request_data.username,
+            "picture": request_data.picture,
+            "engagementRate": request_data.engagementRate,
+            "bio": request_data.bio,
+            "followers": request_data.followers,
+            "country": request_data.country,
             "status": request_data.status.value,
+            "company_user_id": request_data.company_user_id,
+            "admin_approved": True,
         }
-
         if existing:
             await collection.update_one(
                 {
@@ -572,33 +516,35 @@ async def approve_single_influencer(
                     "influencer_id": ObjectId(request_data.influencer_id),
                     "platform": request_data.platform,
                 },
-                {"$set": {"status": request_data.status.value}},
+                {"$set": update_fields},
             )
         else:
-            await collection.insert_one(data)
+            update_fields.update(
+                {
+                    "campaign_id": ObjectId(request_data.campaign_id),
+                    "influencer_id": ObjectId(request_data.influencer_id),
+                    "platform": request_data.platform,
+                    "company_approved": False,
+                }
+            )
+            await collection.insert_one(update_fields)
 
-        return CampaignInfluencersResponse(
-            message=f"Influencer {request_data.status.value} successfully",
-            status=request_data.status,
-        )
+        return {"message": "Influencer approved successfully"}
 
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error in approve single influencer: {str(e)}"
+            status_code=500, detail=f"Error approving influencer: {str(e)}"
         )
 
 
 async def user_reject_influencers(
     campaign_id: str, influencer_ids: List[str], user_id: str
 ) -> Dict[str, Any]:
-    """User rejects approved influencers and moves them to rejectedByUser array"""
     try:
         if not influencer_ids:
             return {"message": "No influencer IDs provided"}
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
-
-        # Ensure campaign exists and belongs to user
         campaign = await campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
         if not campaign:
             raise HTTPException(status_code=404, detail="Campaign not found")
@@ -929,4 +875,46 @@ async def reject_and_regenerate_influencers(request_data) -> Dict[str, Any]:
         raise HTTPException(
             status_code=500,
             detail=f"Error in reject and regenerate influencers: {str(e)}",
+        ) from e
+
+
+async def company_approved_campaign_influencers(
+    page: int = 1,
+    page_size: int = 10,
+):
+    if page < 1 or page_size < 1:
+        raise HTTPException(status_code=400, detail="Invalid pagination parameters")
+    try:
+        db = get_db()
+        collection = db.get_collection("campaign_influencers")
+        cursor = collection.find(
+            {
+                "admin_approved": True,
+                "company_approved": True,
+                "status": CampaignInfluencerStatus.APPROVED.value,
+            }
+        ).sort("updated_at", -1)
+
+        cursor = cursor.skip((page - 1) * page_size).limit(page_size)
+        influencers = await cursor.to_list(length=page_size)
+        influencers = [convert_objectid(doc) for doc in influencers]
+        total = await collection.count_documents(
+            {
+                "admin_approved": True,
+                "company_approved": True,
+                "status": CampaignInfluencerStatus.APPROVED.value,
+            }
+        )
+        total_pages = (total + page_size - 1) // page_size
+        return {
+            "influencers": influencers,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages,
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error in company approved campaign influencers: {str(e)}",
         ) from e

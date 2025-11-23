@@ -1,5 +1,7 @@
 from typing import Any, Dict, List, Optional, Tuple
 
+from bson import ObjectId
+
 
 def parse_follower_count(value: str) -> int:
     try:
@@ -196,3 +198,11 @@ def filter_influencer_data(
         return False
 
     return True
+
+
+def convert_objectid(doc):
+    """Convert all ObjectId fields in a document to strings."""
+    for key, value in doc.items():
+        if isinstance(value, ObjectId):
+            doc[key] = str(value)
+    return doc

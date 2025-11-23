@@ -1,0 +1,70 @@
+from typing import Dict, Any, Optional
+from fastapi import HTTPException
+from app.db.connection import get_db
+from app.utils.helpers import convert_objectid
+
+
+def _get_status_message(status: str) -> str:
+    status_messages = {
+        "pending": "Campaign created and waiting for admin to generate influencers",
+        "processing": "Admin is currently generating influencers for your campaign",
+        "completed": "Campaign completed with approved influencers",
+    }
+    return status_messages.get(status, "Unknown status")
+
+
+async def all_campaigns(
+    user_id: str, status: Optional[str] = None, page: int = 1, page_size: int = 10
+) -> Dict[str, Any]:
+    try:
+        db = get_db()
+        campaigns_collection = db.get_collection("campaigns")
+        query = {"user_id": user_id}
+
+        if status:
+            query["status"] = status
+
+        skip = (page - 1) * page_size
+        total_count = await campaigns_collection.count_documents(query)
+        total_pages = (total_count + page_size - 1) // page_size
+
+        campaigns = (
+            await campaigns_collection.find(query)
+            .sort("created_at", -1)
+            .skip(skip)
+            .limit(page_size)
+            .to_list(length=page_size)
+        )
+
+        user_campaigns = []
+        for campaign in campaigns:
+            campaign = convert_objectid(campaign)
+            campaign_dict = {
+                "campaign_id": str(campaign["_id"]),
+                "name": campaign["name"],
+                "platform": campaign["platform"],
+                "category": campaign["category"],
+                "followers": campaign["followers"],
+                "country": campaign["country"],
+                "limit": campaign["limit"],
+                "status": campaign.get("status", "pending"),
+                "status_message": _get_status_message(
+                    campaign.get("status", "pending")
+                ),
+                "created_at": campaign["created_at"],
+                "updated_at": campaign["updated_at"],
+            }
+            user_campaigns.append(campaign_dict)
+
+        return {
+            "campaigns": user_campaigns,
+            "total": total_count,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages,
+            "has_next": page < total_pages,
+            "has_prev": page > 1,
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

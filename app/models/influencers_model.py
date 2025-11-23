@@ -31,11 +31,6 @@ class FindInfluencerLegacyRequest(BaseModel):
 
 
 class DeleteInfluencerRequest(BaseModel):
-    """Request model to delete influencer data and embeddings from a platform collection.
-
-    Provide at least one identifier. If multiple are provided, they are combined with OR.
-    """
-
     platform: str
     influencer_id: str
 

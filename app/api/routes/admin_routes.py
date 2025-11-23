@@ -1,17 +1,21 @@
 from fastapi import APIRouter, HTTPException, Depends
-from typing import Optional
-from app.api.controllers.admin.approved_campaign import approved_campaign
+from app.api.controllers.admin.approved_campaign import (
+    approved_campaign,
+    approvedAdminCampaignById,
+)
 from app.api.controllers.admin.campaign_byId import campaign_by_id_controller
 from app.api.controllers.admin.delete_campaign import delete_campaign_ById
+from app.api.controllers.admin.delete_influencers import deleteInfluencerEmbedding
 from app.api.controllers.campaign_controller import (
+    AdminApprovedSingleInfluencer,
+    company_approved_campaign_influencers,
     get_all_campaigns,
-    approve_single_influencer,
     admin_generate_influencers,
     update_campaign_status,
     get_campaign_generated_influencers,
     reject_and_regenerate_influencers,
 )
-from app.models.campaign_influencers_model import CampaignInfluencersRequest
+from app.api.controllers.company.company_data import company_data
 from app.models.campaign_model import (
     AdminGenerateInfluencersRequest,
     CampaignStatusUpdateRequest,
@@ -21,19 +25,20 @@ from app.middleware.auth_middleware import require_admin_access
 
 router = APIRouter()
 
+router.add_api_route(
+    path="/campaigns",
+    endpoint=get_all_campaigns,
+    methods=["GET"],
+    tags=["Admin"],
+)
 
-@router.get("/campaigns", tags=["Admin"])
-async def get_all_campaigns_route(
-    status: Optional[str] = None,
-    page: int = 1,
-    page_size: int = 10,
-    current_user: dict = Depends(require_admin_access),
-):
-    """Get all campaigns (admin only). Optional query params: status=pending|processing|completed, page=1, page_size=10"""
-    try:
-        return await get_all_campaigns(status, page, page_size)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+
+router.add_api_route(
+    path="/company-data/{user_id}",
+    endpoint=company_data,
+    methods=["GET"],
+    tags=["Admin"],
+)
 
 
 @router.get("/pending-campaigns", tags=["Admin"])
@@ -69,17 +74,20 @@ router.add_api_route(
     tags=["Admin"],
 )
 
+router.add_api_route(
+    path="/approved-campaign/{campaign_id}",
+    endpoint=approvedAdminCampaignById,
+    methods=["GET"],
+    tags=["Admin"],
+)
 
-@router.patch("/campaigns/update-influencer-status", tags=["Admin"])
-async def approve_single_influencer_route(
-    request_data: CampaignInfluencersRequest,
-    current_user: dict = Depends(require_admin_access),
-):
-    """Approve or reject a single influencer (admin only)"""
-    try:
-        return await approve_single_influencer(request_data)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+
+router.add_api_route(
+    path="/campaigns/update-influencer-status",
+    endpoint=AdminApprovedSingleInfluencer,
+    methods=["PATCH"],
+    tags=["Admin"],
+)
 
 
 @router.post("/campaigns/generate-influencers/{campaign_id}", tags=["Admin"])
@@ -150,3 +158,25 @@ router.add_api_route(
     methods=["DELETE"],
     tags=["Admin"],
 )
+router.add_api_route(
+    path="/delete-influencer",
+    endpoint=deleteInfluencerEmbedding,
+    methods=["DELETE"],
+    tags=["Admin"],
+)
+router.add_api_route(
+    path="/company-approved-influencers",
+    endpoint=company_approved_campaign_influencers,
+    methods=["GET"],
+    tags=["Admin"],
+)
+
+
+# @router.post("/send-email", tags=["Admin"])
+# async def send_email_route(
+#     to: List[str],
+#     subject: str,
+#     html: str,
+#     current_user: dict = Depends(require_admin_access),
+# ):
+#     return await send_mail(to, subject, html)

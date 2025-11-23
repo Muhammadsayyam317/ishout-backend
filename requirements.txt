@@ -28,3 +28,4 @@ starlette-context
 colorlog
 email-validator
 websockets
+resend

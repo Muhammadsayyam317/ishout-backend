@@ -16,13 +16,11 @@ class UserStatus(str, Enum):
 
 
 class CompanyRegistrationRequest(BaseModel):
+    contact_person: str
     company_name: str
     email: EmailStr
     password: str
-    contact_person: str
-    phone: Optional[str] = None
-    industry: Optional[str] = None
-    company_size: Optional[str] = None
+    phone: str
 
 
 class UserLoginRequest(BaseModel):
