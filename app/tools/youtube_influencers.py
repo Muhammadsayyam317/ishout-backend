@@ -87,7 +87,7 @@ async def search_youtube_influencers(
                     break
             if target_limit and len(all_results) >= target_limit:
                 break
-        
+
         # Return limited results
         return all_results[:target_limit] if target_limit else all_results
     except Exception as e:
