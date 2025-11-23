@@ -60,14 +60,6 @@ async def reject_influencers_route(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-router.add_api_route(
-    path="/campaigns/update-influencer-status",
-    endpoint=companyApprovedSingleInfluencer,
-    methods=["PATCH"],
-    tags=["Company"],
-)
-
-
 # @router.get("/approved-influencers/{user_id}", tags=["Company"])
 # async def get_campaign_approved_influencers_route(
 #     user_id: str, current_user: dict = Depends(require_company_user_access)
@@ -114,5 +106,11 @@ router.add_api_route(
     path="/approved-campaigns/{user_id}",
     endpoint=companyApprovedCampaignById,
     methods=["GET"],
+    tags=["Company"],
+)
+router.add_api_route(
+    path="/campaigns/update-influencer-status",
+    endpoint=companyApprovedSingleInfluencer,
+    methods=["PATCH"],
     tags=["Company"],
 )
