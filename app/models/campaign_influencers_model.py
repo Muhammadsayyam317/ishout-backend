@@ -21,6 +21,7 @@ class CampaignInfluencersRequest(BaseModel):
     status: CampaignInfluencerStatus
     admin_approved: bool = False
     company_approved: bool = False
+    company_user_id: str
 
 
 class CampaignInfluencersResponse(BaseModel):

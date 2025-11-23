@@ -506,6 +506,7 @@ async def AdminApprovedSingleInfluencer(
             "followers": request_data.followers,
             "country": request_data.country,
             "status": request_data.status.value,
+            "company_user_id": request_data.company_user_id,
             "admin_approved": True,
         }
         if existing:
