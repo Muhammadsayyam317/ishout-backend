@@ -1,6 +1,6 @@
 from fastapi import HTTPException
 from app.db.connection import get_db
-from app.models.campaign_model import CampaignStatus
+from app.models.campaign_influencers_model import CampaignInfluencerStatus
 from app.utils.helpers import convert_objectid
 
 
@@ -11,54 +11,30 @@ async def companyApprovedCampaignById(
 ):
     try:
         db = get_db()
-
-        skip = (page - 1) * page_size
-
-        pipeline = [
+        collection = db.get_collection("campaign_influencers")
+        cursor = collection.find(
             {
-                "$lookup": {
-                    "from": "campaigns",
-                    "localField": "campaign_id",
-                    "foreignField": "_id",
-                    "as": "campaign",
-                }
-            },
-            {"$unwind": "$campaign"},
-            # Filter by user_id + approved influencer status
-            {
-                "$match": {
-                    "campaign.user_id": user_id,
-                    "admin_approved": True,
-                    "company_approved": False,
-                    "status": CampaignStatus.APPROVED.value,
-                }
-            },
-            {"$sort": {"updated_at": -1}},
-            {"$skip": skip},
-            {"$limit": page_size},
-        ]
-
-        influencers = await db.campaign_influencers.aggregate(pipeline).to_list(
-            length=page_size
+                "company_user_id": user_id,
+                "company_approved": False,
+                "status": CampaignInfluencerStatus.APPROVED.value,
+            }
         )
+        influencers = await cursor.to_list(length=None)
         influencers = [convert_objectid(doc) for doc in influencers]
-
-        # Count total items for pagination
-        count_pipeline = pipeline[:-3] + [{"$count": "total"}]
-        total_result = await db.campaign_influencers.aggregate(count_pipeline).to_list(
-            length=1
+        total = await collection.count_documents(
+            {
+                "company_user_id": user_id,
+                "company_approved": False,
+                "status": CampaignInfluencerStatus.APPROVED.value,
+            }
         )
-        total = total_result[0]["total"] if total_result else 0
         total_pages = (total + page_size - 1) // page_size
-
         return {
+            "influencers": influencers,
             "total": total,
             "page": page,
             "page_size": page_size,
             "total_pages": total_pages,
-            "has_next": page < total_pages,
-            "has_prev": page > 1,
-            "data": influencers,
         }
 
     except Exception as e:
