@@ -7,6 +7,9 @@ from app.api.controllers.company.all_campaign import (
     CompaignwithAdminApprovedInfluencersById,
     all_campaigns,
 )
+from app.api.controllers.company.approved_influencers import (
+    ReviewPendingInfluencersByCampaignId,
+)
 from app.middleware.auth_middleware import require_company_user_access
 from app.api.controllers.campaign_controller import (
     create_campaign,
@@ -72,6 +75,13 @@ router.add_api_route(
 router.add_api_route(
     path="/{user_id}/approved-campaign",
     endpoint=CompaignwithAdminApprovedInfluencersById,
+    methods=["GET"],
+    tags=["Company"],
+)
+
+router.add_api_route(
+    path="/review-pending-influencers/{campaign_id}",
+    endpoint=ReviewPendingInfluencersByCampaignId,
     methods=["GET"],
     tags=["Company"],
 )

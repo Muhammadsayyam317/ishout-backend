@@ -8,8 +8,8 @@ from app.models.campaign_influencers_model import (
 from app.utils.helpers import convert_objectid
 
 
-async def companyApprovedCampaignById(
-    user_id: str,
+async def ReviewPendingInfluencersByCampaignId(
+    campaign_id: str,
     page: int = 1,
     page_size: int = 10,
 ):
@@ -18,7 +18,7 @@ async def companyApprovedCampaignById(
         collection = db.get_collection("campaign_influencers")
         cursor = collection.find(
             {
-                "company_user_id": user_id,
+                "campaign_id": campaign_id,
                 "company_approved": False,
                 "status": CampaignInfluencerStatus.APPROVED.value,
             }
@@ -27,7 +27,7 @@ async def companyApprovedCampaignById(
         influencers = [convert_objectid(doc) for doc in influencers]
         total = await collection.count_documents(
             {
-                "company_user_id": user_id,
+                "campaign_id": campaign_id,
                 "company_approved": False,
                 "status": CampaignInfluencerStatus.APPROVED.value,
             }
