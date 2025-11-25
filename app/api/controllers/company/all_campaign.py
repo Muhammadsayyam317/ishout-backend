@@ -1,5 +1,4 @@
 from typing import Dict, Any, Optional
-from bson import ObjectId
 from fastapi import HTTPException
 from app.db.connection import get_db
 from app.models.campaign_model import CampaignStatus
@@ -73,35 +72,62 @@ async def all_campaigns(
 
 
 async def CompaignwithAdminApprovedInfluencersById(
-    user_id: str,
-    campaign_id: str,
-    page: int = 1,
-    page_size: int = 10,
+    user_id: str, page: int = 1, page_size: int = 10
 ):
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
-        influencers_collection = db.get_collection("campaign_influencers")
-        campaign = await campaigns_collection.find_one(
+
+        skip = (page - 1) * page_size
+
+        pipeline = [
+            {"$match": {"user_id": user_id, "status": CampaignStatus.APPROVED.value}},
+            {"$sort": {"updated_at": -1}},
             {
-                "_id": ObjectId(campaign_id),
-                "user_id": user_id,
-                "status": CampaignStatus.APPROVED.value,
-            }
-        )
+                "$lookup": {
+                    "from": "campaign_influencers",
+                    "let": {"camp_id": "$_id"},
+                    "pipeline": [
+                        {
+                            "$match": {
+                                "$expr": {"$eq": ["$campaign_id", "$$camp_id"]},
+                                "company_approved": False,
+                            }
+                        },
+                        {"$count": "pending_count"},
+                    ],
+                    "as": "pending_info",
+                }
+            },
+            {
+                "$addFields": {
+                    "pending_influencers_count": {
+                        "$ifNull": [
+                            {"$arrayElemAt": ["$pending_info.pending_count", 0]},
+                            0,
+                        ]
+                    }
+                }
+            },
+            {"$project": {"pending_info": 0}},
+            {"$skip": skip},
+            {"$limit": page_size},
+        ]
 
-        if not campaign:
-            raise HTTPException(status_code=404, detail="Campaign not found")
+        campaigns = await campaigns_collection.aggregate(pipeline).to_list(length=None)
 
-        campaign = convert_objectid(campaign)
-
-        pending_count = await influencers_collection.count_documents(
-            {"campaign_id": ObjectId(campaign_id), "company_approved": False}
+        total = await campaigns_collection.count_documents(
+            {"user_id": user_id, "status": CampaignStatus.APPROVED.value}
         )
 
         return {
-            "campaign": campaign,
-            "pending_influencers_count": pending_count,
+            "campaigns": [convert_objectid(c) for c in campaigns],
+            "pagination": {
+                "page": page,
+                "page_size": page_size,
+                "total": total,
+                "total_pages": (total + page_size - 1) // page_size,
+            },
         }
 
     except Exception as e:

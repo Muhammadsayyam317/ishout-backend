@@ -66,11 +66,11 @@ router.add_api_route(
     path="/search-influencers",
     endpoint=search_influencers,
     methods=["POST"],
-    tags=["User"],
+    tags=["Company"],
 )
 
 router.add_api_route(
-    path="/all-campaign/{user_id}",
+    path="/{user_id}/approved-campaign",
     endpoint=CompaignwithAdminApprovedInfluencersById,
     methods=["GET"],
     tags=["Company"],
