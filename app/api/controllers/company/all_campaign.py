@@ -1,6 +1,8 @@
 from typing import Dict, Any, Optional
+from bson import ObjectId
 from fastapi import HTTPException
 from app.db.connection import get_db
+from app.models.campaign_model import CampaignStatus
 from app.utils.helpers import convert_objectid
 
 
@@ -64,6 +66,42 @@ async def all_campaigns(
             "total_pages": total_pages,
             "has_next": page < total_pages,
             "has_prev": page > 1,
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+async def CompaignwithAdminApprovedInfluencersById(
+    user_id: str,
+    campaign_id: str,
+    page: int = 1,
+    page_size: int = 10,
+):
+    try:
+        db = get_db()
+        campaigns_collection = db.get_collection("campaigns")
+        influencers_collection = db.get_collection("campaign_influencers")
+        campaign = await campaigns_collection.find_one(
+            {
+                "_id": ObjectId(campaign_id),
+                "user_id": user_id,
+                "status": CampaignStatus.APPROVED.value,
+            }
+        )
+
+        if not campaign:
+            raise HTTPException(status_code=404, detail="Campaign not found")
+
+        campaign = convert_objectid(campaign)
+
+        pending_count = await influencers_collection.count_documents(
+            {"campaign_id": ObjectId(campaign_id), "company_approved": False}
+        )
+
+        return {
+            "campaign": campaign,
+            "pending_influencers_count": pending_count,
         }
 
     except Exception as e:

@@ -94,39 +94,26 @@ async def get_user_profile(user_id: str) -> Dict[str, Any]:
 
 async def update_user_profile(
     user_id: str, request_data: UserUpdateRequest
-) -> Dict[str, Any]:
+) -> HTTPException:
     """Update user profile"""
     try:
         db = get_db()
         users_collection = db.get_collection("users")
         user = await users_collection.find_one({"_id": ObjectId(user_id)})
         if not user:
-            return {"error": "User not found"}
-        # Prepare update data
-        update_data = {"updated_at": datetime.utcnow()}
-        if request_data.company_name is not None:
-            update_data["company_name"] = request_data.company_name
-        if request_data.contact_person is not None:
-            update_data["contact_person"] = request_data.contact_person
-        if request_data.phone is not None:
-            update_data["phone"] = request_data.phone
-        if request_data.industry is not None:
-            update_data["industry"] = request_data.industry
-        if request_data.company_size is not None:
-            update_data["company_size"] = request_data.company_size
-
-        # Update user
+            return HTTPException(status_code=404, detail="User not found")
+        update_data = request_data.model_dump(exclude_none=True)
+        update_data["updated_at"] = datetime.now(timezone.utc)
         result = await users_collection.update_one(
             {"_id": ObjectId(user_id)}, {"$set": update_data}
         )
-
         if result.modified_count == 0:
-            return {"error": "No changes made"}
+            return HTTPException(status_code=400, detail="No changes made")
 
-        return {"message": "Profile updated successfully"}
+        return HTTPException(status_code=200, detail="Profile updated successfully")
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return HTTPException(status_code=500, detail=str(e))
 
 
 async def change_password(
@@ -138,10 +125,12 @@ async def change_password(
         users_collection = db.get_collection("users")
         user = await users_collection.find_one({"_id": ObjectId(user_id)})
         if not user:
-            return {"error": "User not found"}
+            return HTTPException(status_code=404, detail="User not found")
         # Verify current password
         if not verify_password(request_data.current_password, user.get("password")):
-            return {"error": "Current password is incorrect"}
+            return HTTPException(
+                status_code=401, detail="Current password is incorrect"
+            )
 
         # Hash new password
         new_hashed_password = hash_password(request_data.new_password)
@@ -166,82 +155,11 @@ async def change_password(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-async def _get_campaign_lightweight(campaign_id: str) -> Dict[str, Any]:
-    try:
-        db = get_db()
-        campaigns_collection = db.get_collection("campaigns")
-        campaign = await campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
-        if not campaign:
-            raise HTTPException(status_code=404, detail="Campaign not found")
-
-        campaign["_id"] = str(campaign["_id"])
-
-        return {
-            "campaign": campaign,
-            "influencers": [],
-            "rejected_influencers": [],
-            "total_found": len(campaign.get("influencer_ids", [])),
-            "total_rejected": len(campaign.get("rejected_ids", [])),
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-# async def get_user_campaigns(
-#     user_id: str, status: Optional[str] = None
-# ) -> Dict[str, Any]:
-#     try:
-#         db = get_db()
-#         campaigns_collection = db.get_collection("campaigns")
-#         query = {"user_id": user_id}
-#         if status:
-#             query["status"] = status if isinstance(status, str) else str(status)
-#         campaigns = (
-#             await campaigns_collection.find(query).sort("created_at", -1).to_list(None)
-#         )
-
-#         user_campaigns = []
-#         for campaign in campaigns:
-
-#             campaign_dict = {
-#                 "campaign_id": str(campaign["_id"]),
-#                 "name": campaign["name"],
-#                 "platform": campaign["platform"],
-#                 "category": campaign["category"],
-#                 "followers": campaign["followers"],
-#                 "country": campaign["country"],
-#                 "limit": campaign["limit"],
-#                 "status": campaign.get("status", "pending"),
-#                 "status_message": _get_status_message(
-#                     campaign.get("status", "pending")
-#                 ),
-#                 "created_at": campaign["created_at"],
-#                 "updated_at": campaign["updated_at"],
-#             }
-
-#             user_campaigns.append(campaign_dict)
-
-#         return {"campaigns": user_campaigns, "total": len(user_campaigns)}
-
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-
-
-def _get_status_message(status: str) -> str:
-    status_messages = {
-        "pending": "Campaign created and waiting for admin to generate influencers",
-        "processing": "Admin is currently generating influencers for your campaign",
-        "completed": "Campaign completed with approved influencers",
-    }
-    return status_messages.get(status, "Unknown status")
-
-
-async def get_current_user(token: str) -> Optional[Dict[str, Any]]:
+async def get_current_user(token: str) -> Dict[str, Any]:
     try:
         payload = verify_token(token)
         if not payload:
-            return None
+            return HTTPException(status_code=401, detail="Invalid token")
         return {
             "user_id": payload.get("user_id"),
             "email": payload.get("email"),
