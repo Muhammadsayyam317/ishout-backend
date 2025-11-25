@@ -18,16 +18,16 @@ async def ReviewPendingInfluencersByCampaignId(
         collection = db.get_collection("campaign_influencers")
         cursor = collection.find(
             {
-                "campaign_id": campaign_id,
-                "company_approved": False,
+                "campaign_id": ObjectId(campaign_id),
                 "status": CampaignInfluencerStatus.APPROVED.value,
+                "company_approved": False,
             }
         )
         influencers = await cursor.to_list(length=None)
         influencers = [convert_objectid(doc) for doc in influencers]
         total = await collection.count_documents(
             {
-                "campaign_id": campaign_id,
+                "campaign_id": ObjectId(campaign_id),
                 "company_approved": False,
                 "status": CampaignInfluencerStatus.APPROVED.value,
             }
