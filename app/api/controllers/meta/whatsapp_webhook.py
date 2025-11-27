@@ -3,12 +3,16 @@ import logging
 import httpx
 from fastapi import Response
 from app.config import config
+from app.utils.clients import get_openai_client
 
-# from app.config.llm_router import llm_router
+client = get_openai_client()
 
 
 async def verify_whatsapp_webhook(request: Request):
     params = request.query_params
+    if "hub.mode" not in params:
+        return Response(content="WhatsApp Webhook is active", status_code=200)
+
     mode = params.get("hub.mode")
     token = params.get("hub.verify_token")
     challenge = params.get("hub.challenge")
@@ -29,11 +33,12 @@ async def handle_whatsapp_events(request: Request) -> Response:
             logging.info(f"📩 Incoming Message: {event_data['messages'][0]}")
             user_message = event_data["messages"][0]
             sender_id = user_message["from"]
-            # message_content = user_message["text"]["body"]
-
-            # bot_reply = llm_router(message_content)
-            bot_reply = "Hello, how can I help you today?"
-            response_status = await send_whatsapp_message(sender_id, bot_reply)
+            bot_reply = client.chat.completions.create(
+                model="gpt-4.1-mini",
+                messages=[{"role": "user", "content": user_message["text"]["body"]}],
+            )
+            reply_text = bot_reply.choices[0].message.content
+            response_status = await send_whatsapp_message(sender_id, reply_text)
 
             if response_status:
                 return {"status": "success", "message": "Processed"}
@@ -54,17 +59,6 @@ async def handle_whatsapp_events(request: Request) -> Response:
 
 
 async def send_whatsapp_message(recipient_id: str, message_text: str) -> bool:
-    """
-    Sends a response message to a user via the WhatsApp Cloud API.
-
-    Args:
-        from_number (str): The recipient's phone number.
-        response_text (str): The message content to be sent.
-        message_type (str, optional): The type of message (default is "text").
-
-    Returns:
-        bool: True if the message was sent successfully, False otherwise.
-    """
     headers = {
         "Authorization": "Bearer " + config.META_WHATSAPP_ACCESSSTOKEN,
         "Content-Type": "application/json",

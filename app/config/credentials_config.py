@@ -50,7 +50,7 @@ class Config(BaseModel):
     WHATSAPP_BUSSINESS_ACCOUNT_ID: str = Field(
         default=os.getenv("WHATSAPP_BUSSINESS_ACCOUNT_ID")
     )
-    VERSION: str = Field(default=os.getenv("VERSION"))
+    VERSION: str = Field(default=os.getenv("META_VERSION"))
 
     LANGFUSE_SECRET_KEY: str = Field(default=os.getenv("LANGFUSE_SECRET_KEY"))
     LANGFUSE_PUBLIC_KEY: str = Field(default=os.getenv("LANGFUSE_PUBLIC_KEY"))
