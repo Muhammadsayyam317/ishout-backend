@@ -60,7 +60,8 @@ async def handle_whatsapp_events(request: Request) -> Response:
 
 async def send_whatsapp_message(recipient_id: str, message_text: str) -> bool:
     headers = {
-        "Authorization": "Bearer " + config.META_WHATSAPP_ACCESSSTOKEN,
+        "Authorization": "Bearer "
+        + "EAAVTqVZBPnhYBQPpws4RTBzBGtxZARiAecMVFFvkftKgzRjjTCRkYMYqZBMuIg9pfCLy8ty9cp4JLnw4LKkKZAeqINE2tfz0glk4IgtTxt32dVDFQIAiHGm4JZAzKr4InGMoalsd5T0xFflZAgsYO5N4MOnz0g6vN7UvoZANHdyOEgNkoOXZC4FZAOXsH4WYK2is4VIDT",
         "Content-Type": "application/json",
     }
 
@@ -75,7 +76,7 @@ async def send_whatsapp_message(recipient_id: str, message_text: str) -> bool:
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"https://graph.facebook.com/{config.VERSION}/{config.PHONE_NUMBER_ID}/messages",
+                "https://graph.facebook.com/v22.0/912195958636325/messages",
                 headers=headers,
                 json=message_payload,
             )
