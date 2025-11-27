@@ -1,10 +1,9 @@
 import logging
 from typing import Any
-
-# from langfuse.decorators import observe
+from langfuse.decorators import observe
 from app.utils import (
     get_interactions_from_db,
-    # get_langfuse_client,
+    get_langfuse_client,
     get_openai_client,
     save_interaction_to_db,
 )
@@ -13,10 +12,10 @@ from app.models.message_model import MessageRequestType
 
 # Access the clients
 openai_client = get_openai_client()
-# langfuse_client = get_langfuse_client()
+langfuse_client = get_langfuse_client()
 
 
-# @observe()
+@observe()
 def route_message_request(
     user_input: str, client: Any = openai_client, model_name: str = settings.MODEL_NAME
 ) -> MessageRequestType:

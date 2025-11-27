@@ -2,28 +2,23 @@ from fastapi import Request
 import logging
 import httpx
 from fastapi import Response
+from app.config import config
 
 # from app.config.llm_router import llm_router
-from app.config import config
+
+
+async def verify_whatsapp_webhook(request: Request):
+    params = request.query_params
+    mode = params.get("hub.mode")
+    token = params.get("hub.verify_token")
+    challenge = params.get("hub.challenge")
+
+    if mode == "subscribe" and token == config.META_VERIFY_TOKEN:
+        return Response(content=challenge, status_code=200)
+    return Response(status_code=403)
 
 
 async def handle_whatsapp_events(request: Request) -> Response:
-    """
-    Handles incoming messages and status updates from the WhatsApp Cloud API.
-
-    Args:
-        request (Request): Incoming HTTP request containing message or status update.
-
-    Returns:
-        Response: HTTP response with appropriate status code and message.
-    """
-    if request.method == "GET":
-        logging.info("Received GET request for verification")
-        params = request.query_params
-        if params.get("hub.verify_token") == config.WHATSAPP_VERIFY_TOKEN:
-            return Response(content=params.get("hub.challenge"), status_code=200)
-        return Response(content="Invalid verification token", status_code=403)
-
     try:
         logging.info("Processing incoming event...")
         payload = await request.json()

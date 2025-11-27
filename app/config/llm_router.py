@@ -1,6 +1,5 @@
 # Main handler
 import logging
-
 from app.api.controllers.influencers_controller import find_influencers_by_campaign
 from app.models.influencers_model import FindInfluencerRequest
 from app.config.message_classification import route_message_request

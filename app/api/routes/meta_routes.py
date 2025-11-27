@@ -5,7 +5,10 @@ from app.api.controllers.meta.notification import (
     websocket_notifications,
 )
 from app.api.controllers.meta.privacy_policy import get_privacy_policy
-from app.api.controllers.meta.whatsapp_webhook import handle_whatsapp_events
+from app.api.controllers.meta.whatsapp_webhook import (
+    handle_whatsapp_events,
+    verify_whatsapp_webhook,
+)
 
 router = APIRouter()
 
@@ -39,7 +42,16 @@ router.add_api_websocket_route(
 
 router.add_api_route(
     path="/whatsapp-webhook",
-    endpoint=handle_whatsapp_events,
-    methods=["GET", "POST"],
+    endpoint=verify_whatsapp_webhook,
+    methods=["GET"],
     tags=["Meta"],
+    name="verify_whatsapp_webhook",
+)
+
+router.add_api_route(
+    path="/whatsapp-webhook",
+    endpoint=handle_whatsapp_events,
+    methods=["POST"],
+    tags=["Meta"],
+    name="handle_whatsapp_events",
 )
