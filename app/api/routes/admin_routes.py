@@ -168,7 +168,7 @@ router.add_api_route(
     tags=["Admin"],
 )
 router.add_api_route(
-    path="/company-approved-influencers",
+    path="/company-approved-influencers/{campaign_id}",
     endpoint=company_approved_campaign_influencers,
     methods=["GET"],
     tags=["Admin"],
