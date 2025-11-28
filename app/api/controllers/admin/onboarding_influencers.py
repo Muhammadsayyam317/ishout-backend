@@ -1,5 +1,4 @@
 from fastapi import Depends, HTTPException
-
 from app.db.connection import get_db
 from app.middleware.auth_middleware import require_admin_access
 from app.models.campaign_influencers_model import CampaignInfluencerStatus
@@ -27,15 +26,16 @@ async def onboarding_campaigns(
             {"campaign_id": 1},
         )
         influencers = await cursor.to_list(length=None)
-        campaign_ids = list(
-            set(
-                [
-                    inf.get("campaign_id")
-                    for inf in influencers
-                    if inf.get("campaign_id")
-                ]
-            )
-        )
+
+        campaign_counts = {}
+        campaign_ids = []
+        for influencer in influencers:
+            campaign_id = influencer.get("campaign_id")
+            if not campaign_id:
+                continue
+            campaign_counts[campaign_id] = campaign_counts.get(campaign_id, 0) + 1
+            if campaign_id not in campaign_ids:
+                campaign_ids.append(campaign_id)
 
         if not campaign_ids:
             return {
@@ -60,6 +60,12 @@ async def onboarding_campaigns(
         )
 
         campaigns = await campaigns_cursor.to_list(length=page_size)
+
+        for campaign in campaigns:
+            campaign["approved_influencer_count"] = campaign_counts.get(
+                campaign.get("_id"), 0
+            )
+
         campaigns = [convert_objectid(campaign) for campaign in campaigns]
 
         return {
