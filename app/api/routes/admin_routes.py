@@ -1,4 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
+from app.api.controllers.admin.onboarding_influencers import (
+    onboarding_influencers,
+)
 from app.api.controllers.admin.approved_campaign import (
     approved_campaign,
     approvedAdminCampaignById,
@@ -167,6 +170,13 @@ router.add_api_route(
 router.add_api_route(
     path="/company-approved-influencers",
     endpoint=company_approved_campaign_influencers,
+    methods=["GET"],
+    tags=["Admin"],
+)
+
+router.add_api_route(
+    path="/onboarding-influencers",
+    endpoint=onboarding_influencers,
     methods=["GET"],
     tags=["Admin"],
 )
