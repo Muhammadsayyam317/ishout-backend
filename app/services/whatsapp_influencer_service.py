@@ -19,7 +19,6 @@ async def find_influencers_for_whatsapp(
     Returns a list of influencer dictionaries with username, followers, bio, etc.
     """
     try:
-        # Determine collection name based on platform
         collection_name = None
         if platform == "instagram":
             collection_name = config.MONGODB_ATLAS_COLLECTION_INSTAGRAM
@@ -37,17 +36,11 @@ async def find_influencers_for_whatsapp(
             raise ValueError(
                 f"Collection name is empty for platform {platform}. Check your environment variables."
             )
-
-        # Initialize embeddings
         embeddings = OpenAIEmbeddings(
             api_key=config.OPENAI_API_KEY, model=config.EMBEDDING_MODEL
         )
-
-        # Get PyMongo database (synchronous client for langchain)
         pymongo_db = get_pymongo_db()
         collection = pymongo_db[collection_name]
-
-        # Create vector store
         vectorstore = MongoDBAtlasVectorSearch(
             collection=collection,
             embedding=embeddings,
@@ -56,11 +49,7 @@ async def find_influencers_for_whatsapp(
             text_key=text_key,
             relevance_score_fn="cosine",
         )
-
-        # Run similarity_search in thread pool since it's synchronous
         results = await asyncio.to_thread(vectorstore.similarity_search, query, k=limit)
-
-        # Extract influencer data from results
         influencers = []
         for doc in results:
             if hasattr(doc, "metadata") and doc.metadata:
@@ -81,7 +70,6 @@ async def find_influencers_for_whatsapp(
                     "platform": platform.lower(),
                     "id": doc.metadata.get("id") or doc.metadata.get("_id"),
                 }
-                # Remove None values
                 influencer_data = {
                     k: v for k, v in influencer_data.items() if v is not None
                 }

@@ -1,8 +1,9 @@
 from fastapi import Request
 import logging
 import httpx
+from app.config.credentials_config import config
 from fastapi import Response
-from app.config import config, llm_router
+from app.config.llm_router import llm_router
 from app.utils.clients import get_openai_client
 
 client = get_openai_client()
