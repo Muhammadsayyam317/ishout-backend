@@ -1,65 +1,58 @@
 import logging
-from typing import Any
-from langfuse.decorators import observe
-from app.utils import (
-    get_interactions_from_db,
-    get_langfuse_client,
-    get_openai_client,
-    save_interaction_to_db,
-)
-from app.config import settings
+from typing import Any, Tuple
+from langfuse import observe
+from app.config.credentials_config import config
+from app.config.store_message_history import save_interaction_to_db, is_first_message
+from app.utils.clients import get_openai_client
 from app.models.message_model import MessageRequestType
-
-# Access the clients
-openai_client = get_openai_client()
-langfuse_client = get_langfuse_client()
 
 
 @observe()
-def route_message_request(
-    user_input: str, client: Any = openai_client, model_name: str = settings.MODEL_NAME
-) -> MessageRequestType:
+async def route_message_request(
+    user_input: str,
+    sender_id: str = None,
+    client: Any = get_openai_client(),
+    model_name: str = config.OPENAI_MODEL_NAME,
+) -> Tuple[MessageRequestType, bool]:
     """
-    Routes the message request to the appropriate LLM endpoint to determine the type of request.
-
-    This function takes the user's input, processes it with historical interactions from the database,
-    and sends the relevant context to the LLM. It then parses the LLM's response and routes the message accordingly.
-
-    Args:
-        client (Any): The LLM client to make the request.
-        model_name (str): The name of the model to be used for processing.
-        user_input (str): The current user's input message.
-
-    Returns:
-        MessageRequestType: A Pydantic model containing the request type, confidence score, and description.
+    Route message request and return classification along with is_first_message flag.
+    Returns: (MessageRequestType, is_first_message)
     """
-    """Router LLM call to determine the type of request with memory"""
     logging.info("Routing message request with memory")
 
-    # Retrieve last 5 interactions from DB
-    interactions = get_interactions_from_db()
+    # Check if this is the first message
+    first_message = False
+    if sender_id:
+        first_message = is_first_message(sender_id)
 
-    # Prepare messages with history + the current user input
+    # Get previous interactions for this sender
+    interactions = save_interaction_to_db(sender_id=sender_id) if sender_id else []
+
     messages = [
         {
             "role": "system",
-            "content": "Determine if this is a request to find influencers.",
+            "content": "Determine if this is a request to find influencers. Return 'find_influencers' if the user wants to find influencers, otherwise return a different classification.",
         },
-        {
-            "role": "system",
-            "content": "These are the last five messages of previous conversation but you do not need to use these pieces of information if not relevant:\n"
-            + "\n".join(
-                [
-                    f"User: {interaction[0]}\nAssistant: {interaction[1]}"
-                    for interaction in interactions
-                ]
-            )
-            + "\n\n(End of previous conversation)",
-        },
-        {"role": "user", "content": f"Current conversation: {user_input}"},
     ]
 
-    # Call the LLM to get a response
+    # Add conversation history if available
+    if interactions:
+        messages.append(
+            {
+                "role": "system",
+                "content": "These are the last five messages of previous conversation but you do not need to use these pieces of information if not relevant:\n"
+                + "\n".join(
+                    [
+                        f"User: {interaction[0]}\nAssistant: {interaction[1]}"
+                        for interaction in interactions
+                    ]
+                )
+                + "\n\n(End of previous conversation)",
+            }
+        )
+
+    messages.append({"role": "user", "content": f"Current conversation: {user_input}"})
+
     logging.info("Calling the LLM...")
     completion = client.beta.chat.completions.parse(
         model=model_name,
@@ -67,13 +60,13 @@ def route_message_request(
         response_format=MessageRequestType,
     )
 
-    # Parse the result
     result = completion.choices[0].message.parsed
     logging.info(
         f"Request routed as: {result.request_type} with confidence: {result.confidence_score}"
     )
 
-    # Save the new interaction to the DB (with the LLM's response)
-    save_interaction_to_db(question=user_input, response=result.description)
+    # Save interaction if sender_id is provided
+    if sender_id:
+        save_interaction_to_db(user_input, result.request_type, sender_id)
 
-    return result
+    return result, first_message

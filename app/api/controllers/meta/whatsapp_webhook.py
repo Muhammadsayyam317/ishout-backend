@@ -2,7 +2,7 @@ from fastapi import Request
 import logging
 import httpx
 from fastapi import Response
-from app.config import config
+from app.config import config, llm_router
 from app.utils.clients import get_openai_client
 
 client = get_openai_client()
@@ -30,15 +30,13 @@ async def handle_whatsapp_events(request: Request) -> Response:
         logging.info(f"Event data: {event_data}")
 
         if "messages" in event_data:
-            logging.info(f"📩 Incoming Message: {event_data['messages'][0]}")
+            logging.info(f"Incoming Message FROM: {event_data['messages'][0]['from']}")
+
             user_message = event_data["messages"][0]
             sender_id = user_message["from"]
-            bot_reply = client.chat.completions.create(
-                model="gpt-4.1-mini",
-                messages=[{"role": "user", "content": user_message["text"]["body"]}],
-            )
-            reply_text = bot_reply.choices[0].message.content
-            response_status = await send_whatsapp_message(sender_id, reply_text)
+            message_text = user_message["message"]["text"]
+            bot_reply = await llm_router(message_text, sender_id)
+            response_status = await send_whatsapp_message(sender_id, bot_reply)
 
             if response_status:
                 return {"status": "success", "message": "Processed"}
@@ -46,7 +44,7 @@ async def handle_whatsapp_events(request: Request) -> Response:
                 return Response(content="Failed to send response", status_code=500)
         elif "statuses" in event_data:
             logging.info(
-                f"📊 Status Update: {event_data['statuses'][0]['status']} (ID: {event_data['statuses'][0]['id']})"
+                f"Status Update: {event_data['statuses'][0]['status']} (ID: {event_data['statuses'][0]['id']})"
             )
             return Response(content="Status update received", status_code=200)
 
@@ -76,7 +74,7 @@ async def send_whatsapp_message(recipient_id: str, message_text: str) -> bool:
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                "https://graph.facebook.com/v22.0/912195958636325/messages",
+                "https://graph.facebook.com/v24.0/912195958636325/messages",
                 headers=headers,
                 json=message_payload,
             )

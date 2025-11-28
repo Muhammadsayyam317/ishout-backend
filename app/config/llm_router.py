@@ -1,50 +1,105 @@
-# Main handler
 import logging
-from app.api.controllers.influencers_controller import find_influencers_by_campaign
-from app.models.influencers_model import FindInfluencerRequest
+import re
 from app.config.message_classification import route_message_request
+from app.services.whatsapp_influencer_service import find_influencers_for_whatsapp
 
 
-async def llm_router(user_message):
+async def llm_router(user_message: str, sender_id: str = None):
     """
-    Handles user requests by classifying the intent and routing it
-    to the appropriate function.
-
-    Args:
-        user_message (str): The message sent by the user.
-
-    Returns:
-        str: Response from the appropriate function or an error message.
+    Route user message to appropriate handler.
+    - If first message and not about finding influencers: return helpful message
+    - If about finding influencers: use embedding service to find influencers
     """
     try:
-        # Step 1: Classify the user's intent
-        classify_message = await route_message_request(user_message)
+        # Classify the message and check if it's the first message
+        classify_message, is_first = await route_message_request(
+            user_message, sender_id
+        )
         intent = classify_message.request_type
 
-        # Step 2: Route the request based on the classified intent
+        # If first message and not about finding influencers, return helpful message
+        if is_first and intent != "find_influencers":
+            return "Hello! How may I help you to find influencers?"
+
+        # If not about finding influencers (and not first message), return helpful message
+        if intent != "find_influencers":
+            return "I'm here to help you find influencers. Could you please tell me what kind of influencers you're looking for? For example: 'Find 10 beauty influencers on Instagram' or 'Show me fitness influencers on TikTok'."
+
+        # If about finding influencers, use embedding service
         if intent == "find_influencers":
-            return await find_influencers_by_campaign(
-                FindInfluencerRequest(
-                    campaign_id=user_message.campaign_id,
-                    user_id=user_message.user_id,
-                    limit=user_message.limit,
-                )
+            # Extract platform from message (default to instagram)
+            platform = _extract_platform(user_message)
+
+            # Extract limit from message (default to 5)
+            limit = _extract_limit(user_message)
+
+            # Use the user's message as the query, or use the description from classification
+            query = (
+                classify_message.description
+                if hasattr(classify_message, "description")
+                and classify_message.description
+                else user_message
             )
 
-        else:
-            return "I'm unable to process that request. Can you provide more details?"
+            # Query the vector store using WhatsApp-specific service
+            influencers = await find_influencers_for_whatsapp(
+                query=query, platform=platform, limit=limit
+            )
+
+            if not influencers:
+                return "I couldn't find any influencers matching your request. Could you try rephrasing your query? For example: 'Find 10 beauty influencers on Instagram' or 'Show me fitness influencers on TikTok'."
+
+            # Format the response
+            response = f"I found {len(influencers)} influencer(s) for you:\n\n"
+            for i, influencer in enumerate(influencers[:limit], 1):
+                username = influencer.get("username", influencer.get("name", "Unknown"))
+                followers = influencer.get(
+                    "followers", influencer.get("follower_count", "N/A")
+                )
+                bio = influencer.get("bio", influencer.get("description", ""))
+                platform_name = influencer.get("platform", platform)
+
+                response += f"{i}. @{username} ({platform_name})\n"
+                if followers:
+                    response += f"   Followers: {followers}\n"
+                if bio:
+                    bio_short = bio[:100] + "..." if len(bio) > 100 else bio
+                    response += f"   Bio: {bio_short}\n"
+                response += "\n"
+
+            return response
+
+        return "I'm unable to process that request. Can you provide more details?"
 
     except Exception as e:
-        # Log the error and return a user-friendly response
-        logging.error(f"Error handling request: {e}")
+        logging.error(f"Error handling request: {e}", exc_info=True)
         return (
             "An error occurred while processing your request. Please try again later."
         )
 
 
-# question1 = "What should I do if my package is lost?"
-# print(llm_router(question1))
-# question2 = "How long does it take to send a package to Economy International? And the price?"
-# print(llm_router(question2))
-# question3 = "I want to track the location of my package"
-# print(llm_router(question3))
+def _extract_platform(message: str) -> str:
+    """Extract platform from user message"""
+    message_lower = message.lower()
+    if "instagram" in message_lower or "insta" in message_lower:
+        return "instagram"
+    elif "tiktok" in message_lower or "tik tok" in message_lower:
+        return "tiktok"
+    elif "youtube" in message_lower or "yt" in message_lower:
+        return "youtube"
+    else:
+        return "instagram"  # Default to instagram
+
+
+def _extract_limit(message: str) -> int:
+    """Extract limit/number from user message"""
+    # Look for numbers in the message
+    numbers = re.findall(r"\d+", message)
+    if numbers:
+        try:
+            limit = int(numbers[0])
+            # Cap at reasonable limit
+            return min(limit, 20)
+        except ValueError:
+            pass
+    return 5  # Default limit
