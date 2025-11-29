@@ -88,7 +88,7 @@ async def send_whatsapp_message(recipient_id: str, message_text: str) -> bool:
     logging.info(f"Sending message to {recipient_id} with content: {message_payload}")
     try:
         response = await httpx.AsyncClient(timeout=10.0).post(
-            f"https://graph.facebook.com/v{config.VERSION}/{config.PHONE_NUMBER_ID}/messages",
+            "https://graph.facebook.com/v24.0/912195958636325/messages",
             headers=headers,
             json=message_payload,
         )
