@@ -4,8 +4,17 @@ from typing import Optional, Dict, Any
 
 async def identify_message_type(event_data: Dict[str, Any]) -> Dict[str, Optional[str]]:
     try:
+        # Check if this is a message event or a status update
         if "messages" not in event_data:
-            logging.warning("No messages found in event data")
+            # Check if it's a status update (delivery receipts, read receipts, etc.)
+            if "statuses" in event_data:
+                logging.info(
+                    "Received status update (delivery/read receipt), skipping processing"
+                )
+            else:
+                logging.warning(
+                    f"No messages found in event data. Available keys: {list(event_data.keys())}"
+                )
             return {"sender_id": None, "message_text": None, "message_type": None}
 
         user_message = event_data["messages"][0]

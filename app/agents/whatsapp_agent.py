@@ -20,16 +20,28 @@ async def handle_whatsapp_events(request: Request) -> Response:
         payload = await request.json()
         event_data = payload["entry"][0]["changes"][0]["value"]
 
+        # Log the event type for debugging
+        event_type = (
+            "message"
+            if "messages" in event_data
+            else "status" if "statuses" in event_data else "unknown"
+        )
+        logging.info(f"Received WhatsApp webhook event type: {event_type}")
+
         # Step 1: Identify message type
         message_data = await identify_message_type(event_data)
         sender_id = message_data.get("sender_id")
         message_text = message_data.get("message_text")
         message_type = message_data.get("message_type")
 
-        # Validate sender_id
+        # Handle non-message events (status updates, etc.) - return 200 OK
         if not sender_id:
-            logging.warning("No sender_id found in message")
-            return Response(content="Invalid message: no sender ID", status_code=400)
+            logging.info(
+                "No sender_id found - likely a status update or non-message event, skipping processing"
+            )
+            return Response(
+                content="Event received (non-message event)", status_code=200
+            )
 
         # Step 2: Handle non-text messages
         if message_type != "text" or not message_text:
