@@ -1,23 +1,16 @@
 import logging
 import re
-from app.config.message_classification import route_message_request
-from app.services.whatsapp_influencer_service import find_influencers_for_whatsapp
+from app.services.message_classification import route_message_request
+from app.agents.whatsapp_agent import find_influencers_for_whatsapp
 
 
-async def llm_router(user_message: str, sender_id: str = None):
-    """
-    Route user message to appropriate handler.
-    - If first message and not about finding influencers: return helpful message
-    - If about finding influencers: use embedding service to find influencers
-    """
+async def llm_router(user_message: str, sender_id: str):
     try:
-        # Classify the message and check if it's the first message
         classify_message, is_first = await route_message_request(
             user_message, sender_id
         )
         intent = classify_message.request_type
 
-        # If first message and not about finding influencers, return helpful message
         if is_first and intent != "find_influencers":
             return "Hello! How may I help you to find influencers?"
 
@@ -27,13 +20,9 @@ async def llm_router(user_message: str, sender_id: str = None):
 
         # If about finding influencers, use embedding service
         if intent == "find_influencers":
-            # Extract platform from message (default to instagram)
             platform = _extract_platform(user_message)
-
-            # Extract limit from message (default to 5)
             limit = _extract_limit(user_message)
 
-            # Use the user's message as the query, or use the description from classification
             query = (
                 classify_message.description
                 if hasattr(classify_message, "description")
@@ -41,7 +30,6 @@ async def llm_router(user_message: str, sender_id: str = None):
                 else user_message
             )
 
-            # Query the vector store using WhatsApp-specific service
             influencers = await find_influencers_for_whatsapp(
                 query=query, platform=platform, limit=limit
             )
@@ -79,7 +67,6 @@ async def llm_router(user_message: str, sender_id: str = None):
 
 
 def _extract_platform(message: str) -> str:
-    """Extract platform from user message"""
     message_lower = message.lower()
     if "instagram" in message_lower or "insta" in message_lower:
         return "instagram"
@@ -88,18 +75,15 @@ def _extract_platform(message: str) -> str:
     elif "youtube" in message_lower or "yt" in message_lower:
         return "youtube"
     else:
-        return "instagram"  # Default to instagram
+        return "instagram"
 
 
 def _extract_limit(message: str) -> int:
-    """Extract limit/number from user message"""
-    # Look for numbers in the message
     numbers = re.findall(r"\d+", message)
     if numbers:
         try:
             limit = int(numbers[0])
-            # Cap at reasonable limit
             return min(limit, 20)
         except ValueError:
             pass
-    return 5  # Default limit
+    return 5
