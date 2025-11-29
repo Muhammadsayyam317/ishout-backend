@@ -2,7 +2,7 @@ import logging
 from typing import List, Optional
 from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain_openai import OpenAIEmbeddings
-from app.db.connection import get_db
+from app.db.connection import get_pymongo_db
 from app.config import config
 from app.utils.helpers import extract_influencer_data, matches_country_filter
 
@@ -17,22 +17,7 @@ async def find_influencers_for_whatsapp(
     budget: Optional[str] = None,
     influencer_limit: Optional[int] = None,
 ) -> List[dict]:
-    """
-    Find influencers for WhatsApp using vector search.
-
-    Args:
-        query: Search query text
-        platform: Platform name (instagram, tiktok, youtube)
-        limit: Maximum number of results to return
-        country: Optional country filter (applied after search)
-        budget: Optional budget filter (currently not implemented)
-        influencer_limit: Optional limit override (uses limit if not provided)
-
-    Returns:
-        List of influencer dictionaries
-    """
     try:
-        # Determine collection name based on platform
         collection_name = None
         if platform == "instagram":
             collection_name = config.MONGODB_ATLAS_COLLECTION_INSTAGRAM
@@ -47,12 +32,12 @@ async def find_influencers_for_whatsapp(
             raise ValueError(
                 f"Collection name is empty for platform {platform}. Check your environment variables."
             )
-
-        # Create embeddings and vector store
         embeddings = OpenAIEmbeddings(
             api_key=config.OPENAI_API_KEY, model=config.EMBEDDING_MODEL
         )
-        collection = get_db().get_collection(collection_name)
+        # Use PyMongo database for langchain vector search (synchronous)
+        pymongo_db = get_pymongo_db()
+        collection = pymongo_db[collection_name]
         vectorstore = MongoDBAtlasVectorSearch(
             collection=collection,
             embedding=embeddings,
@@ -65,22 +50,16 @@ async def find_influencers_for_whatsapp(
             influencer_limit if influencer_limit else limit * 2
         )  # Get more results for filtering
         search_results = await vectorstore.similarity_search(query, k=search_limit)
-
-        # Extract influencer data from results
         influencers = []
         for result in search_results:
             try:
                 influencer_data = extract_influencer_data(result, platform.capitalize())
-
-                # Apply country filter if provided
                 if country and not matches_country_filter(
                     influencer_data.get("country"), country
                 ):
                     continue
 
                 influencers.append(influencer_data)
-
-                # Stop if we've reached the desired limit
                 if len(influencers) >= limit:
                     break
 
