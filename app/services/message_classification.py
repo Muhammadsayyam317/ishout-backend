@@ -12,12 +12,12 @@ async def message_classification(
     try:
 
         client = get_openai_client()
-        intent = client.chat.completions.create(
+        intent = client.chat.completions.parse(
             model=config.OPENAI_MODEL_NAME,
             messages=[
                 {
                     "role": "system",
-                    "content": "Classify intent: find_influencer or other if the user is asking about influencers, otherwise return other if the user is asking about something else like how to use the bot, etc. For example: 'Find 10 beauty influencers on Instagram' or 'Show me fitness influencers on TikTok' is a find_influencer request, 'How to use the bot' is a other request.",
+                    "content": "Classify intent: find_influencers or other if the user is asking about influencers, otherwise return other if the user is asking about something else like how to use the bot, etc. For example: 'Find 10 beauty influencers on Instagram' or 'Show me fitness influencers on TikTok' is a find_influencers request, 'How to use the bot' is an other request.",
                 },
                 {"role": "user", "content": user_input},
             ],

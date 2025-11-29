@@ -9,25 +9,66 @@ from app.utils.message_type import identify_message_type
 
 
 async def handle_whatsapp_events(request: Request) -> Response:
+    """
+    Orchestrator function for handling WhatsApp events:
+    1. Identifies message type
+    2. Classifies message intent
+    3. Routes to LLM if related to finding influencers
+    4. Sends reply back to WhatsApp
+    """
     try:
         payload = await request.json()
-        message = await identify_message_type(
-            payload["entry"][0]["changes"][0]["value"]
-        )
-        if message["message_type"] == "text":
-            filter_message = await message_classification(message["message_text"])
-        if filter_message.intent == "find_influencers":
-            request_influencer = await Query_to_llm(filter_message.result)
-            response_status = await send_whatsapp_message(
-                message["sender_id"], request_influencer
-            )
+        event_data = payload["entry"][0]["changes"][0]["value"]
+
+        # Step 1: Identify message type
+        message_data = await identify_message_type(event_data)
+        sender_id = message_data.get("sender_id")
+        message_text = message_data.get("message_text")
+        message_type = message_data.get("message_type")
+
+        # Validate sender_id
+        if not sender_id:
+            logging.warning("No sender_id found in message")
+            return Response(content="Invalid message: no sender ID", status_code=400)
+
+        # Step 2: Handle non-text messages
+        if message_type != "text" or not message_text:
+            bot_reply = "I can only process text messages. Please send me a text message to find influencers."
+            response_status = await send_whatsapp_message(sender_id, bot_reply)
             if response_status:
-                return Response(content=request_influencer, status_code=200)
+                return Response(content="Non-text message handled", status_code=200)
+            else:
+                return Response(content="Failed to send response", status_code=500)
+
+        # Step 3: Classify message intent
+        filter_message = await message_classification(message_text)
+        logging.info(f"Message classified with intent: {filter_message.intent}")
+
+        # Step 4: Route based on intent
+        if filter_message.intent == "find_influencers":
+            # Step 5: Send query to LLM
+            llm_response = await Query_to_llm(message_text)
+            # Step 6: Send reply back to WhatsApp
+            response_status = await send_whatsapp_message(sender_id, llm_response)
+            if response_status:
+                return Response(
+                    content="Message processed successfully", status_code=200
+                )
             else:
                 return Response(content="Failed to send message", status_code=500)
-        return Response(content=response_status, status_code=200)
+        else:
+            # Handle other intents
+            bot_reply = "I'm here to help you find influencers. Could you please tell me what kind of influencers you're looking for? For example: 'Find 10 beauty influencers on Instagram' or 'Show me fitness influencers on TikTok'."
+            response_status = await send_whatsapp_message(sender_id, bot_reply)
+            if response_status:
+                return Response(
+                    content="Response sent for non-influencer query", status_code=200
+                )
+            else:
+                return Response(content="Failed to send message", status_code=500)
+
     except Exception as e:
-        logging.error(f"Error handling WhatsApp events: {e}")
+        logging.error(f"Error handling WhatsApp events: {e}", exc_info=True)
         return Response(content="Internal server error", status_code=500)
 
 
