@@ -1,42 +1,65 @@
+from fastapi import Request
 import logging
-from typing import List
-from langchain_mongodb import MongoDBAtlasVectorSearch
-from langchain_openai import OpenAIEmbeddings
-from app.db.connection import get_db
-from app.config import config
+import httpx
+from app.config.credentials_config import config
+from fastapi import Response
+from app.services.llm_router import Query_to_llm
+from app.services.message_classification import message_classification
+from app.utils.message_type import identify_message_type
 
-logger = logging.getLogger(__name__)
 
-
-async def find_influencers_for_whatsapp(
-    query: str,
-    platform: str,
-    limit: int = 10,
-) -> List[dict]:
+async def handle_whatsapp_events(request: Request) -> Response:
     try:
-        collection_name = None
-        if platform == "instagram":
-            collection_name = config.MONGODB_ATLAS_COLLECTION_INSTAGRAM
-        elif platform == "tiktok":
-            collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
-        elif platform == "youtube":
-            collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
-        else:
-            raise ValueError(f"Invalid platform specified: {platform}")
-        embeddings = OpenAIEmbeddings(
-            api_key=config.OPENAI_API_KEY, model=config.EMBEDDING_MODEL
+        payload = await request.json()
+        message = await identify_message_type(
+            payload["entry"][0]["changes"][0]["value"]
         )
-        collection = get_db().get_collection(collection_name)
-        vectorstore = MongoDBAtlasVectorSearch(
-            collection=collection,
-            embedding=embeddings,
-            index_name=f"embedding_index_{platform}",
-            relevance_score="cosine",
-        ).create_vector_search(dimension=1536)
-        results = await vectorstore.similarity_search(query, k=limit)
-        for res in results:
-            results.append(res.page_content)
-        return results
+        if message["message_type"] == "text":
+            filter_message = await message_classification(message["message_text"])
+        if filter_message.intent == "find_influencers":
+            request_influencer = await Query_to_llm(filter_message.result)
+            response_status = await send_whatsapp_message(
+                message["sender_id"], request_influencer
+            )
+            if response_status:
+                return Response(content=request_influencer, status_code=200)
+            else:
+                return Response(content="Failed to send message", status_code=500)
+        return Response(content=response_status, status_code=200)
     except Exception as e:
-        logger.error(f"Error finding influencers for WhatsApp: {str(e)}", exc_info=True)
-        return []
+        logging.error(f"Error handling WhatsApp events: {e}")
+        return Response(content="Internal server error", status_code=500)
+
+
+async def send_whatsapp_message(recipient_id: str, message_text: str) -> bool:
+    headers = {
+        "Authorization": f"Bearer {config.META_WHATSAPP_ACCESSSTOKEN}",
+        "Content-Type": "application/json",
+    }
+
+    message_payload = {
+        "messaging_product": "whatsapp",
+        "to": recipient_id,
+        "type": "text",
+        "text": {"body": message_text},
+    }
+
+    logging.info(f"Sending message to {recipient_id} with content: {message_payload}")
+    try:
+        response = await httpx.AsyncClient(timeout=10.0).post(
+            f"https://graph.facebook.com/v{config.VERSION}/{config.PHONE_NUMBER_ID}/messages",
+            headers=headers,
+            json=message_payload,
+        )
+        logging.info(f"Response status code: {response.status_code}")
+
+        if response.status_code != 200:
+            logging.error(f"Error: {response.status_code}, {response.text}")
+            return False
+        return True
+    except httpx.RequestError as http_error:
+        logging.error(f"HTTP request error: {http_error}")
+        return False
+    except Exception as general_error:
+        logging.error(f"Unexpected error: {general_error}")
+        return False

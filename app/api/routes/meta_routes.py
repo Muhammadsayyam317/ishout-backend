@@ -5,10 +5,8 @@ from app.api.controllers.meta.notification import (
     websocket_notifications,
 )
 from app.api.controllers.meta.privacy_policy import get_privacy_policy
-from app.api.controllers.meta.whatsapp_webhook import (
-    handle_whatsapp_events,
-    verify_whatsapp_webhook,
-)
+from app.api.controllers.meta.whatsapp_webhook import verify_whatsapp_webhook
+from app.agents.whatsapp_agent import handle_whatsapp_events
 
 router = APIRouter()
 
