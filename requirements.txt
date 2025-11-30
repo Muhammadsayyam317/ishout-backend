@@ -58,7 +58,7 @@ langgraph-checkpoint-sqlite
 langgraph-checkpoint
 langgraph-prebuilt
 langgraph-sdk
-xxhash
+xxhash==3.5.0   
 # -------------------------------
 # MongoDB
 # -------------------------------
@@ -77,8 +77,7 @@ python-multipart
 # -------------------------------
 # Other dependencies
 # -------------------------------
-pydantic==2.1.1  # pinned for openai-agents compatibility
-pydantic_core
+pydantic==2.1.1
 typing_extensions
 typing_inspection
 annotated_types
@@ -88,5 +87,5 @@ email-validator
 websockets
 resend
 click
-zstandard
+zstandard==0.21.0 
 packaging
