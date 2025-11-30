@@ -12,6 +12,8 @@ langchain-openai
 langchain-community
 langchain-mongodb
 langfuse
+langgraph
+langgraph-checkpoint-sqlite   
 
 # MongoDB
 pymongo
