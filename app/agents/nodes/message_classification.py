@@ -1,6 +1,5 @@
 import logging
 from langfuse import observe
-from app.agents.whatsapp_agent import ConversationState
 from app.config.credentials_config import config
 from app.utils.clients import get_openai_client
 from app.models.message_model import MessageRequestType

@@ -1,6 +1,6 @@
 import logging
 import re
-from app.services.message_classification import message_classification
+from app.agents.nodes.message_classification import message_classification
 from app.tools.whatsapp_influencer import find_influencers_for_whatsapp
 
 

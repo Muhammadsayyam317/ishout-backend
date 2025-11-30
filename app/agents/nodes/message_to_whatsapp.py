@@ -4,6 +4,7 @@ from app.config.credentials_config import config
 
 
 async def send_whatsapp_message(recipient_id: str, message_text: str) -> bool:
+
     headers = {
         "Authorization": f"Bearer {config.META_WHATSAPP_ACCESSSTOKEN}",
         "Content-Type": "application/json",
