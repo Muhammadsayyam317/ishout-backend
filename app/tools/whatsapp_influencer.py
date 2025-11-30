@@ -43,7 +43,7 @@ async def find_influencers_for_whatsapp(
             embedding=embeddings,
             index_name=f"embedding_index_{platform}",
             relevance_score="cosine",
-        ).create_vector_search(dimension=1536)
+        ).create_vector_search_index(dimension=1536)
 
         # Perform similarity search (only accepts query and k parameters)
         search_limit = (
