@@ -7,7 +7,6 @@ urllib3
 certifi
 idna
 requests_toolbelt
-
 # -------------------------------
 # FastAPI and web server
 # -------------------------------
@@ -60,25 +59,21 @@ langgraph-checkpoint
 langgraph-prebuilt
 langgraph-sdk
 xxhash
-
 # -------------------------------
 # MongoDB
 # -------------------------------
 pymongo
 motor
-
 # -------------------------------
 # MongoDB DNS resolver
 # -------------------------------
 dnspython
-
 # -------------------------------
 # Authentication and Security
 # -------------------------------
 PyJWT
 passlib[bcrypt]
 python-multipart
-
 # -------------------------------
 # Other dependencies
 # -------------------------------
