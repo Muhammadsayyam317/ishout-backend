@@ -43,13 +43,13 @@ async def find_influencers_for_whatsapp(
             embedding=embeddings,
             index_name=f"embedding_index_{platform}",
             relevance_score="cosine",
-        ).create_vector_search_index(dimension=1536)
+        ).create_vector_search_index(dimensions=1536)
 
         # Perform similarity search (only accepts query and k parameters)
         search_limit = (
             influencer_limit if influencer_limit else limit * 2
         )  # Get more results for filtering
-        search_results = await vectorstore.similarity_search(query, k=search_limit)
+        search_results = vectorstore.similarity_search(query, k=search_limit)
         influencers = []
         for result in search_results:
             try:
