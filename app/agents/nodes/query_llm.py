@@ -25,7 +25,7 @@ async def Query_to_llm(state: ConversationState):
 
     if missing:
         return (
-            "I need these details before searching: "
+            "iShout need these details before searching: "
             + ", ".join(missing)
             + ". Please reply with them."
         )
