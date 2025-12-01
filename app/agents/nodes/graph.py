@@ -40,7 +40,7 @@ async def node_classify(state: ConversationState):
     return state
 
 
-# Node 3: Extract/accumulate requirements into state (platform, count, country, budget)
+# Node 3: Extract requirements into state (platform, count, country, budget)
 async def node_requirements(state):
     logging.info(f"[requirements] User message: {state['user_message']}")
     state.pop("reply", None)
@@ -51,9 +51,12 @@ async def node_requirements(state):
     limit = extract_limit(msg)
     country = extract_country(msg)
     budget = extract_budget(msg)
-    category = extract_category(msg)  # just call it directly
-
-    # accumulate (do not overwrite with None)
+    category = extract_category(msg)
+    logging.info(f"[requirements] Platform: {platform}")
+    logging.info(f"[requirements] Limit: {limit}")
+    logging.info(f"[requirements] Country: {country}")
+    logging.info(f"[requirements] Budget: {budget}")
+    logging.info(f"[requirements] Category: {category}")
     if platform:
         state["platform"] = platform
     if limit is not None:
