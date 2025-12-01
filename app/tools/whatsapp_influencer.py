@@ -15,7 +15,6 @@ async def find_influencers_for_whatsapp(
     country: Optional[str] = None,
 ) -> List[dict]:
     try:
-        collection_name = None
         if platform == "instagram":
             collection_name = config.MONGODB_ATLAS_COLLECTION_INSTAGRAM
         elif platform == "tiktok":
@@ -23,27 +22,26 @@ async def find_influencers_for_whatsapp(
         elif platform == "youtube":
             collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
         else:
-            raise ValueError(f"Invalid platform specified: {platform}")
+            raise ValueError(f"Invalid platform: {platform}")
 
-        if not collection_name:
-            raise ValueError(
-                f"Collection name is empty for platform {platform}. Check your environment variables."
-            )
         embeddings = OpenAIEmbeddings(
-            api_key=config.OPENAI_API_KEY, model=config.EMBEDDING_MODEL
+            api_key=config.OPENAI_API_KEY,
+            model=config.EMBEDDING_MODEL,
         )
-        collection = get_db().get_collection(collection_name)
+
+        collection = get_db()[collection_name]
+        logger.info(f"Collection: {collection}")
         store = MongoDBAtlasVectorSearch(
             collection=collection,
             embedding=embeddings,
             index_name=f"embedding_index_{platform}",
             relevance_score="cosine",
-        ).create_vector_search_index(dimension=1536)
-        result = await store.similarity_search(query, k=number_of_influencers)
-        for res in result:
-            result.append(res.page_content)
-        return result
-
+        )
+        logger.info(f"Store: {store}")
+        await store.create_vector_search_index(dimension=1536)
+        docs = await store.asimilarity_search(query, k=number_of_influencers)
+        logger.info(f"Docs: {docs}")
+        return [doc.page_content for doc in docs]
     except Exception as e:
         logger.error(f"Error finding influencers for WhatsApp: {str(e)}", exc_info=True)
         return []
