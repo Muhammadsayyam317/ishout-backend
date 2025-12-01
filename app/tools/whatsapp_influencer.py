@@ -34,7 +34,7 @@ def find_influencers_for_whatsapp(
             relevance_score="cosine",
         )
 
-        store.create_vector_search_index(dimension=1536)
+        store.create_vector_search_index(dimensions=1536)
         docs = store.similarity_search(query, k=number_of_influencers)
 
         return [doc.page_content for doc in docs]
