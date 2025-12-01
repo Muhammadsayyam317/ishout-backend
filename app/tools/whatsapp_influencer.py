@@ -2,9 +2,8 @@ import logging
 from typing import List, Optional
 from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain_openai import OpenAIEmbeddings
-from app.db.connection import get_pymongo_db
+from app.db.connection import get_db
 from app.config import config
-from app.utils.helpers import extract_influencer_data, matches_country_filter
 
 logger = logging.getLogger(__name__)
 
@@ -33,38 +32,17 @@ async def find_influencers_for_whatsapp(
         embeddings = OpenAIEmbeddings(
             api_key=config.OPENAI_API_KEY, model=config.EMBEDDING_MODEL
         )
-        pymongo_db = get_pymongo_db()
-        collection = pymongo_db[collection_name]
-
-        # Initialize vector store
-        vectorstore = MongoDBAtlasVectorSearch(
+        collection = get_db().get_collection(collection_name)
+        store = MongoDBAtlasVectorSearch(
             collection=collection,
             embedding=embeddings,
             index_name=f"embedding_index_{platform}",
             relevance_score="cosine",
-        )
-        vectorstore.create_vector_search_index(dimensions=1536)
-
-        search_limit = number_of_influencers
-        search_results = vectorstore.similarity_search(query, k=search_limit)
-        influencers = []
-        for result in search_results:
-            try:
-                influencer_data = extract_influencer_data(result, platform.capitalize())
-                if country and not matches_country_filter(
-                    influencer_data.get("country"), country
-                ):
-                    continue
-
-                influencers.append(influencer_data)
-                if len(influencers) >= number_of_influencers:
-                    break
-
-            except Exception as e:
-                logger.warning(f"Error extracting influencer data: {e}")
-                continue
-
-        return influencers
+        ).create_vector_search_index(dimension=1536)
+        result = await store.similarity_search(query, k=number_of_influencers)
+        for res in result:
+            result.append(res.page_content)
+        return result
 
     except Exception as e:
         logger.error(f"Error finding influencers for WhatsApp: {str(e)}", exc_info=True)
