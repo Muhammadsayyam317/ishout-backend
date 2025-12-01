@@ -5,13 +5,11 @@ from app.agents.nodes.query_llm import Query_to_llm
 from app.agents.nodes.message_to_whatsapp import send_whatsapp_message
 from app.models.whatsappconversation_model import ConversationState
 from app.utils.extract_feilds import extract_all_fields
-from langgraph.checkpoint.sqlite import SqliteSaver
-import sqlite3
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 
-# Persistent SQLite-backed checkpointer so state is stored between messages
-_conn = sqlite3.connect("whatsapp_agent.db", check_same_thread=False)
-checkpointer = SqliteSaver(_conn)
+# Async SQLite-backed checkpointer so state is stored between messages
+checkpointer = AsyncSqliteSaver.from_conn_string("whatsapp_agent.db")
 graph = StateGraph(ConversationState)
 
 

@@ -64,6 +64,7 @@ langgraph-sdk
 # -------------------------------
 pymongo
 motor
+aiosqlite
 # -------------------------------
 # MongoDB DNS resolver
 # -------------------------------
