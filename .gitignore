@@ -17,3 +17,8 @@ venv/
 .vscode/
 *.swp
 *.swo
+
+whatsapp_agent.db
+*.db
+*.sqlite
+*.sqlite3

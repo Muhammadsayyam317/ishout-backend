@@ -8,28 +8,25 @@ from app.utils.extract_feilds import (
     extract_country,
     extract_category,
 )
-from langgraph.checkpoint.memory import MemorySaver
-from langgraph.store.memory import InMemoryStore
 import logging
+import sqlite3
+from langgraph.checkpoint.sqlite import SqliteSaver
 
-checkpointer = MemorySaver()
-store = InMemoryStore()
+checkpointer = SqliteSaver(sqlite3.connect("whatsapp_agent.db"))
 graph = StateGraph(ConversationState)
 
 
-# Node 1: Extract requirements into state (platform, count, country,number of influencers)
-async def node_requirements(state):
-    logging.info(f"[requirements] User message: {state['user_message']}")
-    state.pop("reply", None)
-    msg = state.get("user_message") or ""
+async def node_requirements(state: ConversationState):
+    msg = state.get("user_message", "")
+    logging.info(f"[node_requirements] User message: {msg}")
 
-    # Extract fields from the latest user message
+    # Extract new fields from message
     platform = extract_platform(msg)
     limit = extract_limit(msg)
     country = extract_country(msg)
     category = extract_category(msg)
 
-    # Accumulate in state (do not overwrite existing if None)
+    # Accumulate (do NOT overwrite correct previous values)
     if platform:
         state["platform"] = platform
     if limit is not None:
@@ -39,25 +36,28 @@ async def node_requirements(state):
     if category:
         state["category"] = category
 
-    # Check missing fields
+    # Check what is still missing
     missing = missing_fields(state)
+
     if missing:
         pretty = []
-        for m in missing:
-            if m == "platform":
-                pretty.append("platform (Instagram, TikTok, YouTube)")
-            elif m == "country":
-                pretty.append("country (UAE, Kuwait, etc.)")
-            elif m == "number_of_influencers":
-                pretty.append("number of influencers")
-            elif m == "category":
-                pretty.append("category (fashion, beauty, etc.)")
+
+        if "platform" in missing:
+            pretty.append("platform (Instagram, TikTok, YouTube)")
+        if "country" in missing:
+            pretty.append("country (UAE, Kuwait, etc.)")
+        if "category" in missing:
+            pretty.append("category (fashion, beauty, etc.)")
+        if "number_of_influencers" in missing:
+            pretty.append("number of influencers")
+
         state["reply"] = (
             "I need these details before searching: "
             + ", ".join(pretty)
-            + ".\nPlease reply with them, for example: "
-            "'Platform is Instagram, category is fashion, country is UAE, and I need 4 influencers.'"
+            + ".\nPlease reply with them."
         )
+    else:
+        state["reply"] = None
 
     return state
 
@@ -117,4 +117,4 @@ graph.add_edge("ask_user", END)
 graph.add_edge("search", "send")
 graph.add_edge("send", END)
 
-whatsapp_agent = graph.compile(checkpointer=checkpointer, store=store)
+whatsapp_agent = graph.compile(checkpointer=checkpointer)
