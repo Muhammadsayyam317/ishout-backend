@@ -40,28 +40,27 @@ async def node_requirements(state: ConversationState):
 
     if missing:
         state["reply"] = f"I need these details before searching: {', '.join(missing)}"
-        return "ask_user"
 
-    return "search"
+    return state
 
 
 # Ask user missing fields
 async def node_ask_user(state: ConversationState):
     await send_whatsapp_message(state["sender_id"], state["reply"])
-    return END
+    return state
 
 
 # Node 4: Search influencers
 async def node_search(state: ConversationState):
     result = await Query_to_llm(state["user_message"])
     state["reply"] = result
-    return "send"
+    return state
 
 
 # Node 5: Send reply
 async def node_send(state: ConversationState):
     await send_whatsapp_message(state["sender_id"], state["reply"])
-    return END
+    return state
 
 
 # Build graph
@@ -87,6 +86,7 @@ graph.add_conditional_edges(
     },
 )
 
+graph.add_edge("ask_user", END)
 graph.add_edge("search", "send")
 graph.add_edge("send", END)
 
