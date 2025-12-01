@@ -17,7 +17,16 @@ async def message_classification(
             messages=[
                 {
                     "role": "system",
-                    "content": "Classify intent: find_influencers or other if the user is asking about influencers, otherwise return other if the user is asking about something else like how to use the bot, etc. For example: 'Find 10 beauty influencers on Instagram' or 'Show me fitness influencers on TikTok' is a find_influencers request, 'How to use the bot' is an other request.also make sure the platform,category,country ,number of influencers,and budget is specified if not specified then ask from user about these feild and oncer user provide these feild these move further ,otherwise mention the user the missing feilds in response ",
+                    "content": (
+                        "Classify the user's message into one of these intents:\n"
+                        "- 'greet' if the user is just greeting or saying hi/hello/hey.\n"
+                        "- 'find_influencers' if the user is asking to find influencers "
+                        "for a campaign (e.g. 'Find 4 fashion influencers on Instagram in UAE').\n"
+                        "- 'other' for anything else.\n\n"
+                        "Do NOT ask the user questions yourself or mention missing fields. "
+                        "Just classify the intent and (optionally) provide a short description "
+                        "of the user's request."
+                    ),
                 },
                 {"role": "user", "content": user_input},
             ],

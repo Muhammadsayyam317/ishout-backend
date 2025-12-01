@@ -33,6 +33,9 @@ async def node_classify(state: ConversationState):
 # Node 3: Check missing fields
 async def node_requirements(state: ConversationState):
 
+    # Clear any previous "missing fields" reply so routing reflects current state
+    state.pop("reply", None)
+
     fields = extract_all_fields(state["user_message"])
     missing = []
 
@@ -50,6 +53,26 @@ async def node_requirements(state: ConversationState):
     if missing:
         state["reply"] = f"I need these details before searching: {', '.join(missing)}"
 
+    return state
+
+
+# Greet user and explain capabilities
+async def node_greet(state: ConversationState):
+    state["reply"] = (
+        "Hi! 👋 I can help you find influencers. "
+        "Tell me the platform, category, country, and how many influencers you need."
+    )
+    await send_whatsapp_message(state["sender_id"], state["reply"])
+    return state
+
+
+# Fallback for non-influencer questions
+async def node_fallback(state: ConversationState):
+    state["reply"] = (
+        "I can help you find influencers for your campaigns. "
+        "Please tell me the platform, category, country, and number of influencers you want."
+    )
+    await send_whatsapp_message(state["sender_id"], state["reply"])
     return state
 
 
@@ -80,11 +103,23 @@ graph.add_node("requirements", node_requirements)
 graph.add_node("ask_user", node_ask_user)
 graph.add_node("search", node_search)
 graph.add_node("send", node_send)
+graph.add_node("greet", node_greet)
+graph.add_node("fallback", node_fallback)
 
 graph.set_entry_point("identify")
 
 graph.add_edge("identify", "classify")
-graph.add_edge("classify", "requirements")
+
+# Route based on classified intent
+graph.add_conditional_edges(
+    "classify",
+    lambda state: state.get("intent", "other"),
+    {
+        "find_influencers": "requirements",
+        "greet": "greet",
+        "other": "fallback",
+    },
+)
 
 graph.add_conditional_edges(
     "requirements",
