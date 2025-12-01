@@ -35,7 +35,6 @@ async def find_influencers_for_whatsapp(
         embeddings = OpenAIEmbeddings(
             api_key=config.OPENAI_API_KEY, model=config.EMBEDDING_MODEL
         )
-        # Use PyMongo database for langchain vector search (synchronous)
         pymongo_db = get_pymongo_db()
         collection = pymongo_db[collection_name]
         vectorstore = MongoDBAtlasVectorSearch(
@@ -45,10 +44,7 @@ async def find_influencers_for_whatsapp(
             relevance_score="cosine",
         ).create_vector_search_index(dimensions=1536)
 
-        # Perform similarity search (only accepts query and k parameters)
-        search_limit = (
-            influencer_limit if influencer_limit else limit * 2
-        )  # Get more results for filtering
+        search_limit = influencer_limit if influencer_limit else limit * 2
         search_results = vectorstore.similarity_search(query, k=search_limit)
         influencers = []
         for result in search_results:
