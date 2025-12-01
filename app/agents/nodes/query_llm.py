@@ -1,5 +1,6 @@
 import logging
 from app.tools.whatsapp_influencer import find_influencers_for_whatsapp
+from app.models.whatsappconversation_model import ConversationState
 from app.utils.extract_feilds import (
     extract_budget,
     extract_country,
@@ -8,18 +9,21 @@ from app.utils.extract_feilds import (
 )
 
 
-async def Query_to_llm(user_message: str):
+async def Query_to_llm(state: ConversationState):
     """
-    Handle 'find_influencers' intent:
-    - Extract required fields from the user's message.
+    Handle 'find_influencers' intent using fields already extracted into state.
+    - Read platform / number_of_influencers / country / budget from state.
     - If any key fields are missing, ask the user for them.
     - Otherwise, query the influencer store and format a response.
     """
     try:
-        platform = extract_platform(user_message)
-        limit = extract_limit(user_message)
-        country = extract_country(user_message)
-        budget = extract_budget(user_message)
+        user_message = state.get("user_message") or ""
+
+        # Prefer values already stored in state, fall back to extracting from message
+        platform = state.get("platform") or extract_platform(user_message)
+        limit = state.get("number_of_influencers") or extract_limit(user_message)
+        country = state.get("country") or extract_country(user_message)
+        budget = state.get("budget") or extract_budget(user_message)
 
         missing = []
         if not platform:
@@ -38,7 +42,6 @@ async def Query_to_llm(user_message: str):
                 "and I need 4 influencers.'"
             )
 
-        # Fallbacks for optional parameters
         search_limit = limit or 5
 
         influencers = await find_influencers_for_whatsapp(
@@ -58,7 +61,6 @@ async def Query_to_llm(user_message: str):
                 "2. 'Show me 2-6 fitness influencers on TikTok in UAE'\n"
             )
 
-        # Format the response
         response = f"I found {len(influencers)} influencer(s) for you:\n\n"
         for i, influencer in enumerate(influencers[:search_limit], 1):
             username = influencer.get("username", influencer.get("name", "Unknown"))

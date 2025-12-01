@@ -4,7 +4,12 @@ from app.agents.nodes.message_classification import message_classification
 from app.agents.nodes.query_llm import Query_to_llm
 from app.agents.nodes.message_to_whatsapp import send_whatsapp_message
 from app.models.whatsappconversation_model import ConversationState
-from app.utils.extract_feilds import extract_all_fields
+from app.utils.extract_feilds import (
+    extract_platform,
+    extract_limit,
+    extract_country,
+    extract_budget,
+)
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.store.memory import InMemoryStore
 
@@ -30,19 +35,26 @@ async def node_classify(state: ConversationState):
     return state
 
 
-# Node 3: Check missing fields
+# Node 3: Extract requirements into state (platform, count, country, budget)
 async def node_requirements(state: ConversationState):
     state.pop("reply", None)
-    # Extract only new values from THIS message
-    new_fields = extract_all_fields(state["user_message"])
-    for key, val in new_fields.items():
-        if val:
-            state[key] = val  # Update only non-empty values
-    # Required fields
-    required_fields = ["platform", "category", "country", "number_of_influencers"]
-    missing = [f for f in required_fields if not state.get(f)]
-    if missing:
-        state["reply"] = "I still need these details: " + ", ".join(missing)
+
+    message = state.get("user_message") or ""
+
+    platform = extract_platform(message)
+    limit = extract_limit(message)
+    country = extract_country(message)
+    budget = extract_budget(message)
+
+    # Persist extracted fields into conversation state for downstream use
+    if platform:
+        state["platform"] = platform
+    if limit is not None:
+        state["number_of_influencers"] = limit
+    if country:
+        state["country"] = country
+    if budget:
+        state["budget"] = budget
 
     return state
 
@@ -66,7 +78,8 @@ async def node_ask_user(state: ConversationState):
 
 # Node 4: Search influencers
 async def node_search(state: ConversationState):
-    result = await Query_to_llm(state["user_message"])
+    # Delegate to LLM/query layer, which will read fields from state
+    result = await Query_to_llm(state)
     state["reply"] = result
     return state
 
