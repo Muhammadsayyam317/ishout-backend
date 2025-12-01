@@ -21,7 +21,7 @@ async def message_classification(
                         "Classify the user's message into one of these intents:\n"
                         "- 'greet' if the user is just greeting or saying hi/hello/hey.\n"
                         "- 'find_influencers' if the user is asking to find influencers "
-                        "for a campaign (e.g. 'Find 4 fashion influencers on Instagram in UAE').\n"
+                        "for a campaign ('Find 4 fashion influencers on Instagram in UAE').\n"
                         "- 'other' for anything else.\n\n"
                         "Do NOT ask the user questions yourself or mention missing fields. "
                         "Just classify the intent and (optionally) provide a short description "
