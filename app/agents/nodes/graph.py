@@ -33,9 +33,15 @@ async def node_requirements(state: ConversationState):
     fields = extract_all_fields(state["user_message"])
     missing = []
 
+    # Only update fields that have values (preserve existing state)
     for key, val in fields.items():
-        state[key] = val
-        if val is None:
+        if val is not None:
+            state[key] = val
+
+    # Check which fields are still missing (check current state, not just extracted fields)
+    required_fields = ["platform", "category", "country", "number_of_influencers"]
+    for key in required_fields:
+        if state.get(key) is None:
             missing.append(key)
 
     if missing:
