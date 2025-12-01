@@ -12,10 +12,8 @@ logger = logging.getLogger(__name__)
 async def find_influencers_for_whatsapp(
     query: str,
     platform: str,
-    limit: int = 10,
+    number_of_influencers: int,
     country: Optional[str] = None,
-    budget: Optional[str] = None,
-    influencer_limit: Optional[int] = None,
 ) -> List[dict]:
     try:
         collection_name = None
@@ -47,7 +45,7 @@ async def find_influencers_for_whatsapp(
         )
         vectorstore.create_vector_search_index(dimensions=1536)
 
-        search_limit = influencer_limit if influencer_limit else limit * 2
+        search_limit = number_of_influencers
         search_results = vectorstore.similarity_search(query, k=search_limit)
         influencers = []
         for result in search_results:
@@ -59,7 +57,7 @@ async def find_influencers_for_whatsapp(
                     continue
 
                 influencers.append(influencer_data)
-                if len(influencers) >= limit:
+                if len(influencers) >= number_of_influencers:
                     break
 
             except Exception as e:

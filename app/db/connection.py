@@ -29,7 +29,7 @@ async def connect():
         pymongo_client = MongoClient(config.MONGODB_ATLAS_URI)
         pymongo_db = pymongo_client[config.MONGODB_ATLAS_DB_NAME]
 
-        print("✅ MongoDB connected successfully (Motor + PyMongo)")
+        print("MongoDB connected successfully (Motor + PyMongo)")
     except Exception as e:
         client = None
         db = None
@@ -51,7 +51,7 @@ async def close():
         pymongo_db = None
         print("🧹 MongoDB connection closed.")
     else:
-        print("❌ MongoDB client not initialized.")
+        print(" MongoDB client not initialized.")
 
 
 def get_db():

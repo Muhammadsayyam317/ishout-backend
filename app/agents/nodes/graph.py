@@ -9,10 +9,7 @@ from app.utils.extract_feilds import (
     extract_category,
 )
 import logging
-import sqlite3
-from langgraph.checkpoint.sqlite import SqliteSaver
 
-checkpointer = SqliteSaver(sqlite3.connect("whatsapp_agent.db"))
 graph = StateGraph(ConversationState)
 
 
@@ -113,5 +110,3 @@ graph.add_conditional_edges(
 graph.add_edge("ask_user", END)
 graph.add_edge("search", "send")
 graph.add_edge("send", END)
-
-whatsapp_agent = graph.compile(checkpointer=checkpointer)

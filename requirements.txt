@@ -88,6 +88,7 @@ colorlog
 email-validator
 websockets
 resend
+tabulate
 # click
 # zstandard==0.21.0 
 # packaging

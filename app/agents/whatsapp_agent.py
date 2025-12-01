@@ -1,5 +1,5 @@
 from fastapi import Request
-from app.agents.nodes.graph import whatsapp_agent
+from app.db.sqlite import build_whatsapp_agent
 from app.utils.chat_history import save_chat_message
 
 
@@ -36,6 +36,7 @@ async def handle_whatsapp_events(request: Request):
         "sender_id": thread_id,
         "user_message": user_text,
     }
+    whatsapp_agent = await build_whatsapp_agent()
     final_state = await whatsapp_agent.ainvoke(
         state, config={"configurable": {"thread_id": thread_id}}
     )
