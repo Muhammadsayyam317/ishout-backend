@@ -30,12 +30,14 @@ async def Query_to_llm(state: ConversationState):
             + ". Please reply with them."
         )
     logging.info(f"[Query_to_llm] Missing: {missing}")
+    query_parts = [p for p in [category, platform, country] if p]
+    query = " ".join(query_parts)
 
     influencers = await find_influencers_for_whatsapp(
+        query=query,
         platform=platform,
         number_of_influencers=limit,
         country=country,
-        category=category,
     )
     logging.info(f"[Query_to_llm] Influencers: {influencers}")
 
