@@ -8,7 +8,6 @@ from app.utils.extract_feilds import (
     extract_platform,
     extract_limit,
     extract_country,
-    extract_budget,
     extract_category,
 )
 from langgraph.checkpoint.memory import MemorySaver
@@ -46,6 +45,9 @@ async def node_requirements(state):
     state.pop("reply", None)
     msg = state.get("user_message") or ""
     logging.info(f"[requirements] Message: {msg}")
+
+    # Import extract functions locally to avoid any scoping issues
+
     platform = extract_platform(msg)
     logging.info(f"[requirements] Platform: {platform}")
     limit = extract_limit(msg)

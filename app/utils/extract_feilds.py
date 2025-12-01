@@ -53,18 +53,16 @@ def extract_limit(message: str) -> Optional[int]:
     if m:
         try:
             return int(m.group(2) or m.group(1))
-        except:
+        except ValueError:
             return int(m.group(1))
     return None
 
 
 def extract_country(message: str) -> Optional[str]:
     msg = (message or "").lower()
-    # match exact country keywords from list
     for c in COUNTRIES:
         if c in msg:
             return c
-    # try simple capitalized words (fallback) — but keep conservative
     m = re.search(r"\bin\s+([A-Za-z ]{2,30})\b", msg)
     if m:
         cand = m.group(1).strip().lower()
@@ -73,15 +71,15 @@ def extract_country(message: str) -> Optional[str]:
     return None
 
 
-def extract_budget(message: str) -> Optional[str]:
-    msg = (message or "").lower()
-    m = re.search(r"\$\s?(\d{2,10})", msg)
-    if m:
-        return m.group(1)
-    m2 = re.search(r"(\d{3,})\s*(usd|dollars)", msg)
-    if m2:
-        return m2.group(1)
-    return None
+# def extract_budget(message: str) -> Optional[str]:
+#     msg = (message or "").lower()
+#     m = re.search(r"\$\s?(\d{2,10})", msg)
+#     if m:
+#         return m.group(1)
+#     m2 = re.search(r"(\d{3,})\s*(usd|dollars)", msg)
+#     if m2:
+#         return m2.group(1)
+#     return None
 
 
 def extract_category(message: str) -> Optional[str]:
@@ -98,5 +96,4 @@ def extract_all_fields(message: str):
         "category": extract_category(message),
         "country": extract_country(message),
         "number_of_influencers": extract_limit(message),
-        "budget": extract_budget(message),
     }

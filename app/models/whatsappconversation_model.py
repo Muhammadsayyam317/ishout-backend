@@ -10,7 +10,6 @@ class ConversationState(TypedDict, total=False):
     category: Optional[str]
     country: Optional[str]
     number_of_influencers: Optional[int]
-    budget: Optional[str]
 
     reply: Optional[str]
     event_data: dict
