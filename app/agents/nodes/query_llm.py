@@ -19,9 +19,12 @@ async def Query_to_llm(state: ConversationState):
     try:
         user_message = state.get("user_message") or ""
 
-        # Prefer values already stored in state, fall back to extracting from message
+        # Prefer values already stored in state, fall back to extracting from current message
         platform = state.get("platform") or extract_platform(user_message)
-        limit = state.get("number_of_influencers") or extract_limit(user_message)
+        # IMPORTANT: preserve existing number_of_influencers if new message doesn't contain a number
+        limit = state.get("number_of_influencers")
+        if limit is None:
+            limit = extract_limit(user_message)
         country = state.get("country") or extract_country(user_message)
         budget = state.get("budget") or extract_budget(user_message)
 

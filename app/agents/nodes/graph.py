@@ -35,18 +35,15 @@ async def node_classify(state: ConversationState):
     return state
 
 
-# Node 3: Extract requirements into state (platform, count, country, budget)
+# Node 3: Extract/accumulate requirements into state (platform, count, country, budget)
 async def node_requirements(state: ConversationState):
     state.pop("reply", None)
 
     message = state.get("user_message") or ""
-
     platform = extract_platform(message)
     limit = extract_limit(message)
     country = extract_country(message)
     budget = extract_budget(message)
-
-    # Persist extracted fields into conversation state for downstream use
     if platform:
         state["platform"] = platform
     if limit is not None:

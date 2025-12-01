@@ -1,6 +1,5 @@
 from datetime import datetime
 from typing import List, Dict
-
 from fastapi import Request
 
 from app.db.connection import get_db
