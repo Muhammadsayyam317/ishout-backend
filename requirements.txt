@@ -13,10 +13,10 @@ requests_toolbelt
 fastapi
 uvicorn
 python-dotenv
-h11
-anyio
-starlette
-starlette-context
+# h11
+# anyio
+# starlette
+# starlette-context
 
 # -------------------------------
 # OpenAI and LangChain
@@ -29,26 +29,26 @@ langchain_core
 langchain-community
 langchain-mongodb
 langchain-text-splitters
-tiktoken
-lark
-pyyaml
-jsonpatch
-numpy
-tqdm
-distro
-jiter
-griffe
+# tiktoken
+# lark
+# pyyaml
+# jsonpatch
+# numpy
+# tqdm
+# distro
+# jiter
+# griffe
 types-requests
 
 # -------------------------------
 # Langfuse
 # -------------------------------
 langfuse
-backoff
-opentelemetry-api
-opentelemetry-exporter-otlp-proto-http
-opentelemetry-sdk
-wrapt==1.14.1  # downgraded to fix langfuse requirement
+# backoff
+# opentelemetry-api
+# opentelemetry-exporter-otlp-proto-http
+# opentelemetry-sdk
+# wrapt==1.14.1  
 
 # -------------------------------
 # LangGraph
@@ -58,7 +58,7 @@ langgraph-checkpoint-sqlite
 langgraph-checkpoint
 langgraph-prebuilt
 langgraph-sdk
-xxhash==3.5.0   
+# xxhash==3.5.0   
 # -------------------------------
 # MongoDB
 # -------------------------------
@@ -67,7 +67,7 @@ motor
 # -------------------------------
 # MongoDB DNS resolver
 # -------------------------------
-dnspython
+# dnspython
 # -------------------------------
 # Authentication and Security
 # -------------------------------
@@ -78,14 +78,14 @@ python-multipart
 # Other dependencies
 # -------------------------------
 pydantic>=2.9.0
-typing_extensions
-typing_inspection
-annotated_types
-annotated_doc
+# typing_extensions
+# typing_inspection
+# annotated_types
+# annotated_doc
 colorlog
 email-validator
 websockets
 resend
-click
-zstandard==0.21.0 
-packaging
+# click
+# zstandard==0.21.0 
+# packaging
