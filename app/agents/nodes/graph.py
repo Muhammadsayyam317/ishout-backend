@@ -42,11 +42,20 @@ async def node_requirements(state):
 
     msg = state.get("user_message") or ""
 
+    # extract only from current message
     platform = extract_platform(msg)
     limit = extract_limit(msg)
     country = extract_country(msg)
     budget = extract_budget(msg)
+    category = None
+    try:
+        from app.utils.extract_feilds import extract_category
 
+        category = extract_category(msg)
+    except Exception:
+        category = None
+
+    # accumulate (do not overwrite with None)
     if platform:
         state["platform"] = platform
     if limit is not None:
@@ -55,12 +64,32 @@ async def node_requirements(state):
         state["country"] = country
     if budget:
         state["budget"] = budget
+    if category:
+        state["category"] = category
 
+    # compute missing fields using the shared helper
     missing = missing_fields(state)
+    # include category in missing checklist if you want it mandatory
+    # if not state.get("category"):
+    #     missing.append("category")
 
     if missing:
+        # keep the user-facing friendly names and examples
+        pretty = []
+        for m in missing:
+            if m == "platform":
+                pretty.append("platform (e.g. Instagram, TikTok, YouTube)")
+            elif m == "country":
+                pretty.append("country (e.g. UAE, Kuwait, Saudi Arabia)")
+            elif m == "limit":
+                pretty.append("number of influencers")
+            else:
+                pretty.append(m)
         state["reply"] = (
-            "I need these details before searching: " + ", ".join(missing) + "."
+            "I need these details before searching: "
+            + ", ".join(pretty)
+            + ".\nPlease reply with them, for example: "
+            "'Platform is Instagram, category is fashion, country is UAE, and I need 4 influencers.'"
         )
 
     return state
@@ -128,11 +157,9 @@ graph.add_edge("classify", "requirements")
 graph.add_conditional_edges(
     "requirements",
     lambda state: "ask_user" if missing_fields(state) else "search",
-    {
-        "ask_user": "ask_user",
-        "search": "search",
-    },
+    {"ask_user": "ask_user", "search": "search"},
 )
+
 
 graph.add_edge("ask_user", END)
 graph.add_edge("search", "send")

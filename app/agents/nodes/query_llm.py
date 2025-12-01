@@ -1,23 +1,15 @@
 import logging
 from app.tools.whatsapp_influencer import find_influencers_for_whatsapp
-from app.models.whatsappconversation_model import ConversationState
-from app.utils.extract_feilds import (
-    extract_budget,
-    extract_country,
-    extract_limit,
-    extract_platform,
-)
 
 
-async def Query_to_llm(state: ConversationState):
+async def Query_to_llm(state):
     try:
-        user_message = state.get("user_message") or ""
-        platform = state.get("platform") or extract_platform(user_message)
+        # Use accumulated state to build a human readable query for the influencer DB/LLM
+        platform = state.get("platform")
         limit = state.get("number_of_influencers")
-        if limit is None:
-            limit = extract_limit(user_message)
-        country = state.get("country") or extract_country(user_message)
-        budget = state.get("budget") or extract_budget(user_message)
+        country = state.get("country")
+        budget = state.get("budget")
+        category = state.get("category")
 
         missing = []
         if not platform:
@@ -32,14 +24,25 @@ async def Query_to_llm(state: ConversationState):
                 "I need these details before searching: "
                 + ", ".join(missing)
                 + ".\nPlease reply with them, for example: "
-                "'Platform is Instagram, category is fashion, country is UAE, "
-                "and I need 4 influencers.'"
+                "'Platform is Instagram, category is fashion, country is UAE, and I need 4 influencers.'"
             )
 
-        search_limit = limit or 5
+        # Build a clear query string for the influencer search
+        parts = []
+        if category:
+            parts.append(category)
+        if platform:
+            parts.append(platform)
+        if country:
+            parts.append(country)
+        if budget:
+            parts.append(f"budget {budget}")
+        query = " ".join(parts) if parts else (state.get("user_message") or "")
+
+        search_limit = int(limit) if limit else 5
 
         influencers = await find_influencers_for_whatsapp(
-            query=user_message,
+            query=query,
             platform=platform,
             limit=search_limit,
             country=country,

@@ -33,7 +33,11 @@ async def handle_whatsapp_events(request: Request):
         metadata={"source": "whatsapp_webhook"},
     )
 
-    state = {"event_data": event_data}
+    state = {
+        "event_data": event_data,
+        "thread_id": thread_id,
+        "sender_id": thread_id,  # make sender explicit for nodes that send messages
+    }
     final_state = await whatsapp_agent.ainvoke(
         state, config={"configurable": {"thread_id": thread_id}}
     )
