@@ -69,8 +69,12 @@ async def node_greet(state: ConversationState):
 # Fallback for non-influencer questions
 async def node_fallback(state: ConversationState):
     state["reply"] = (
-        "I can help you find influencers for your campaigns. "
-        "Please tell me the platform, category, country, and number of influencers you want."
+        "I can help you only to find influencers for your campaigns. Please tell me the following details: "
+        "1. platform, "
+        "2. category, "
+        "3. country, "
+        "4. number of influencers, "
+        "5. budget"
     )
     await send_whatsapp_message(state["sender_id"], state["reply"])
     return state
