@@ -36,14 +36,17 @@ async def node_classify(state: ConversationState):
 
 
 # Node 3: Extract/accumulate requirements into state (platform, count, country, budget)
-async def node_requirements(state: ConversationState):
+async def node_requirements(state):
+    # Clear old reply every time user sends new message
     state.pop("reply", None)
 
-    message = state.get("user_message") or ""
-    platform = extract_platform(message)
-    limit = extract_limit(message)
-    country = extract_country(message)
-    budget = extract_budget(message)
+    msg = state.get("user_message") or ""
+
+    platform = extract_platform(msg)
+    limit = extract_limit(msg)
+    country = extract_country(msg)
+    budget = extract_budget(msg)
+
     if platform:
         state["platform"] = platform
     if limit is not None:
@@ -52,6 +55,13 @@ async def node_requirements(state: ConversationState):
         state["country"] = country
     if budget:
         state["budget"] = budget
+
+    missing = missing_fields(state)
+
+    if missing:
+        state["reply"] = (
+            "I need these details before searching: " + ", ".join(missing) + "."
+        )
 
     return state
 
@@ -87,6 +97,19 @@ async def node_send(state: ConversationState):
     return state
 
 
+def missing_fields(state: ConversationState):
+    missing = []
+
+    if not state.get("platform"):
+        missing.append("platform")
+    if not state.get("country"):
+        missing.append("country")
+    if not state.get("number_of_influencers"):
+        missing.append("limit")
+
+    return missing
+
+
 # Build graph
 
 graph.add_node("identify", node_identify)
@@ -101,21 +124,10 @@ graph.add_node("fallback", node_fallback)
 graph.set_entry_point("identify")
 
 graph.add_edge("identify", "classify")
-
-# Route based on classified intent
-graph.add_conditional_edges(
-    "classify",
-    lambda state: state.get("intent", "other"),
-    {
-        "find_influencers": "requirements",
-        "greet": "greet",
-        "other": "fallback",
-    },
-)
-
+graph.add_edge("classify", "requirements")
 graph.add_conditional_edges(
     "requirements",
-    lambda state: "ask_user" if state.get("reply") else "search",
+    lambda state: "ask_user" if missing_fields(state) else "search",
     {
         "ask_user": "ask_user",
         "search": "search",

@@ -10,18 +10,9 @@ from app.utils.extract_feilds import (
 
 
 async def Query_to_llm(state: ConversationState):
-    """
-    Handle 'find_influencers' intent using fields already extracted into state.
-    - Read platform / number_of_influencers / country / budget from state.
-    - If any key fields are missing, ask the user for them.
-    - Otherwise, query the influencer store and format a response.
-    """
     try:
         user_message = state.get("user_message") or ""
-
-        # Prefer values already stored in state, fall back to extracting from current message
         platform = state.get("platform") or extract_platform(user_message)
-        # IMPORTANT: preserve existing number_of_influencers if new message doesn't contain a number
         limit = state.get("number_of_influencers")
         if limit is None:
             limit = extract_limit(user_message)
