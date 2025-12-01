@@ -40,22 +40,19 @@ async def node_classify(state: ConversationState):
     return state
 
 
-# Node 3: Extract requirements into state (platform, count, country, budget)
+# Node 3: Extract requirements into state (platform, count, country,number of influencers)
 async def node_requirements(state):
     logging.info(f"[requirements] User message: {state['user_message']}")
     state.pop("reply", None)
     msg = state.get("user_message") or ""
     logging.info(f"[requirements] Message: {msg}")
-
     platform = extract_platform(msg)
-    limit = extract_limit(msg)
-    country = extract_country(msg)
-    budget = extract_budget(msg)
-    category = extract_category(msg)
     logging.info(f"[requirements] Platform: {platform}")
+    limit = extract_limit(msg)
     logging.info(f"[requirements] Limit: {limit}")
+    country = extract_country(msg)
     logging.info(f"[requirements] Country: {country}")
-    logging.info(f"[requirements] Budget: {budget}")
+    category = extract_category(msg)
     logging.info(f"[requirements] Category: {category}")
     if platform:
         state["platform"] = platform
@@ -63,12 +60,9 @@ async def node_requirements(state):
         state["number_of_influencers"] = limit
     if country:
         state["country"] = country
-    if budget:
-        state["budget"] = budget
     if category:
         state["category"] = category
 
-    # compute missing fields using the shared helper
     missing = missing_fields(state)
     if missing:
         pretty = []

@@ -24,8 +24,6 @@ async def handle_whatsapp_events(request: Request):
 
     if not thread_id:
         return {"status": "error", "message": "No sender ID found in message"}
-
-    # Persist user message to Mongo for long-term memory
     await save_chat_message(
         thread_id=thread_id,
         role="user",
@@ -36,13 +34,11 @@ async def handle_whatsapp_events(request: Request):
     state = {
         "event_data": event_data,
         "thread_id": thread_id,
-        "sender_id": thread_id,  # make sender explicit for nodes that send messages
+        "sender_id": thread_id,
     }
     final_state = await whatsapp_agent.ainvoke(
         state, config={"configurable": {"thread_id": thread_id}}
     )
-
-    # Persist assistant reply (if any)
     reply_text = (final_state or {}).get("reply")
     if reply_text:
         await save_chat_message(

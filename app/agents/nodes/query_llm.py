@@ -7,12 +7,10 @@ async def Query_to_llm(state: ConversationState):
     platform = state.get("platform")
     limit = state.get("number_of_influencers")
     country = state.get("country")
-    budget = state.get("budget")
     category = state.get("category")
     logging.info(f"[Query_to_llm] Platform: {platform}")
     logging.info(f"[Query_to_llm] Limit: {limit}")
     logging.info(f"[Query_to_llm] Country: {country}")
-    logging.info(f"[Query_to_llm] Budget: {budget}")
     logging.info(f"[Query_to_llm] Category: {category}")
 
     missing = []
@@ -34,8 +32,6 @@ async def Query_to_llm(state: ConversationState):
     logging.info(f"[Query_to_llm] Missing: {missing}")
 
     query_parts = [p for p in [category, platform, country] if p]
-    if budget:
-        query_parts.append(f"budget:{budget}")
     query = " ".join(query_parts)
     logging.info(f"[Query_to_llm] Query: {query}")
 
@@ -44,7 +40,6 @@ async def Query_to_llm(state: ConversationState):
         platform=platform,
         limit=limit,
         country=country,
-        budget=budget,
         influencer_limit=limit,
     )
     logging.info(f"[Query_to_llm] Influencers: {influencers}")

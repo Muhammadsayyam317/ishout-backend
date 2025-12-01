@@ -4,9 +4,7 @@ from typing import Optional, Dict, Any
 
 async def identify_message_type(event_data: Dict[str, Any]) -> Dict[str, Optional[str]]:
     try:
-        # Check if this is a message event or a status update
         if "messages" not in event_data:
-            # Check if it's a status update (delivery receipts, read receipts, etc.)
             if "statuses" in event_data:
                 logging.info(
                     "Received status update (delivery/read receipt), skipping processing"
@@ -22,7 +20,6 @@ async def identify_message_type(event_data: Dict[str, Any]) -> Dict[str, Optiona
         message_type = user_message.get("type", "unknown")
         message_text = None
 
-        # Extract text from text messages
         if message_type == "text":
             if "text" in user_message:
                 text_data = user_message["text"]
