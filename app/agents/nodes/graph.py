@@ -5,7 +5,7 @@ from app.agents.nodes.query_llm import Query_to_llm
 from app.agents.nodes.message_to_whatsapp import send_whatsapp_message
 from app.models.whatsappconversation_model import ConversationState
 from app.utils.extract_feilds import extract_all_fields
-from langgraph.checkpoint import MemorySaver
+from langgraph.checkpoint.memory import MemorySaver
 from langgraph.store.memory import InMemoryStore
 
 
