@@ -32,51 +32,29 @@ async def node_classify(state: ConversationState):
 
 # Node 3: Check missing fields
 async def node_requirements(state: ConversationState):
-
-    # Clear any previous "missing fields" reply so routing reflects current state
     state.pop("reply", None)
-
-    fields = extract_all_fields(state["user_message"])
-    missing = []
-
-    # Only update fields that have values (preserve existing state)
-    for key, val in fields.items():
-        if val is not None:
-            state[key] = val
-
-    # Check which fields are still missing (check current state, not just extracted fields)
+    # Extract only new values from THIS message
+    new_fields = extract_all_fields(state["user_message"])
+    for key, val in new_fields.items():
+        if val:
+            state[key] = val  # Update only non-empty values
+    # Required fields
     required_fields = ["platform", "category", "country", "number_of_influencers"]
-    for key in required_fields:
-        if state.get(key) is None:
-            missing.append(key)
-
+    missing = [f for f in required_fields if not state.get(f)]
     if missing:
-        state["reply"] = f"I need these details before searching: {', '.join(missing)}"
+        state["reply"] = "I still need these details: " + ", ".join(missing)
 
     return state
 
 
 # Greet user and explain capabilities
 async def node_greet(state: ConversationState):
-    state["reply"] = (
-        "Hi! 👋 I can help you find influencers. "
-        "Tell me the platform, category, country, and how many influencers you need."
-    )
-    await send_whatsapp_message(state["sender_id"], state["reply"])
+    state["reply"] = "Hi! 👋 I can help you find influencers..."
     return state
 
 
-# Fallback for non-influencer questions
 async def node_fallback(state: ConversationState):
-    state["reply"] = (
-        "I can help you only to find influencers for your campaigns. Please tell me the following details: "
-        "1. platform, "
-        "2. category, "
-        "3. country, "
-        "4. number of influencers, "
-        "5. budget"
-    )
-    await send_whatsapp_message(state["sender_id"], state["reply"])
+    state["reply"] = "I can only help you find influencers..."
     return state
 
 

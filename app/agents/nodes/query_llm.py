@@ -40,15 +40,11 @@ async def Query_to_llm(user_message: str):
                 followers = influencer.get(
                     "followers", influencer.get("follower_count", "N/A")
                 )
-                bio = influencer.get("bio", influencer.get("description", ""))
                 platform_name = influencer.get("platform", platform)
 
                 response += f"{i}. @{username} ({platform_name})\n"
                 if followers:
                     response += f"   Followers: {followers}\n"
-                if bio:
-                    bio_short = bio[:100] + "..." if len(bio) > 100 else bio
-                    response += f"   Bio: {bio_short}\n"
                 response += "\n"
 
             return response
