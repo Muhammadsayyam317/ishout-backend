@@ -7,7 +7,6 @@ async def handle_whatsapp_events(request: Request):
     event = await request.json()
     event_data = event["entry"][0]["changes"][0]["value"]
 
-    # Check if this is a message event (not a status update)
     if "messages" not in event_data:
         return {"status": "ok", "message": "Status update, skipping"}
     if not event_data.get("messages"):
@@ -35,6 +34,7 @@ async def handle_whatsapp_events(request: Request):
         "event_data": event_data,
         "thread_id": thread_id,
         "sender_id": thread_id,
+        "user_message": user_text,
     }
     final_state = await whatsapp_agent.ainvoke(
         state, config={"configurable": {"thread_id": thread_id}}
