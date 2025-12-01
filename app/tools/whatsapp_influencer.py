@@ -15,7 +15,6 @@ def find_influencers_for_whatsapp(
     country: Optional[str] = None,
 ) -> List[dict]:
     try:
-        # Pick collection
         collection_map = {
             "instagram": config.MONGODB_ATLAS_COLLECTION_INSTAGRAM,
             "tiktok": config.MONGODB_ATLAS_COLLECTION_TIKTOK,
