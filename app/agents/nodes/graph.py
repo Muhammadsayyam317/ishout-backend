@@ -64,6 +64,7 @@ async def node_requirements(state: ConversationState):
 
 # Ask user missing fields
 async def node_ask_user(state: ConversationState):
+    logging.info(f"[node_ask_user] Reply: {state['reply']}")
     await send_whatsapp_message(state["sender_id"], state["reply"])
     return state
 
@@ -82,16 +83,12 @@ async def node_send(state: ConversationState):
 
 
 def missing_fields(state: ConversationState):
-    missing = []
-    if not state.get("platform"):
-        missing.append("platform")
-    if not state.get("country"):
-        missing.append("country")
-    if not state.get("number_of_influencers"):
-        missing.append("number_of_influencers")
-    if not state.get("category"):
-        missing.append("category")
-    return missing
+    logging.info(f"[missing_fields] State: {state}")
+    return [
+        field
+        for field in ["platform", "country", "number_of_influencers", "category"]
+        if not state.get(field)
+    ]
 
 
 # Build graph
