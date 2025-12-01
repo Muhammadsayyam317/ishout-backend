@@ -46,17 +46,12 @@ async def node_requirements(state):
     state.pop("reply", None)
     msg = state.get("user_message") or ""
     logging.info(f"[requirements] Message: {msg}")
+
     platform = extract_platform(msg)
     limit = extract_limit(msg)
     country = extract_country(msg)
     budget = extract_budget(msg)
-    category = extract_category(msg)
-    try:
-        from app.utils.extract_feilds import extract_category
-
-        category = extract_category(msg)
-    except Exception:
-        category = None
+    category = extract_category(msg)  # just call it directly
 
     # accumulate (do not overwrite with None)
     if platform:
@@ -79,7 +74,7 @@ async def node_requirements(state):
                 pretty.append("platform (e.g. Instagram, TikTok, YouTube)")
             elif m == "country":
                 pretty.append("country (e.g. UAE, Kuwait, Saudi Arabia)")
-            elif m == "limit":
+            elif m == "number_of_influencers":
                 pretty.append("number of influencers")
             else:
                 pretty.append(m)
