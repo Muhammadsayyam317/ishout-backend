@@ -37,12 +37,15 @@ async def find_influencers_for_whatsapp(
         )
         pymongo_db = get_pymongo_db()
         collection = pymongo_db[collection_name]
+
+        # Initialize vector store
         vectorstore = MongoDBAtlasVectorSearch(
             collection=collection,
             embedding=embeddings,
             index_name=f"embedding_index_{platform}",
             relevance_score="cosine",
-        ).create_vector_search_index(dimensions=1536)
+        )
+        vectorstore.create_vector_search_index(dimensions=1536)
 
         search_limit = influencer_limit if influencer_limit else limit * 2
         search_results = vectorstore.similarity_search(query, k=search_limit)

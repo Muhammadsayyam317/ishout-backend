@@ -9,12 +9,12 @@ from app.utils.extract_feilds import (
     extract_limit,
     extract_country,
     extract_budget,
+    extract_category,
 )
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.store.memory import InMemoryStore
+import logging
 
-
-# In-memory checkpointer + store for testing (no disk persistence)
 checkpointer = MemorySaver()
 store = InMemoryStore()
 graph = StateGraph(ConversationState)
@@ -22,32 +22,35 @@ graph = StateGraph(ConversationState)
 
 # Node 1: Identify incoming message
 async def node_identify(state: ConversationState):
+    logging.info(f"[identify] Incoming event: {state['event_data']}")
     msg_data = await identify_message_type(state["event_data"])
     state["sender_id"] = msg_data["sender_id"]
     state["user_message"] = msg_data["message_text"]
+    logging.info(f"[identify] Sender ID: {state['sender_id']}")
+    logging.info(f"[identify] User message: {state['user_message']}")
     return state
 
 
 # Node 2: Classify intent
 async def node_classify(state: ConversationState):
+    logging.info(f"[classify] User message: {state['user_message']}")
     result = await message_classification(state["user_message"])
     state["intent"] = result.intent
+    logging.info(f"[classify] Intent: {state['intent']}")
     return state
 
 
 # Node 3: Extract/accumulate requirements into state (platform, count, country, budget)
 async def node_requirements(state):
-    # Clear old reply every time user sends new message
+    logging.info(f"[requirements] User message: {state['user_message']}")
     state.pop("reply", None)
-
     msg = state.get("user_message") or ""
-
-    # extract only from current message
+    logging.info(f"[requirements] Message: {msg}")
     platform = extract_platform(msg)
     limit = extract_limit(msg)
     country = extract_country(msg)
     budget = extract_budget(msg)
-    category = None
+    category = extract_category(msg)
     try:
         from app.utils.extract_feilds import extract_category
 
@@ -69,12 +72,7 @@ async def node_requirements(state):
 
     # compute missing fields using the shared helper
     missing = missing_fields(state)
-    # include category in missing checklist if you want it mandatory
-    # if not state.get("category"):
-    #     missing.append("category")
-
     if missing:
-        # keep the user-facing friendly names and examples
         pretty = []
         for m in missing:
             if m == "platform":
@@ -114,7 +112,6 @@ async def node_ask_user(state: ConversationState):
 
 # Node 4: Search influencers
 async def node_search(state: ConversationState):
-    # Delegate to LLM/query layer, which will read fields from state
     result = await Query_to_llm(state)
     state["reply"] = result
     return state
@@ -128,14 +125,14 @@ async def node_send(state: ConversationState):
 
 def missing_fields(state: ConversationState):
     missing = []
-
     if not state.get("platform"):
-        missing.append("platform")
+        missing.append("platform (Instagram, TikTok, YouTube)")
     if not state.get("country"):
-        missing.append("country")
+        missing.append("country (UAE, Kuwait, etc.)")
     if not state.get("number_of_influencers"):
-        missing.append("limit")
-
+        missing.append("number of influencers")
+    if not state.get("category"):
+        missing.append("category (fashion, beauty, etc.)")
     return missing
 
 
@@ -155,9 +152,13 @@ graph.set_entry_point("identify")
 graph.add_edge("identify", "classify")
 graph.add_edge("classify", "requirements")
 graph.add_conditional_edges(
-    "requirements",
-    lambda state: "ask_user" if missing_fields(state) else "search",
-    {"ask_user": "ask_user", "search": "search"},
+    "classify",
+    lambda state: (
+        "greet"
+        if state["intent"] == "greet"
+        else "requirements" if state["intent"] == "find_influencers" else "fallback"
+    ),
+    {"greet": "greet", "requirements": "requirements", "fallback": "fallback"},
 )
 
 

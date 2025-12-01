@@ -52,9 +52,9 @@ def extract_limit(message: str) -> Optional[int]:
     m = re.search(r"(\d+)\s*(?:-|to)?\s*(\d+)?\s*(influencers?|creators?)?", msg)
     if m:
         try:
-            return int(m.group(1))
+            return int(m.group(2) or m.group(1))
         except:
-            return None
+            return int(m.group(1))
     return None
 
 
