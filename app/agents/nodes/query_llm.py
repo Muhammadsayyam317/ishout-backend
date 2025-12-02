@@ -5,14 +5,13 @@ from app.tools.whatsapp_influencer import find_influencers_for_whatsapp
 
 async def Query_to_llm(state: ConversationState):
     platform = state.get("platform")
-    logging.info("[Query_to_llm] Entering Query_to_llm")
-    logging.info(f"[Query_to_llm] Platform: {platform}")
+    print(f"[Query_to_llm] Platform: {platform}")
     limit = state.get("number_of_influencers")
-    logging.info(f"[Query_to_llm] Limit: {limit}")
+    print(f"[Query_to_llm] Limit: {limit}")
     country = state.get("country")
-    logging.info(f"[Query_to_llm] Country: {country}")
+    print(f"[Query_to_llm] Country: {country}")
     category = state.get("category")
-    logging.info(f"[Query_to_llm] Category: {category}")
+    print(f"[Query_to_llm] Category: {category}")
 
     missing = []
     if not platform:
@@ -30,10 +29,15 @@ async def Query_to_llm(state: ConversationState):
             + ", ".join(missing)
             + ". Please reply with them."
         )
+    print(f"[Query_to_llm] Missing: {missing}")
     logging.info(f"[Query_to_llm] Missing: {missing}")
     query_parts = [p for p in [category, platform, country] if p]
     query = " ".join(query_parts)
+    print(f"[Query_to_llm] Search query constructed: '{query}'")
     logging.info(f"[Query_to_llm] Search query constructed: '{query}'")
+    print(
+        f"[Query_to_llm] Calling find_influencers_for_whatsapp with - query: '{query}', platform: '{platform}', number_of_influencers: {limit}, country: '{country}'"
+    )
     logging.info(
         f"[Query_to_llm] Calling find_influencers_for_whatsapp with - query: '{query}', platform: '{platform}', number_of_influencers: {limit}, country: '{country}'"
     )
@@ -44,8 +48,10 @@ async def Query_to_llm(state: ConversationState):
         number_of_influencers=limit,
         country=country,
     )
+    print(f"[Query_to_llm] Influencers: {influencers}")
     logging.info(f"[Query_to_llm] Influencers: {influencers}")
-
+    print("[Query_to_llm] No influencers found with these filters.")
+    logging.info("[Query_to_llm] No influencers found with these filters.")
     if not influencers:
         return "No influencers found with these filters."
 

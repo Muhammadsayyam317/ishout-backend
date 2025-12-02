@@ -13,18 +13,16 @@ import aiosqlite
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from app.agents.nodes.graph import graph
 
-# Configure logging to show INFO level and above to console
-# Force configuration even if logging was already configured
+
 try:
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
         handlers=[logging.StreamHandler()],
-        force=True,  # Override any existing configuration (Python 3.8+)
+        force=True,
     )
 except TypeError:
-    # Fallback for Python < 3.8
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -32,15 +30,10 @@ except TypeError:
         handlers=[logging.StreamHandler()],
     )
 
-# Also set the root logger level explicitly
 logging.getLogger().setLevel(logging.INFO)
-
-# Set specific loggers to INFO level
 logging.getLogger("app").setLevel(logging.INFO)
 logging.getLogger("app.agents").setLevel(logging.INFO)
 logging.getLogger("app.tools").setLevel(logging.INFO)
-
-# Test log to verify logging is working
 logging.info("Logging configured successfully")
 
 security = HTTPBearer(
@@ -88,7 +81,6 @@ register_exception_handlers(app)
 def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
-
     openapi_schema = get_openapi(
         title=app.title,
         version=app.version,
@@ -101,8 +93,6 @@ def custom_openapi():
 
 
 app.openapi = custom_openapi
-
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://ishout.vercel.app", "http://localhost:3000"],
