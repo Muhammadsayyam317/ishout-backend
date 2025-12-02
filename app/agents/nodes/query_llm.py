@@ -43,6 +43,5 @@ async def Query_to_llm(state: ConversationState):
 
     response = f"I found {len(influencers)} influencer(s):\n\n"
     for i, inf in enumerate(influencers, 1):
-        username = inf.get("username") or inf.get("name", "Unknown")
-        response += f"{i}. @{username} ({platform})\n"
+        response += f"{i}. {inf}\n\n"
     return response
