@@ -24,26 +24,12 @@ async def Query_to_llm(state: ConversationState):
         missing.append("category (e.g. fashion, beauty, tech)")
 
     if missing:
-        return (
-            "iShout need these details before searching: "
-            + ", ".join(missing)
-            + ". Please reply with them."
-        )
+        return "iShout need these details before searching: " + ", ".join(missing)
     print(f"[Query_to_llm] Missing: {missing}")
     logging.info(f"[Query_to_llm] Missing: {missing}")
-    query_parts = [p for p in [category, platform, country] if p]
-    query = " ".join(query_parts)
-    print(f"[Query_to_llm] Search query constructed: '{query}'")
-    logging.info(f"[Query_to_llm] Search query constructed: '{query}'")
-    print(
-        f"[Query_to_llm] Calling find_influencers_for_whatsapp with - query: '{query}', platform: '{platform}', number_of_influencers: {limit}, country: '{country}'"
-    )
-    logging.info(
-        f"[Query_to_llm] Calling find_influencers_for_whatsapp with - query: '{query}', platform: '{platform}', number_of_influencers: {limit}, country: '{country}'"
-    )
 
     influencers = find_influencers_for_whatsapp(
-        query=query,
+        category=category,
         platform=platform,
         number_of_influencers=limit,
         country=country,
