@@ -7,10 +7,19 @@ from fastapi.openapi.utils import get_openapi
 from app.api.api import api_router
 from contextlib import asynccontextmanager
 import os
+import logging
 from app.core.errors import register_exception_handlers
 import aiosqlite
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from app.agents.nodes.graph import graph
+
+# Configure logging to show INFO level and above to console
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[logging.StreamHandler()],
+)
 
 security = HTTPBearer(
     scheme_name="Bearer", description="Enter your Bearer token", auto_error=False
