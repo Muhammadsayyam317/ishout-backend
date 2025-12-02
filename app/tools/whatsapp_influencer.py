@@ -3,12 +3,12 @@ from typing import List, Optional
 from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain_openai import OpenAIEmbeddings
 from app.config import config
-from app.db.connection import get_db
+from app.db.connection import get_pymongo_db
 
 logger = logging.getLogger(__name__)
 
 
-async def find_influencers_for_whatsapp(
+def find_influencers_for_whatsapp(
     query: str,
     platform: str,
     number_of_influencers: int,
@@ -22,7 +22,7 @@ async def find_influencers_for_whatsapp(
         }
         if platform not in collection_map:
             raise ValueError(f"Invalid platform: {platform}")
-        collection = get_db().get_collection(collection_map[platform])
+        collection = get_pymongo_db()[collection_map[platform]]
         embeddings = OpenAIEmbeddings(
             api_key=config.OPENAI_API_KEY,
             model=config.EMBEDDING_MODEL,
@@ -34,7 +34,7 @@ async def find_influencers_for_whatsapp(
             relevance_score="cosine",
         )
 
-        await store.create_vector_search_index(dimensions=1536)
+        store.create_vector_search_index(dimensions=1536)
         docs = store.similarity_search(query, k=number_of_influencers)
 
         return [doc.page_content for doc in docs]

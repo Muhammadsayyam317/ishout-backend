@@ -34,7 +34,7 @@ async def Query_to_llm(state: ConversationState):
     query_parts = [p for p in [category, platform, country] if p]
     query = " ".join(query_parts)
 
-    influencers = await find_influencers_for_whatsapp(
+    influencers = find_influencers_for_whatsapp(
         query=query,
         platform=platform,
         number_of_influencers=limit,
