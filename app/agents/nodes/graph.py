@@ -23,7 +23,7 @@ async def node_requirements(state: ConversationState):
     country = extract_country(msg)
     category = extract_category(msg)
 
-    # Accumulate (do NOT overwrite correct previous values)
+    # (do NOT overwrite correct previous values)
     if platform:
         state["platform"] = platform
     if limit is not None:
@@ -69,6 +69,8 @@ async def node_ask_user(state: ConversationState):
 # Node 2: Search influencers
 async def node_search(state: ConversationState):
     result = await Query_to_llm(state)
+    logging.info(f"[node_search] Result: {result}")
+    print(f"[node_search] Result: {result}")
     state["reply"] = result
     return state
 

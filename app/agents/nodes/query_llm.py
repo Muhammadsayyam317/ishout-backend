@@ -6,6 +6,7 @@ from app.tools.whatsapp_influencer import find_influencers_for_whatsapp
 async def Query_to_llm(state: ConversationState):
     platform = state.get("platform")
     logging.info(f"[Query_to_llm] Platform: {platform}")
+    print(f"[Query_to_llm] Platform: {platform}")
     limit = state.get("number_of_influencers")
     logging.info(f"[Query_to_llm] Limit: {limit}")
     country = state.get("country")
