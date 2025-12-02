@@ -14,12 +14,34 @@ from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from app.agents.nodes.graph import graph
 
 # Configure logging to show INFO level and above to console
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-    handlers=[logging.StreamHandler()],
-)
+# Force configuration even if logging was already configured
+try:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        handlers=[logging.StreamHandler()],
+        force=True,  # Override any existing configuration (Python 3.8+)
+    )
+except TypeError:
+    # Fallback for Python < 3.8
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        handlers=[logging.StreamHandler()],
+    )
+
+# Also set the root logger level explicitly
+logging.getLogger().setLevel(logging.INFO)
+
+# Set specific loggers to INFO level
+logging.getLogger("app").setLevel(logging.INFO)
+logging.getLogger("app.agents").setLevel(logging.INFO)
+logging.getLogger("app.tools").setLevel(logging.INFO)
+
+# Test log to verify logging is working
+logging.info("Logging configured successfully")
 
 security = HTTPBearer(
     scheme_name="Bearer", description="Enter your Bearer token", auto_error=False
@@ -98,4 +120,5 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=8000,
         reload=True,
+        log_level="info",
     )
