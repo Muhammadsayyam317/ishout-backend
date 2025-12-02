@@ -6,6 +6,7 @@ from app.config import config
 from app.db.connection import get_pymongo_db
 
 logger = logging.getLogger(__name__)
+print(f"[find_influencers_for_whatsapp] Logger: {logger}")
 
 
 def find_influencers_for_whatsapp(
@@ -14,6 +15,12 @@ def find_influencers_for_whatsapp(
     number_of_influencers: int,
     country: Optional[str] = None,
 ) -> List[dict]:
+    print(f"[find_influencers_for_whatsapp] Query: {query}")
+    print(f"[find_influencers_for_whatsapp] Platform: {platform}")
+    print(
+        f"[find_influencers_for_whatsapp] Number of influencers: {number_of_influencers}"
+    )
+    print(f"[find_influencers_for_whatsapp] Country: {country}")
     logger.info(
         f"[find_influencers_for_whatsapp] Called with - query: '{query}', platform: '{platform}', number_of_influencers: {number_of_influencers}, country: '{country}'"
     )
