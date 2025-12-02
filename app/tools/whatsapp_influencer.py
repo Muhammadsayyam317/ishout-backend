@@ -14,6 +14,9 @@ def find_influencers_for_whatsapp(
     number_of_influencers: int,
     country: Optional[str] = None,
 ) -> List[dict]:
+    logger.info(
+        f"[find_influencers_for_whatsapp] Called with - query: '{query}', platform: '{platform}', number_of_influencers: {number_of_influencers}, country: '{country}'"
+    )
     try:
         collection_map = {
             "instagram": config.MONGODB_ATLAS_COLLECTION_INSTAGRAM,
@@ -23,6 +26,9 @@ def find_influencers_for_whatsapp(
         if platform not in collection_map:
             raise ValueError(f"Invalid platform: {platform}")
         collection = get_pymongo_db()[collection_map[platform]]
+        logger.info(
+            f"[find_influencers_for_whatsapp] Using collection: {collection_map[platform]}"
+        )
         embeddings = OpenAIEmbeddings(
             api_key=config.OPENAI_API_KEY,
             model=config.EMBEDDING_MODEL,
@@ -35,9 +41,17 @@ def find_influencers_for_whatsapp(
         )
 
         store.create_vector_search_index(dimensions=1536)
+        logger.info(
+            f"[find_influencers_for_whatsapp] Performing similarity search with query: '{query}', k: {number_of_influencers}"
+        )
         docs = store.similarity_search(query, k=number_of_influencers)
+        logger.info(f"[find_influencers_for_whatsapp] Found {len(docs)} documents")
 
-        return [doc.page_content for doc in docs]
+        result = [doc.page_content for doc in docs]
+        logger.info(
+            f"[find_influencers_for_whatsapp] Returning {len(result)} influencers"
+        )
+        return result
 
     except Exception as e:
         logger.error(f"Error finding influencers for WhatsApp: {str(e)}", exc_info=True)
