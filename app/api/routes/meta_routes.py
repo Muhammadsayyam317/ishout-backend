@@ -7,6 +7,7 @@ from app.api.controllers.meta.notification import (
 from app.api.controllers.meta.privacy_policy import get_privacy_policy
 from app.api.controllers.meta.whatsapp_webhook import verify_whatsapp_webhook
 from app.agents.whatsapp_agent import handle_whatsapp_events
+from app.tools.whatsapp_influencer import find_influencers_for_whatsapp
 
 router = APIRouter()
 
@@ -52,4 +53,13 @@ router.add_api_route(
     methods=["POST"],
     tags=["Meta"],
     name="handle_whatsapp_events",
+)
+
+
+router.add_api_route(
+    path="/test-logging",
+    endpoint=find_influencers_for_whatsapp,
+    methods=["POST"],
+    tags=["Meta"],
+    name="find_influencers_for_whatsapp",
 )
