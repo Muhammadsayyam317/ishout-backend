@@ -6,7 +6,6 @@ SESSION_EXPIRY_SECONDS = 600
 
 async def create_new_state(sender_id):
     session_collection = get_session_collection()
-
     new_state = {
         "sender_id": sender_id,
         "platform": None,
@@ -29,38 +28,35 @@ async def create_new_state(sender_id):
 
 async def get_user_state(sender_id):
     session_collection = get_session_collection()
-
     state = await session_collection.find_one({"sender_id": sender_id})
-
+    if state:
+        state.pop("_id", None)
     if not state:
         return await create_new_state(sender_id)
-
     now = time.time()
     last_active = state.get("last_active", 0)
-
     if now - last_active > SESSION_EXPIRY_SECONDS:
         return await create_new_state(sender_id)
-
     await session_collection.update_one(
         {"sender_id": sender_id},
         {"$set": {"last_active": now}},
     )
 
     state["last_active"] = now
+    state.pop("_id", None)
     return state
 
 
 async def update_user_state(sender_id, new_data: dict):
-    session_collection = get_session_collection()
 
+    new_data.pop("_id", None)
+    session_collection = get_session_collection()
     update_fields = {key: value for key, value in new_data.items() if value is not None}
     update_fields["last_active"] = time.time()
-
     await session_collection.update_one(
         {"sender_id": sender_id},
         {"$set": update_fields},
     )
-
     return await session_collection.find_one({"sender_id": sender_id})
 
 
