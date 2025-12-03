@@ -40,9 +40,6 @@ def find_influencers_for_whatsapp(
             )
         collection = get_pymongo_db()[collection_name]
         print(f"[find_influencers_for_whatsapp] Using collection: {collection_name}")
-        logger.info(
-            f"[find_influencers_for_whatsapp] Using collection: {collection_name}"
-        )
         embeddings = OpenAIEmbeddings(
             api_key=config.OPENAI_API_KEY,
             model=config.EMBEDDING_MODEL,
@@ -57,12 +54,7 @@ def find_influencers_for_whatsapp(
         )
         print(f"[find_influencers_for_whatsapp] Query: {query}")
         docs = store.similarity_search(query, k=number_of_influencers)
-        logger.info(f"[find_influencers_for_whatsapp] Found {len(docs)} documents")
-        print(f"[find_influencers_for_whatsapp] Found {len(docs)} documents")
         result = [doc.page_content for doc in docs]
-        logger.info(
-            f"[find_influencers_for_whatsapp] Returning {len(result)} influencers"
-        )
         return result
 
     except Exception as e:

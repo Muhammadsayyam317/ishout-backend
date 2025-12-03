@@ -1,6 +1,7 @@
 from langgraph.graph import StateGraph, END
 from app.agents.nodes.query_llm import Query_to_llm
 from app.agents.nodes.message_to_whatsapp import send_whatsapp_message
+from app.agents.nodes.state import reset_user_state
 from app.models.whatsappconversation_model import ConversationState
 import logging
 from app.utils.extract_feilds import (
@@ -83,6 +84,7 @@ async def node_search(state: ConversationState):
 # Node 3: Send reply
 async def node_send(state: ConversationState):
     await send_whatsapp_message(state["sender_id"], state["reply"])
+    reset_user_state(state["sender_id"])
     return state
 
 

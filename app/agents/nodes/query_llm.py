@@ -34,13 +34,9 @@ async def Query_to_llm(state: ConversationState):
         number_of_influencers=limit,
         country=country,
     )
-    print(f"[Query_to_llm] Influencers: {influencers}")
-    logging.info(f"[Query_to_llm] Influencers: {influencers}")
-    print("[Query_to_llm] No influencers found with these filters.")
-    logging.info("[Query_to_llm] No influencers found with these filters.")
+
     if not influencers:
         return "No influencers found with these filters."
-
     response = f"I found {len(influencers)} influencer(s):\n\n"
     for i, inf in enumerate(influencers, 1):
         response += f"{i}. {inf}\n\n"
