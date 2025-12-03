@@ -1,13 +1,11 @@
 import time
-from app.db.mongo_session import get_session_collection
+from app.db.connection import get_db
 
-SESSION_EXPIRY_SECONDS = 600
+SESSION_EXPIRY_SECONDS = 600  # 10 minutes
 
 
-def create_new_state(sender_id):
-    """Create a fresh session document."""
-    session_collection = get_session_collection()
-    new_state = {
+def create_new_state(sender_id: str):
+    return {
         "sender_id": sender_id,
         "platform": None,
         "country": None,
@@ -17,51 +15,51 @@ def create_new_state(sender_id):
         "reply": None,
         "last_active": time.time(),
     }
-    session_collection.update_one(
-        {"sender_id": sender_id}, {"$set": new_state}, upsert=True
-    )
-    return new_state
 
 
-def get_user_state(sender_id):
-    """Fetch user session from DB; create if missing or expired."""
-    session_collection = get_session_collection()
-    state = session_collection.find_one({"sender_id": sender_id})
+async def get_user_state(sender_id: str):
+    """Fetch state from MongoDB using shared connection, auto-create or auto-reset."""
+    db = get_db()
+    sessions = db["whatsapp_sessions"]
+    now = time.time()
+    state = await sessions.find_one({"sender_id": sender_id})
 
-    # If no session → create new
+    # 🟢 New user → create state
     if not state:
-        return create_new_state(sender_id)
+        new_state = create_new_state(sender_id)
+        await sessions.insert_one(new_state)
+        return new_state
 
-    # Check if expired
-    now = time.time()
-    last_active = state.get("last_active", 0)
+    # ⏳ Session expired → reset
+    if now - state.get("last_active", 0) > SESSION_EXPIRY_SECONDS:
+        new_state = create_new_state(sender_id)
+        await sessions.update_one({"sender_id": sender_id}, {"$set": new_state})
+        return new_state
 
-    if now - last_active > SESSION_EXPIRY_SECONDS:
-        return create_new_state(sender_id)
-
-    # Update last_active
-    session_collection.update_one(
-        {"sender_id": sender_id}, {"$set": {"last_active": now}}
-    )
-
-    # Return updated state
-    state["last_active"] = now
-    return state
+    # 🔄 Always update last_active
+    await sessions.update_one({"sender_id": sender_id}, {"$set": {"last_active": now}})
+    # Return fresh updated state
+    return await sessions.find_one({"sender_id": sender_id})
 
 
-def update_user_state(sender_id, new_data: dict):
-    """Update values inside the MongoDB session."""
-    session_collection = get_session_collection()
-    now = time.time()
+async def update_user_state(sender_id: str, new_data: dict):
+    """Merge new data into existing state and save to MongoDB."""
+    db = get_db()
+    sessions = db["whatsapp_sessions"]
 
-    update_fields = {key: value for key, value in new_data.items() if value is not None}
-    update_fields["last_active"] = now
+    await get_user_state(sender_id)  # ensure session exists
 
-    session_collection.update_one({"sender_id": sender_id}, {"$set": update_fields})
+    update_payload = {k: v for k, v in new_data.items() if v is not None}
+    update_payload["last_active"] = time.time()
 
-    return session_collection.find_one({"sender_id": sender_id})
+    await sessions.update_one({"sender_id": sender_id}, {"$set": update_payload})
+    return await sessions.find_one({"sender_id": sender_id})
 
 
-def reset_user_state(sender_id):
-    """Manually reset session."""
-    return create_new_state(sender_id)
+async def reset_user_state(sender_id: str):
+    """Reset full session state."""
+    db = get_db()
+    sessions = db["whatsapp_sessions"]
+    new_state = create_new_state(sender_id)
+    await sessions.update_one({"sender_id": sender_id}, {"$set": new_state})
+    return new_state
