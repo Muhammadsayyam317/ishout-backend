@@ -19,11 +19,11 @@ async def _get_ig_username(psid: Optional[str]) -> Optional[str]:
     now = time.time()
     cached = PROFILE_CACHE.get(psid)
     if cached and now - cached.get("ts", 0) < PROFILE_TTL_SEC:
-        return cached.get("username") or cached.get("name")
-    graph_url = f"https://graph.facebook.com/{config.IG_GRAPH_API_VERSION}/{psid}"
+        return cached.get("username")
+    graph_url = f"https://graph.facebook.com/v23.0/{psid}"
     params = {
-        "fields": "username,name",
-        "access_token": config.PAGE_ACCESS_TOKEN,
+        "fields": "username",
+        "access_token": "EAAVTqVZBPnhYBQPpws4RTBzBGtxZARiAecMVFFvkftKgzRjjTCRkYMYqZBMuIg9pfCLy8ty9cp4JLnw4LKkKZAeqINE2tfz0glk4IgtTxt32dVDFQIAiHGm4JZAzKr4InGMoalsd5T0xFflZAgsYO5N4MOnz0g6vN7UvoZANHdyOEgNkoOXZC4FZAOXsH4WYK2is4VIDT",
     }
 
     try:
@@ -31,10 +31,9 @@ async def _get_ig_username(psid: Optional[str]) -> Optional[str]:
             resp = await client.get(graph_url, params=params)
             if resp.status_code == 200:
                 data = resp.json()
-                username = data.get("username") or data.get("name")
+                username = data.get("username")
                 PROFILE_CACHE[psid] = {
                     "username": data.get("username"),
-                    "name": data.get("name"),
                     "ts": now,
                 }
                 return username

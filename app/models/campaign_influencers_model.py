@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Optional
 from pydantic import BaseModel
 
 
@@ -11,13 +12,13 @@ class CampaignInfluencerStatus(str, Enum):
 class CampaignInfluencersRequest(BaseModel):
     campaign_id: str
     influencer_id: str
-    username: str
-    picture: str
-    engagementRate: float
-    bio: str
-    platform: str
-    followers: int
-    country: str
+    username: Optional[str] = None
+    picture: Optional[str] = None
+    engagementRate: Optional[float] = None
+    bio: Optional[str] = None
+    platform: Optional[str] = None
+    followers: Optional[int] = None
+    country: Optional[str] = None
     status: CampaignInfluencerStatus
     admin_approved: bool = False
     company_approved: bool = False

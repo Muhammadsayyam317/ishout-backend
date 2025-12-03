@@ -1,6 +1,7 @@
 from typing import Dict, Any, Optional
 from fastapi import HTTPException
 from app.db.connection import get_db
+from app.models.campaign_model import CampaignStatus
 from app.utils.helpers import convert_objectid
 
 
@@ -64,6 +65,69 @@ async def all_campaigns(
             "total_pages": total_pages,
             "has_next": page < total_pages,
             "has_prev": page > 1,
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+async def CompaignwithAdminApprovedInfluencersById(
+    user_id: str, page: int = 1, page_size: int = 10
+):
+    try:
+        db = get_db()
+        campaigns_collection = db.get_collection("campaigns")
+
+        skip = (page - 1) * page_size
+
+        pipeline = [
+            {"$match": {"user_id": user_id, "status": CampaignStatus.APPROVED.value}},
+            {"$sort": {"updated_at": -1}},
+            {
+                "$lookup": {
+                    "from": "campaign_influencers",
+                    "let": {"camp_id": "$_id"},
+                    "pipeline": [
+                        {
+                            "$match": {
+                                "$expr": {"$eq": ["$campaign_id", "$$camp_id"]},
+                                "company_approved": False,
+                            }
+                        },
+                        {"$count": "pending_count"},
+                    ],
+                    "as": "pending_info",
+                }
+            },
+            {
+                "$addFields": {
+                    "pending_influencers_count": {
+                        "$ifNull": [
+                            {"$arrayElemAt": ["$pending_info.pending_count", 0]},
+                            0,
+                        ]
+                    }
+                }
+            },
+            {"$project": {"pending_info": 0}},
+            {"$skip": skip},
+            {"$limit": page_size},
+        ]
+
+        campaigns = await campaigns_collection.aggregate(pipeline).to_list(length=None)
+
+        total = await campaigns_collection.count_documents(
+            {"user_id": user_id, "status": CampaignStatus.APPROVED.value}
+        )
+
+        return {
+            "campaigns": [convert_objectid(c) for c in campaigns],
+            "pagination": {
+                "page": page,
+                "page_size": page_size,
+                "total": total,
+                "total_pages": (total + page_size - 1) // page_size,
+            },
         }
 
     except Exception as e:

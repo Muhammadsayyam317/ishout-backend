@@ -3,8 +3,13 @@ from fastapi import APIRouter, HTTPException, Depends
 from app.api.controllers.admin.approved_campaign import (
     companyApprovedSingleInfluencer,
 )
-from app.api.controllers.company.all_campaign import all_campaigns
-from app.api.controllers.company.approved_influencers import companyApprovedCampaignById
+from app.api.controllers.company.all_campaign import (
+    CompaignwithAdminApprovedInfluencersById,
+    all_campaigns,
+)
+from app.api.controllers.company.approved_influencers import (
+    ReviewPendingInfluencersByCampaignId,
+)
 from app.middleware.auth_middleware import require_company_user_access
 from app.api.controllers.campaign_controller import (
     create_campaign,
@@ -60,51 +65,23 @@ async def reject_influencers_route(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# @router.get("/approved-influencers/{user_id}", tags=["Company"])
-# async def get_campaign_approved_influencers_route(
-#     user_id: str, current_user: dict = Depends(require_company_user_access)
-# ):
-#     try:
-#         return await companyApprovedCampaignById(user_id)
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-
-
-#         return {
-#             "campaign": {
-#                 "campaign_id": campaign_id,
-#                 "name": campaign.get("name"),
-#                 "description": campaign.get("description"),
-#                 "status": campaign.get("status"),
-#                 "platform": campaign.get("platform"),
-#                 "category": campaign.get("category"),
-#                 "followers": campaign.get("followers"),
-#                 "country": campaign.get("country"),
-#                 "created_at": campaign.get("created_at"),
-#                 "updated_at": campaign.get("updated_at"),
-#             },
-#             "approved_influencers": campaign_data.get("approved_influencers", []),
-#             "rejected_by_user_influencers": campaign_data.get(
-#                 "rejected_by_user_influencers", []
-#             ),
-#             "total_approved": campaign_data.get("total_approved", 0),
-#             "total_rejected_by_user": campaign_data.get("total_rejected_by_user", 0),
-#         }
-#     except HTTPException:
-#         raise
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-
-
 router.add_api_route(
     path="/search-influencers",
     endpoint=search_influencers,
     methods=["POST"],
-    tags=["User"],
+    tags=["Company"],
 )
+
 router.add_api_route(
-    path="/approved-campaigns/{user_id}",
-    endpoint=companyApprovedCampaignById,
+    path="/{user_id}/approved-campaign",
+    endpoint=CompaignwithAdminApprovedInfluencersById,
+    methods=["GET"],
+    tags=["Company"],
+)
+
+router.add_api_route(
+    path="/review-pending-influencers/{campaign_id}",
+    endpoint=ReviewPendingInfluencersByCampaignId,
     methods=["GET"],
     tags=["Company"],
 )

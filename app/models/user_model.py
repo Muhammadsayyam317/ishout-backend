@@ -58,13 +58,12 @@ class PasswordChangeRequest(BaseModel):
 
 
 class UserUpdateRequest(BaseModel):
-    """Request model for updating user profile"""
-
+    email: Optional[EmailStr] = None
     company_name: Optional[str] = None
     contact_person: Optional[str] = None
     phone: Optional[str] = None
-    industry: Optional[str] = None
-    company_size: Optional[str] = None
+    password: Optional[str] = None
+    confirm_password: Optional[str] = None
 
 
 class UserCampaignResponse(BaseModel):

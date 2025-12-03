@@ -879,40 +879,55 @@ async def reject_and_regenerate_influencers(request_data) -> Dict[str, Any]:
 
 
 async def company_approved_campaign_influencers(
+    campaign_id: str,
     page: int = 1,
     page_size: int = 10,
 ):
+    if not campaign_id:
+        raise HTTPException(status_code=400, detail="campaign_id is required")
     if page < 1 or page_size < 1:
         raise HTTPException(status_code=400, detail="Invalid pagination parameters")
+
+    try:
+        campaign_object_id = ObjectId(campaign_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid campaign_id format")
+
     try:
         db = get_db()
         collection = db.get_collection("campaign_influencers")
-        cursor = collection.find(
-            {
-                "admin_approved": True,
-                "company_approved": True,
-                "status": CampaignInfluencerStatus.APPROVED.value,
-            }
-        ).sort("updated_at", -1)
+        base_query = {
+            "campaign_id": campaign_object_id,
+            "admin_approved": True,
+            "company_approved": True,
+            "status": CampaignInfluencerStatus.APPROVED.value,
+        }
 
-        cursor = cursor.skip((page - 1) * page_size).limit(page_size)
+        cursor = (
+            collection.find(base_query)
+            .sort("updated_at", -1)
+            .skip((page - 1) * page_size)
+            .limit(page_size)
+        )
+
         influencers = await cursor.to_list(length=page_size)
         influencers = [convert_objectid(doc) for doc in influencers]
-        total = await collection.count_documents(
-            {
-                "admin_approved": True,
-                "company_approved": True,
-                "status": CampaignInfluencerStatus.APPROVED.value,
-            }
-        )
+
+        total = await collection.count_documents(base_query)
         total_pages = (total + page_size - 1) // page_size
+
         return {
+            "campaign_id": campaign_id,
             "influencers": influencers,
             "total": total,
             "page": page,
             "page_size": page_size,
             "total_pages": total_pages,
+            "has_next": page < total_pages,
+            "has_prev": page > 1,
         }
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=500,

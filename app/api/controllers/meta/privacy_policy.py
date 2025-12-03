@@ -23,7 +23,7 @@ def get_privacy_policy():
         <p>We implement encryption and secure storage to protect your data from unauthorized access.</p>
 
         <h2>5. Contact Us</h2>
-        <p>If you have any questions, contact us at <a href="mailto:support@ishout.app">support@ishout.app</a>.</p>
+        <p>If you have any questions, contact us at <a href="mailto:aminharb@ishout.ae">aminharb@ishout.ae</a>.</p>
 
         <p>Last Updated: November 2025</p>
     </body>

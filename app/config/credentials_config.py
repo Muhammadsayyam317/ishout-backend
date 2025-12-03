@@ -30,14 +30,32 @@ class Config(BaseModel):
     )
 
     OPENAI_API_KEY: str = Field(default=os.getenv("OPENAI_API_KEY"))
+    OPENAI_MODEL_NAME: str = Field(default=os.getenv("OPENAI_MODEL_NAME"))
     EMBEDDING_MODEL: str = Field(default=os.getenv("EMBEDDING_MODEL"))
     PORT: int = Field(default=int(os.getenv("PORT", "8000")))
 
     JWT_SECRET_KEY: str = Field(default=os.getenv("JWT_SECRET_KEY"))
     JWT_ALGORITHM: str = Field(default=os.getenv("JWT_ALGORITHM", "HS256"))
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
-        default=int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "60"))
+        default=int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))
     )
+    RESEND_API_KEY: str = Field(default=os.getenv("RESEND_API_KEY"))
+
+    RECIPENT_NUMBER: str = Field(default=os.getenv("RECIPENT_NUMBER"))
+    PHONE_NUMBER_ID: str = Field(default=os.getenv("PHONE_NUMBER_ID"))
+    META_APP_ID: str = Field(default=os.getenv("META_APP_ID"))
+    META_WHATSAP_APP_SECRET: str = Field(default=os.getenv("META_WHATSAP_APP_SECRET"))
+    META_WHATSAPP_ACCESSSTOKEN: str = Field(
+        default=os.getenv("META_WHATSAPP_ACCESSSTOKEN")
+    )
+    WHATSAPP_BUSSINESS_ACCOUNT_ID: str = Field(
+        default=os.getenv("WHATSAPP_BUSSINESS_ACCOUNT_ID")
+    )
+    VERSION: str = Field(default=os.getenv("META_VERSION"))
+
+    LANGFUSE_SECRET_KEY: str = Field(default=os.getenv("LANGFUSE_SECRET_KEY"))
+    LANGFUSE_PUBLIC_KEY: str = Field(default=os.getenv("LANGFUSE_PUBLIC_KEY"))
+    LANGFUSE_BASE_URL: str = Field(default=os.getenv("LANGFUSE_BASE_URL"))
 
     INSTAGRAM_APP_ID: str = Field(default=os.getenv("INSTAGRAM_APP_ID"))
     INSTAGRAM_APP_SECRET: str = Field(default=os.getenv("INSTAGRAM_APP_SECRET"))

@@ -13,7 +13,7 @@ from app.middleware.auth_middleware import require_company_user_access
 router = APIRouter()
 
 
-@router.put("/profile", tags=["User"])
+@router.put("/update-profile", tags=["User"])
 async def update_profile_route(
     request_data: UserUpdateRequest,
     current_user: dict = Depends(require_company_user_access),
@@ -25,22 +25,37 @@ async def update_profile_route(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/profile", tags=["User"])
-async def get_profile_route(current_user: dict = Depends(require_company_user_access)):
-    """Get current user profile (Company users only)"""
-    try:
-        return await get_user_profile(current_user["user_id"])
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# @router.get("/profile", tags=["User"])
+# async def get_profile_route(current_user: dict = Depends(require_company_user_access)):
+#     """Get current user profile (Company users only)"""
+#     try:
+#         return await get_user_profile(current_user["user_id"])
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+router.add_api_route(
+    path="/user-profile",
+    endpoint=get_user_profile,
+    methods=["GET"],
+    tags=["User"],
+)
 
 
-@router.put("/change-password", tags=["User"])
-async def change_password_route(
-    request_data: PasswordChangeRequest,
-    current_user: dict = Depends(require_company_user_access),
-):
-    """Change user password (Company users only)"""
-    try:
-        return await change_password(current_user["user_id"], request_data)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+# @router.put("/change-password", tags=["User"])
+# async def change_password_route(
+#     request_data: PasswordChangeRequest,
+#     current_user: dict = Depends(require_company_user_access),
+# ):
+#     """Change user password (Company users only)"""
+#     try:
+#         return await change_password(current_user["user_id"], request_data)
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+
+router.add_api_route(
+    path="/change-password",
+    endpoint=change_password,
+    methods=["PUT"],
+    tags=["User"],
+)

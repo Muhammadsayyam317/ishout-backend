@@ -1,31 +1,94 @@
+# -------------------------------
+# HTTP clients
+# -------------------------------
 httpx
+requests
+urllib3
+certifi
+idna
+requests_toolbelt
+# -------------------------------
 # FastAPI and web server
+# -------------------------------
 fastapi
 uvicorn
 python-dotenv
+# h11
+# anyio
+# starlette
+# starlette-context
 
+# -------------------------------
 # OpenAI and LangChain
-openai
-openai-agents
+# -------------------------------
+openai==2.8.1
+openai-agents==0.5.0
 langchain
 langchain-openai
+langchain_core
 langchain-community
 langchain-mongodb
+langchain-text-splitters
+langgraph-checkpoint-sqlite
+# tiktoken
+# lark
+# pyyaml
+# jsonpatch
+# numpy
+# tqdm
+# distro
+# jiter
+# griffe
+types-requests
 
+# -------------------------------
+# Langfuse
+# -------------------------------
+langfuse
+# backoff
+# opentelemetry-api
+# opentelemetry-exporter-otlp-proto-http
+# opentelemetry-sdk
+# wrapt==1.14.1  
+
+# -------------------------------
+# LangGraph
+# -------------------------------
+langgraph
+langgraph-checkpoint-sqlite
+langgraph-checkpoint
+langgraph-prebuilt
+langgraph-sdk
+# xxhash==3.5.0   
+# -------------------------------
 # MongoDB
+# -------------------------------
 pymongo
 motor
-
+aiosqlite
+# -------------------------------
+# MongoDB DNS resolver
+# -------------------------------
+# dnspython
+# -------------------------------
 # Authentication and Security
+# -------------------------------
 PyJWT
 passlib[bcrypt]
 python-multipart
-
+# -------------------------------
 # Other dependencies
-pydantic
-twilio
-starlette-context
+# -------------------------------
+pydantic>=2.9.0
+# typing_extensions
+# typing_inspection
+# annotated_types
+# annotated_doc
 colorlog
 email-validator
 websockets
 resend
+tabulate
+# click
+# zstandard==0.21.0 
+# packaging

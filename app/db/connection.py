@@ -16,20 +16,31 @@ pymongo_db = None
 async def connect():
     """Connect to MongoDB asynchronously and store globally."""
     global client, db, pymongo_client, pymongo_db
+
     if client and db:
         print("⚙️ MongoDB already connected.")
         return
 
     try:
         # Motor client for async operations
-        client = AsyncIOMotorClient(config.MONGODB_ATLAS_URI)
+        client = AsyncIOMotorClient(
+            config.MONGODB_ATLAS_URI,
+            maxPoolSize=10,
+            minPoolSize=1,
+            serverSelectionTimeoutMS=5000,
+        )
         db = client[config.MONGODB_ATLAS_DB_NAME]
 
         # PyMongo client for langchain vector search (synchronous)
-        pymongo_client = MongoClient(config.MONGODB_ATLAS_URI)
+        pymongo_client = MongoClient(
+            config.MONGODB_ATLAS_URI,
+            maxPoolSize=10,
+            serverSelectionTimeoutMS=5000,
+        )
         pymongo_db = pymongo_client[config.MONGODB_ATLAS_DB_NAME]
 
-        print("✅ MongoDB connected successfully (Motor + PyMongo)")
+        print("MongoDB connected successfully (Motor + PyMongo)")
+
     except Exception as e:
         client = None
         db = None
@@ -41,17 +52,19 @@ async def connect():
 async def close():
     """Close MongoDB connection."""
     global client, db, pymongo_client, pymongo_db
+
     if client:
         client.close()
         client = None
         db = None
+
     if pymongo_client:
         pymongo_client.close()
         pymongo_client = None
         pymongo_db = None
         print("🧹 MongoDB connection closed.")
     else:
-        print("❌ MongoDB client not initialized.")
+        print("MongoDB client not initialized.")
 
 
 def get_db():

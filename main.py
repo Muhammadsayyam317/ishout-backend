@@ -7,8 +7,34 @@ from fastapi.openapi.utils import get_openapi
 from app.api.api import api_router
 from contextlib import asynccontextmanager
 import os
+import logging
 from app.core.errors import register_exception_handlers
+import aiosqlite
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+from app.agents.nodes.graph import graph
 
+
+try:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        handlers=[logging.StreamHandler()],
+        force=True,
+    )
+except TypeError:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        handlers=[logging.StreamHandler()],
+    )
+
+logging.getLogger().setLevel(logging.INFO)
+logging.getLogger("app").setLevel(logging.INFO)
+logging.getLogger("app.agents").setLevel(logging.INFO)
+logging.getLogger("app.tools").setLevel(logging.INFO)
+logging.info("Logging configured successfully")
 
 security = HTTPBearer(
     scheme_name="Bearer", description="Enter your Bearer token", auto_error=False
@@ -29,8 +55,14 @@ security_schemes = {
 async def lifespan(app: FastAPI):
     print(f"🔧 Server PID: {os.getpid()}")
     await connect()
+    app.state.sqlite_db = await aiosqlite.connect("whatsapp_agent.db")
+    app.state.checkpointer = AsyncSqliteSaver(app.state.sqlite_db)
+    app.state.whatsapp_agent = graph.compile(checkpointer=app.state.checkpointer)
+    print("Whatsapp agent compiled successfully")
     yield
     await close()
+    await app.state.sqlite_db.close()
+    print("🧹 SQLite closed")
 
 
 app = FastAPI(
@@ -49,7 +81,6 @@ register_exception_handlers(app)
 def custom_openapi():
     if app.openapi_schema:
         return app.openapi_schema
-
     openapi_schema = get_openapi(
         title=app.title,
         version=app.version,
@@ -62,14 +93,13 @@ def custom_openapi():
 
 
 app.openapi = custom_openapi
-
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=["https://ishout.vercel.app", "http://localhost:3000"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 app.include_router(api_router)
@@ -80,4 +110,5 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=8000,
         reload=True,
+        log_level="info",
     )
