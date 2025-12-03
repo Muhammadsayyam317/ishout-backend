@@ -62,7 +62,6 @@ async def node_requirements(state: ConversationState):
 
 # Ask user missing fields
 async def node_ask_user(state: ConversationState):
-    logging.info(f"[node_ask_user] Reply: {state['reply']}")
     await send_whatsapp_message(state["sender_id"], state["reply"])
     return state
 
@@ -119,3 +118,4 @@ graph.add_conditional_edges(
 graph.add_edge("ask_user", END)
 graph.add_edge("search", "send")
 graph.add_edge("send", END)
+# graph.add_edge("requirements", END)
