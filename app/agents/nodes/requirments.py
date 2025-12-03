@@ -2,6 +2,7 @@ import logging
 from app.agents.nodes.message_to_whatsapp import send_whatsapp_message
 from app.agents.nodes.query_llm import Query_to_llm
 from app.models.whatsappconversation_model import ConversationState
+from app.services.campaign_service import create_campaign
 from app.utils.extract_feilds import (
     extract_platform,
     extract_limit,
@@ -65,6 +66,13 @@ async def node_requirements(state: ConversationState):
 # Ask user missing fields
 async def node_ask_user(state: ConversationState):
     await send_whatsapp_message(state["sender_id"], state["reply"])
+    return state
+
+
+async def node_create_campaign(state: ConversationState):
+    result = await create_campaign(state)
+    state["campaign_id"] = result["campaign_id"]
+    state["reply"] = result["message"]
     return state
 
 

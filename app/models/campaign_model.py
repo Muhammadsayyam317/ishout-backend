@@ -23,8 +23,8 @@ class CreateCampaignRequest(BaseModel):
     name: Optional[str] = None
     platform: List[str]
     category: List[str]
-    followers: List[str]
-    country: List[str]
+    followers: Optional[List[str]] = None
+    country: Optional[List[str]] = None
     user_id: Optional[str] = None
     limit: Optional[int] = 10
     company_name: Optional[str] = None
