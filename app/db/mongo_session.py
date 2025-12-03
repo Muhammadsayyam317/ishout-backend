@@ -7,7 +7,6 @@ SESSION_EXPIRY_SECONDS = 600  # 10 minutes
 def get_session_collection():
     db = get_pymongo_db()
     session_collection = db["whatsapp_sessions"]
-    # Ensure TTL index exists (idempotent)
     session_collection.create_index(
         [("last_active", ASCENDING)],
         expireAfterSeconds=SESSION_EXPIRY_SECONDS,
