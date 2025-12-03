@@ -1,7 +1,6 @@
 from langgraph.graph import StateGraph, END
 from app.agents.nodes.requirments import (
     node_ask_user,
-    node_create_campaign,
     node_requirements,
     node_search,
     node_send,
@@ -20,7 +19,7 @@ graph.add_node("send", node_send)
 graph.set_entry_point("requirements")
 graph.add_conditional_edges(
     "requirements",
-    lambda state: "ask_user" if state.get("reply") else "create_campaign",
+    lambda state: "ask_user" if state.get("reply") else "search",
     {
         "ask_user": "ask_user",
         "search": "search",
