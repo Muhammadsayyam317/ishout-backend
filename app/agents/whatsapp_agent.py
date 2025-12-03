@@ -30,7 +30,7 @@ async def handle_whatsapp_events(request: Request):
         content=user_text,
         metadata={"source": "whatsapp_webhook"},
     )
-    state = get_user_state(thread_id)
+    state = await get_user_state(thread_id)
     # add message into the state
     state["user_message"] = user_text
     state["event_data"] = event_data
