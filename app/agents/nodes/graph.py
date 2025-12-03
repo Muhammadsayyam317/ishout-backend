@@ -13,7 +13,7 @@ graph = StateGraph(ConversationState)
 # Build graph
 graph.add_node("requirements", node_requirements)
 graph.add_node("ask_user", node_ask_user)
-graph.add_node("create_campaign", node_create_campaign)
+# graph.add_node("create_campaign", node_create_campaign)
 graph.add_node("search", node_search)
 graph.add_node("send", node_send)
 
@@ -27,6 +27,6 @@ graph.add_conditional_edges(
     },
 )
 graph.add_edge("ask_user", END)
-graph.add_edge("create_campaign", "search")
+# graph.add_edge("create_campaign", "search")
 graph.add_edge("search", "send")
 graph.add_edge("send", END)

@@ -69,11 +69,11 @@ async def node_ask_user(state: ConversationState):
     return state
 
 
-async def node_create_campaign(state: ConversationState):
-    result = await create_campaign(state)
-    state["campaign_id"] = result["campaign_id"]
-    state["reply"] = result["message"]
-    return state
+# async def node_create_campaign(state: ConversationState):
+#     result = await create_campaign(state)
+#     state["campaign_id"] = result["campaign_id"]
+#     state["reply"] = result["message"]
+#     return state
 
 
 # Node 2: Search influencers
