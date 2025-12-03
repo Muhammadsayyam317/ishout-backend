@@ -12,4 +12,5 @@ class ConversationState(TypedDict, total=False):
     number_of_influencers: Optional[int]
 
     reply: Optional[str]
+    last_active: Optional[float] = None
     event_data: dict

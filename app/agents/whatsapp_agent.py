@@ -7,11 +7,13 @@ from app.utils.chat_history import save_chat_message
 async def handle_whatsapp_events(request: Request):
     event = await request.json()
     event_data = event["entry"][0]["changes"][0]["value"]
+
     if "messages" not in event_data:
         return {"status": "ok", "message": "Status update, skipping"}
     if not event_data.get("messages"):
         return {"status": "ok", "message": "No messages to process"}
-    # Extract user + message
+
+    # Get thread_id and user text from the first message
     first_message = event_data["messages"][0]
     thread_id = first_message.get("from")
     user_text = (
@@ -19,41 +21,27 @@ async def handle_whatsapp_events(request: Request):
         if isinstance(first_message.get("text"), dict)
         else first_message.get("text")
     ) or ""
+
     if not thread_id:
         return {"status": "error", "message": "No sender ID found in message"}
-    # Log message
     await save_chat_message(
         thread_id=thread_id,
         role="user",
         content=user_text,
         metadata={"source": "whatsapp_webhook"},
     )
-    # Load session (MongoDB)
-    state = await get_user_state(thread_id)
-    # Inject new values
+    state = get_user_state(thread_id)
+    # add message into the state
     state["user_message"] = user_text
     state["event_data"] = event_data
     state["thread_id"] = thread_id
     state["sender_id"] = thread_id
 
-    # Run AI agent
     whatsapp_agent = await build_whatsapp_agent()
-    final_state = await whatsapp_agent.ainvoke(
+    final_state = whatsapp_agent.invoke(
         state, config={"configurable": {"thread_id": thread_id}}
     )
-
-    # Save updated session in MongoDB
+    # Persist the latest state for this user/session
     if final_state:
-        await update_user_state(thread_id, final_state)
-
-    # Send reply
-    reply_text = (final_state or {}).get("reply")
-    if reply_text:
-        await save_chat_message(
-            thread_id=thread_id,
-            role="assistant",
-            content=reply_text,
-            metadata={"source": "whatsapp_agent"},
-        )
-
+        update_user_state(thread_id, final_state)
     return {"status": "ok"}
