@@ -54,12 +54,3 @@ router.add_api_route(
     tags=["Meta"],
     name="handle_whatsapp_events",
 )
-
-
-router.add_api_route(
-    path="/test-logging",
-    endpoint=find_influencers_for_whatsapp,
-    methods=["POST"],
-    tags=["Meta"],
-    name="find_influencers_for_whatsapp",
-)
