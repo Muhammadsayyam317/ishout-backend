@@ -68,14 +68,7 @@ async def node_ask_user(state: ConversationState):
 
 # Node 2: Search influencers
 async def node_search(state: ConversationState):
-    logging.info("[node_search] Entering node_search")
-    logging.info(f"[node_search] Full state before LLM call: {state}")
-    logging.info(
-        f"[node_search] State values - platform: {state.get('platform')}, country: {state.get('country')}, number_of_influencers: {state.get('number_of_influencers')}, category: {state.get('category')}, sender_id: {state.get('sender_id')}, user_message: {state.get('user_message')}"
-    )
     result = await Query_to_llm(state)
-    logging.info(f"[node_search] Result from LLM: {result}")
-    logging.info("[node_search] Exiting node_search")
     state["reply"] = result
     return state
 

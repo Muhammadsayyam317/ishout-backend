@@ -8,11 +8,19 @@ async def handle_whatsapp_events(request: Request):
     event = await request.json()
     event_data = event["entry"][0]["changes"][0]["value"]
     if "messages" not in event_data:
-        return {"status": "ok"}
+        return {"status": "ok", "message": "Status update, skipping"}
+    if not event_data.get("messages"):
+        return {"status": "ok", "message": "No messages to process"}
     # Extract user + message
     first_message = event_data["messages"][0]
     thread_id = first_message.get("from")
-    user_text = first_message.get("text", {}).get("body") or ""
+    user_text = (
+        first_message.get("text", {}).get("body")
+        if isinstance(first_message.get("text"), dict)
+        else first_message.get("text")
+    ) or ""
+    if not thread_id:
+        return {"status": "error", "message": "No sender ID found in message"}
     # Log message
     await save_chat_message(
         thread_id=thread_id,
@@ -37,4 +45,15 @@ async def handle_whatsapp_events(request: Request):
     # Save updated session in MongoDB
     if final_state:
         await update_user_state(thread_id, final_state)
+
+    # Send reply
+    reply_text = (final_state or {}).get("reply")
+    if reply_text:
+        await save_chat_message(
+            thread_id=thread_id,
+            role="assistant",
+            content=reply_text,
+            metadata={"source": "whatsapp_agent"},
+        )
+
     return {"status": "ok"}
