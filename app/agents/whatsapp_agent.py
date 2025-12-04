@@ -8,13 +8,11 @@ async def handle_whatsapp_events(request: Request):
     event = await request.json()
     event_data = event["entry"][0]["changes"][0]["value"]
 
-    # Skip status updates
     if "messages" not in event_data:
         return {"status": "ok", "message": "Status update, skipping"}
     if not event_data.get("messages"):
         return {"status": "ok", "message": "No messages to process"}
 
-    # Get thread_id and user text from the first message
     first_message = event_data["messages"][0]
     thread_id = first_message.get("from")
     user_text = (
@@ -25,14 +23,14 @@ async def handle_whatsapp_events(request: Request):
 
     if not thread_id:
         return {"status": "error", "message": "No sender ID found in message"}
-    # Save user message in chat history
+
     await save_chat_message(
         thread_id=thread_id,
         role="user",
         content=user_text,
         metadata={"source": "whatsapp_webhook"},
     )
-    # Get or create user state
+
     state = await get_user_state(thread_id)
     state.pop("_id", None)
 
@@ -44,16 +42,14 @@ async def handle_whatsapp_events(request: Request):
     state["thread_id"] = thread_id
     state["sender_id"] = thread_id
 
-    # Reset state if session expired but not done
     if state.get("done") and not state.get("reply_sent"):
         state = reset_user_state(thread_id)
 
-    # Build WhatsApp agent
     whatsapp_agent = await build_whatsapp_agent()
     final_state = await whatsapp_agent.ainvoke(
         state, config={"configurable": {"thread_id": thread_id}}
     )
-    # Persist the latest state for this user/session
+
     if final_state:
         if final_state.get("reply") and not final_state.get("reply_sent"):
             final_state["reply_sent"] = True

@@ -11,23 +11,21 @@ from app.utils.extract_feilds import (
 )
 
 
-async def node_requirements(state: ConversationState):
+async def node_requirements(state: dict):
     msg = state.get("user_message", "")
     logging.info(f"[node_requirements] User message: {msg}")
+
     if state.get("done"):
         state["reply"] = "Conversation already completed, skipping"
         return state
 
-    msg = state.get("user_message", "")
-    logging.info(f"[node_requirements] User message: {msg}")
-
-    # Extract new fields from message
+    # Extract new fields from user message
     platform = extract_platform(msg)
     limit = extract_limit(msg)
     country = extract_country(msg)
     category = extract_category(msg)
 
-    # (do NOT overwrite correct previous values)
+    # Update state without overwriting correct previous values
     if platform:
         state["platform"] = platform
     if limit is not None:
@@ -37,12 +35,12 @@ async def node_requirements(state: ConversationState):
     if category:
         state["category"] = category
 
-    # Check what is still missing
+    # Check which fields are still missing
     missing = missing_fields(state)
 
     if missing:
+        # Prepare readable missing fields message
         pretty = []
-
         if "platform" in missing:
             pretty.append("platform (Instagram, TikTok, YouTube)")
         if "country" in missing:
@@ -57,8 +55,13 @@ async def node_requirements(state: ConversationState):
             + ", ".join(pretty)
             + ".\nPlease reply with them."
         )
+
+        # Reset reply_sent so this message can be sent
+        state["reply_sent"] = False
     else:
+        # All required fields collected, no reply needed here
         state["reply"] = None
+        state["reply_sent"] = False  # will be sent in node_send
 
     return state
 
@@ -68,6 +71,7 @@ async def node_ask_user(state: ConversationState):
     if state.get("reply"):
         await send_whatsapp_message(state["sender_id"], state["reply"])
         state["reply_sent"] = True
+        state["reply"] = None
     return state
 
 
@@ -87,10 +91,11 @@ async def node_search(state: ConversationState):
 
 # Node 3: Send reply
 async def node_send(state: ConversationState):
-    if state.get("reply"):
+    if state.get("reply") and not state.get("reply_sent"):
         await send_whatsapp_message(state["sender_id"], state["reply"])
         state["done"] = True
         state["reply_sent"] = True
+        state["reply"] = None
     return state
 
 
