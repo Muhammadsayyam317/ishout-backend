@@ -65,7 +65,9 @@ async def node_requirements(state: ConversationState):
 
 # Ask user missing fields
 async def node_ask_user(state: ConversationState):
-    await send_whatsapp_message(state["sender_id"], state["reply"])
+    if state.get("reply"):
+        await send_whatsapp_message(state["sender_id"], state["reply"])
+        state["reply_sent"] = True
     return state
 
 
@@ -85,8 +87,10 @@ async def node_search(state: ConversationState):
 
 # Node 3: Send reply
 async def node_send(state: ConversationState):
-    await send_whatsapp_message(state["sender_id"], state["reply"])
-    state["done"] = True
+    if state.get("reply"):
+        await send_whatsapp_message(state["sender_id"], state["reply"])
+        state["done"] = True
+        state["reply_sent"] = True
     return state
 
 
