@@ -12,33 +12,29 @@ from app.utils.extract_feilds import (
 )
 
 
-async def node_debug_before(state: dict):
+async def node_debug_before(state, config):
     logging.info("\n\n===== DEBUG BEFORE =====\n" + json.dumps(state, indent=2))
     return state
 
 
-async def node_debug_after(state: dict):
+async def node_debug_after(state, config):
     logging.info("\n\n===== DEBUG AFTER =====\n" + json.dumps(state, indent=2))
     return state
 
 
-async def node_requirements(state: ConversationState):
+async def node_requirements(state, config):
     msg = state.get("user_message", "")
     logging.info(f"[node_requirements] User message: {msg}")
+
     if state.get("done"):
         state["reply"] = "Conversation already completed, skipping"
         return state
 
-    msg = state.get("user_message", "")
-    logging.info(f"[node_requirements] User message: {msg}")
-
-    # Extract new fields from message
     platform = extract_platform(msg)
     limit = extract_limit(msg)
     country = extract_country(msg)
     category = extract_category(msg)
 
-    # (do NOT overwrite correct previous values)
     if platform:
         state["platform"] = platform
     if limit is not None:
@@ -48,12 +44,10 @@ async def node_requirements(state: ConversationState):
     if category:
         state["category"] = category
 
-    # Check what is still missing
     missing = missing_fields(state)
 
     if missing:
         pretty = []
-
         if "platform" in missing:
             pretty.append("platform (Instagram, TikTok, YouTube)")
         if "country" in missing:
@@ -64,9 +58,7 @@ async def node_requirements(state: ConversationState):
             pretty.append("number of influencers")
 
         state["reply"] = (
-            "iShout need these details before searching: "
-            + ", ".join(pretty)
-            + ".\nPlease reply with them."
+            "iShout needs these details: " + ", ".join(pretty) + ". Please reply."
         )
     else:
         state["reply"] = None
@@ -91,7 +83,7 @@ async def node_ask_user(state, config):
 
 
 # Node 2: Search influencers
-async def node_search(state: ConversationState):
+async def node_search(state, config):
     result = await Query_to_llm(state)
     state["reply"] = result
     return state
