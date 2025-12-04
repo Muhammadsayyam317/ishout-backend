@@ -48,7 +48,7 @@ async def handle_whatsapp_events(request: Request):
     if state.get("done") and not state.get("reply_sent"):
         state = reset_user_state(thread_id)
 
-    whatsapp_agent, checkpointer = await build_whatsapp_agent()
+    whatsapp_agent = await build_whatsapp_agent()
     final_state = await whatsapp_agent.ainvoke(
         state,
         config={
