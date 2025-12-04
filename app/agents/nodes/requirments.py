@@ -1,3 +1,4 @@
+import json
 import logging
 from app.agents.nodes.message_to_whatsapp import send_whatsapp_message
 from app.agents.nodes.query_llm import Query_to_llm
@@ -74,8 +75,11 @@ async def node_requirements(state: ConversationState):
 
 
 # Ask user missing fields
-async def node_ask_user(state: ConversationState):
-    await send_whatsapp_message(state["sender_id"], state["reply"])
+async def node_ask_user(state, config):
+    sender = state.get("sender_id") or config["configurable"]["thread_id"]
+    if state.get("reply"):
+        await send_whatsapp_message(sender, state["reply"])
+        state["reply_sent"] = True
     return state
 
 
@@ -94,9 +98,11 @@ async def node_search(state: ConversationState):
 
 
 # Node 3: Send reply
-async def node_send(state: ConversationState):
-    await send_whatsapp_message(state["sender_id"], state["reply"])
+async def node_send(state: ConversationState, config):
+    sender = state.get("sender_id") or config["configurable"]["thread_id"]
+    await send_whatsapp_message(sender, state["reply"])
     state["done"] = True
+    state["reply_sent"] = True
     return state
 
 
