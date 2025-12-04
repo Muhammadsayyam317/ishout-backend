@@ -1,3 +1,4 @@
+import json
 import logging
 from app.agents.nodes.message_to_whatsapp import send_whatsapp_message
 from app.agents.nodes.query_llm import Query_to_llm
@@ -9,6 +10,16 @@ from app.utils.extract_feilds import (
     extract_country,
     extract_category,
 )
+
+
+async def node_debug_before(state: dict):
+    logging.info("\n\n===== DEBUG BEFORE =====\n" + json.dumps(state, indent=2))
+    return state
+
+
+async def node_debug_after(state: dict):
+    logging.info("\n\n===== DEBUG AFTER =====\n" + json.dumps(state, indent=2))
+    return state
 
 
 async def node_requirements(state: ConversationState):
