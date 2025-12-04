@@ -42,7 +42,6 @@ async def handle_whatsapp_events(request: Request):
     state["user_message"] = user_text
     state["event_data"] = event_data
     state["thread_id"] = thread_id
-    state["sender_id"] = thread_id
 
     # Reset state if session expired but not done
     if state.get("done") and not state.get("reply_sent"):

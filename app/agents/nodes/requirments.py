@@ -1,4 +1,3 @@
-import json
 import logging
 from app.agents.nodes.message_to_whatsapp import send_whatsapp_message
 from app.agents.nodes.query_llm import Query_to_llm
@@ -24,18 +23,21 @@ async def node_debug_after(state: dict):
 
 async def node_requirements(state: ConversationState):
     msg = state.get("user_message", "")
-
+    logging.info(f"[node_requirements] User message: {msg}")
     if state.get("done"):
         state["reply"] = "Conversation already completed, skipping"
         return state
 
     msg = state.get("user_message", "")
+    logging.info(f"[node_requirements] User message: {msg}")
 
+    # Extract new fields from message
     platform = extract_platform(msg)
     limit = extract_limit(msg)
     country = extract_country(msg)
     category = extract_category(msg)
 
+    # (do NOT overwrite correct previous values)
     if platform:
         state["platform"] = platform
     if limit is not None:
@@ -73,9 +75,7 @@ async def node_requirements(state: ConversationState):
 
 # Ask user missing fields
 async def node_ask_user(state: ConversationState):
-    if state.get("reply"):
-        await send_whatsapp_message(state["sender_id"], state["reply"])
-        state["reply_sent"] = True
+    await send_whatsapp_message(state["sender_id"], state["reply"])
     return state
 
 
@@ -95,10 +95,8 @@ async def node_search(state: ConversationState):
 
 # Node 3: Send reply
 async def node_send(state: ConversationState):
-    if state.get("reply"):
-        await send_whatsapp_message(state["sender_id"], state["reply"])
-        state["done"] = True
-        state["reply_sent"] = True
+    await send_whatsapp_message(state["sender_id"], state["reply"])
+    state["done"] = True
     return state
 
 
