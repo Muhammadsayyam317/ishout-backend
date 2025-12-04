@@ -11,21 +11,19 @@ from app.utils.extract_feilds import (
 )
 
 
-async def node_requirements(state: dict):
+async def node_requirements(state: ConversationState):
     msg = state.get("user_message", "")
-    logging.info(f"[node_requirements] User message: {msg}")
-
     if state.get("done"):
         state["reply"] = "Conversation already completed, skipping"
         return state
 
-    # Extract new fields from user message
+    msg = state.get("user_message", "")
+
     platform = extract_platform(msg)
     limit = extract_limit(msg)
     country = extract_country(msg)
     category = extract_category(msg)
 
-    # Update state without overwriting correct previous values
     if platform:
         state["platform"] = platform
     if limit is not None:
@@ -34,13 +32,11 @@ async def node_requirements(state: dict):
         state["country"] = country
     if category:
         state["category"] = category
-
-    # Check which fields are still missing
     missing = missing_fields(state)
 
     if missing:
-        # Prepare readable missing fields message
         pretty = []
+
         if "platform" in missing:
             pretty.append("platform (Instagram, TikTok, YouTube)")
         if "country" in missing:
@@ -55,13 +51,8 @@ async def node_requirements(state: dict):
             + ", ".join(pretty)
             + ".\nPlease reply with them."
         )
-
-        # Reset reply_sent so this message can be sent
-        state["reply_sent"] = False
     else:
-        # All required fields collected, no reply needed here
         state["reply"] = None
-        state["reply_sent"] = False  # will be sent in node_send
 
     return state
 
