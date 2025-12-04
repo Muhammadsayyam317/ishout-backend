@@ -90,11 +90,11 @@ async def node_search(state, config):
 
 
 # Node 3: Send reply
-async def node_send(state: ConversationState, config):
-    sender = state.get("sender_id") or config["configurable"]["thread_id"]
-    await send_whatsapp_message(sender, state["reply"])
-    state["done"] = True
-    state["reply_sent"] = True
+async def node_send(state, config):
+    if state.get("reply"):
+        await send_whatsapp_message(state["sender_id"], state["reply"])
+        state["done"] = True
+        state["reply_sent"] = True
     return state
 
 
