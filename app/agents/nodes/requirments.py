@@ -24,6 +24,7 @@ async def node_debug_after(state: dict):
 
 async def node_requirements(state: ConversationState):
     msg = state.get("user_message", "")
+
     if state.get("done"):
         state["reply"] = "Conversation already completed, skipping"
         return state
@@ -43,6 +44,8 @@ async def node_requirements(state: ConversationState):
         state["country"] = country
     if category:
         state["category"] = category
+
+    # Check what is still missing
     missing = missing_fields(state)
 
     if missing:
@@ -73,7 +76,6 @@ async def node_ask_user(state: ConversationState):
     if state.get("reply"):
         await send_whatsapp_message(state["sender_id"], state["reply"])
         state["reply_sent"] = True
-        state["reply"] = None
     return state
 
 
@@ -93,11 +95,10 @@ async def node_search(state: ConversationState):
 
 # Node 3: Send reply
 async def node_send(state: ConversationState):
-    if state.get("reply") and not state.get("reply_sent"):
+    if state.get("reply"):
         await send_whatsapp_message(state["sender_id"], state["reply"])
         state["done"] = True
         state["reply_sent"] = True
-        state["reply"] = None
     return state
 
 
