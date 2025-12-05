@@ -27,7 +27,7 @@ graph.add_conditional_edges(
     "debug_after",
     lambda state: (
         "ask_user"
-        if state.get("reply") and not state.get("done")
+        if state.get("reply") and not state.get("done") and not state.get("reply_sent")
         else "create_campaign" if not state.get("done") else "acknowledge_user"
     ),
     {
@@ -37,6 +37,6 @@ graph.add_conditional_edges(
     },
 )
 
-graph.add_edge("ask_user", "debug_before")
+graph.add_edge("ask_user", END)
 graph.add_edge("create_campaign", "acknowledge_user")
 graph.add_edge("acknowledge_user", END)

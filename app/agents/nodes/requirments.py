@@ -2,6 +2,7 @@
 import json
 import logging
 from app.agents.nodes.message_to_whatsapp import send_whatsapp_message
+from app.agents.nodes.state import update_user_state
 from app.models.whatsappconversation_model import ConversationState
 from app.services.campaign_service import create_campaign
 from app.utils.extract_feilds import (
@@ -112,6 +113,7 @@ async def node_ask_user(state, config):
     if state.get("reply") and not state.get("reply_sent"):
         await send_whatsapp_message(sender, state["reply"])
         state["reply_sent"] = True
+        await update_user_state(sender, state)
     return state
 
 
