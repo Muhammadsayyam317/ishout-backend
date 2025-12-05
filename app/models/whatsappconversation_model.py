@@ -7,9 +7,16 @@ def take_first(a, b):
     return b
 
 
+def take_second(a, b):
+    """Prefer the second (newer) value if it's not None, otherwise take the first"""
+    if b is not None:
+        return b
+    return a
+
+
 class ConversationState(TypedDict, total=False):
     sender_id: Annotated[Optional[str], take_first]
-    user_message: Annotated[Optional[str], take_first]
+    user_message: Annotated[Optional[str], take_second]
     intent: Annotated[Optional[str], take_first]
 
     platform: Annotated[Optional[str], take_first]

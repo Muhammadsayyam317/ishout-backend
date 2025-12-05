@@ -44,19 +44,38 @@ async def node_requirements(state, config):
     missing = missing_fields(state)
 
     if missing:
-        pretty = []
-        if "platform" in missing:
-            pretty.append("platform (Instagram, TikTok, YouTube)")
-        if "country" in missing:
-            pretty.append("country (UAE, Kuwait, etc.)")
-        if "category" in missing:
-            pretty.append("category (fashion, beauty, etc.)")
-        if "number_of_influencers" in missing:
-            pretty.append("number of influencers")
+        # Build a user-friendly message acknowledging what we have and what we need
+        provided = []
+        if state.get("platform"):
+            provided.append(f"Platform: {state['platform']}")
+        if state.get("category"):
+            provided.append(f"Category: {state['category']}")
+        if state.get("country"):
+            provided.append(f"Country: {state['country']}")
+        if state.get("number_of_influencers"):
+            provided.append(f"Influencers: {state['number_of_influencers']}")
 
-        state["reply"] = (
-            "iShout needs these details: " + ", ".join(pretty) + ". Please reply."
-        )
+        needed = []
+        if "platform" in missing:
+            needed.append("platform (Instagram, TikTok, or YouTube)")
+        if "country" in missing:
+            needed.append("country (e.g., UAE, Kuwait, Saudi Arabia)")
+        if "category" in missing:
+            needed.append("category (e.g., fashion, beauty, food)")
+        if "number_of_influencers" in missing:
+            needed.append("number of influencers")
+
+        # Build the reply message
+        if provided:
+            reply = f"Thanks! I got: {', '.join(provided)}.\n\n"
+            reply += f"I still need: {', '.join(needed)}.\n\n"
+            reply += "Please provide the missing details."
+        else:
+            reply = "To help you find the right influencers, I need:\n"
+            reply += "• " + "\n• ".join(needed) + "\n\n"
+            reply += "Please provide all these details in your message."
+
+        state["reply"] = reply
     else:
         state["reply"] = None
 

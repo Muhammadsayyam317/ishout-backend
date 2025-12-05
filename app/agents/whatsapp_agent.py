@@ -54,8 +54,12 @@ async def handle_whatsapp_events(request: Request):
                 }
             )
 
-        # Persist updated state before running agent
+        event_data_backup = state.get("event_data")
+        thread_id_backup = state.get("thread_id")
         state = await update_user_state(thread_id, state)
+        state["event_data"] = event_data_backup
+        state["thread_id"] = thread_id_backup
+        state["user_message"] = user_text
 
         # Build and invoke LangGraph agent
         whatsapp_agent = await build_whatsapp_agent()
