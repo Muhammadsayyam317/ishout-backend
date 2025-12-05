@@ -42,10 +42,16 @@ async def handle_whatsapp_events(request: Request):
     state["user_message"] = user_text
     state["event_data"] = event_data
     state["thread_id"] = thread_id
+    # Ensure sender_id is always set from thread_id
+    state["sender_id"] = thread_id
 
     # Reset state if session expired but not done
     if state.get("done") and not state.get("reply_sent"):
-        state = reset_user_state(thread_id)
+        state = await reset_user_state(thread_id)
+        state["sender_id"] = thread_id
+        state["user_message"] = user_text
+        state["event_data"] = event_data
+        state["thread_id"] = thread_id
 
     whatsapp_agent = await build_whatsapp_agent()
     final_state = await whatsapp_agent.ainvoke(
