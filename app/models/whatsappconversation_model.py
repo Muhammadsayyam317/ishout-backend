@@ -2,9 +2,6 @@ from typing import TypedDict, Optional, Annotated
 
 
 def take_first(a, b):
-    """Generic binary reducer that takes the first non-None value.
-    This prevents InvalidUpdateError when multiple nodes return state with the same field.
-    LangGraph expects a binary function (a, b) -> c."""
     if a is not None:
         return a
     return b

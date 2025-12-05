@@ -85,11 +85,9 @@ async def node_acknowledge_user(state, config):
 
     final_msg = (
         "Great! 🎉 I got all your campaign details.\n"
-        "Our admin team will review them and we’ll notify you once it's approved. 👍"
+        "iShout admin team will review them and we’ll notify you once it's approved. 👍"
     )
-
     await send_whatsapp_message(sender, final_msg)
-
     state["done"] = True
     state["reply_sent"] = True
 

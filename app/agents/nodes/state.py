@@ -48,16 +48,34 @@ async def get_user_state(sender_id):
 
 
 async def update_user_state(sender_id, new_data: dict):
-
     new_data.pop("_id", None)
     session_collection = get_session_collection()
-    update_fields = {key: value for key, value in new_data.items() if value is not None}
+    allowed_fields = [
+        "platform",
+        "country",
+        "category",
+        "number_of_influencers",
+        "user_message",
+        "reply",
+        "last_active",
+        "done",
+        "reply_sent",
+        "campaign_id",
+        "campaign_created",
+    ]
+
+    update_fields = {field: new_data.get(field) for field in allowed_fields}
     update_fields["last_active"] = time.time()
+
     await session_collection.update_one(
         {"sender_id": sender_id},
         {"$set": update_fields},
+        upsert=True,
     )
-    return await session_collection.find_one({"sender_id": sender_id})
+
+    updated = await session_collection.find_one({"sender_id": sender_id})
+    updated.pop("_id", None)
+    return updated
 
 
 async def reset_user_state(sender_id):

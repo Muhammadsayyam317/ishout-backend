@@ -24,14 +24,6 @@ async def handle_whatsapp_events(request: Request):
 
     if not thread_id:
         return {"status": "error", "message": "No sender ID found"}
-
-    # await save_chat_message(
-    #     thread_id=thread_id,
-    #     role="user",
-    #     content=user_text,
-    #     metadata={"source": "whatsapp_webhook"},
-    # )
-
     # Load state
     state = await get_user_state(thread_id)
     state.pop("_id", None)
