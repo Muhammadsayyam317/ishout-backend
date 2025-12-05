@@ -71,7 +71,6 @@ async def node_ask_user(state, config):
     if state.get("reply"):
         await send_whatsapp_message(sender, state["reply"])
         state["reply_sent"] = True
-    # Don't modify sender_id - it should already be set
     return state
 
 
