@@ -36,20 +36,22 @@ async def node_requirements(state, config):
         state["platform"] = platform
     if limit is not None:
         state["number_of_influencers"] = limit
+        logging.info(f"[node_requirements] Updated number_of_influencers to: {limit}")
     if country:
         state["country"] = country
     if category:
         state["category"] = category
 
-    missing = missing_fields(state)
-
     logging.info(
         f"[node_requirements] Extracted - platform: {platform}, category: {category}, country: {country}, limit: {limit}"
     )
     logging.info(
-        f"[node_requirements] Current state - platform: {state.get('platform')}, category: {state.get('category')}, country: {state.get('country')}, number_of_influencers: {state.get('number_of_influencers')}"
+        f"[node_requirements] State after updates - platform: {state.get('platform')}, category: {state.get('category')}, country: {state.get('country')}, number_of_influencers: {state.get('number_of_influencers')}"
     )
+
+    missing = missing_fields(state)
     logging.info(f"[node_requirements] Missing fields: {missing}")
+    state["reply"] = None
 
     if missing:
         # Build a user-friendly message acknowledging what we have and what we need
@@ -126,9 +128,19 @@ async def node_acknowledge_user(state, config):
 
 
 def missing_fields(state: ConversationState):
-    logging.info(f"[missing_fields] State: {state}")
-    return [
-        field
-        for field in ["platform", "country", "number_of_influencers", "category"]
-        if not state.get(field)
-    ]
+    missing = []
+    for field in ["platform", "country", "number_of_influencers", "category"]:
+        value = state.get(field)
+        # For number_of_influencers, 0 is also considered missing (need at least 1)
+        is_missing = (
+            value is None
+            or value == ""
+            or (field == "number_of_influencers" and value == 0)
+        )
+        if is_missing:
+            missing.append(field)
+        logging.info(
+            f"[missing_fields] {field}: {repr(value)} (type: {type(value).__name__}, missing: {is_missing})"
+        )
+    logging.info(f"[missing_fields] Final missing list: {missing}")
+    return missing
