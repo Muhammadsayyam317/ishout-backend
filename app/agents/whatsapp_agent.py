@@ -1,6 +1,5 @@
 from fastapi import Request
 import logging
-from langgraph import graph
 from app.agents.nodes.state import get_user_state, reset_user_state, update_user_state
 from app.db.sqlite import build_whatsapp_agent
 
@@ -65,7 +64,6 @@ async def handle_whatsapp_events(request: Request):
             config={
                 "configurable": {
                     "thread_id": thread_id,
-                    "debug_log": list(graph.get_state_history(state)),
                 }
             },
         )
