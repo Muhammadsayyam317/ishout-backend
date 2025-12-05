@@ -26,7 +26,6 @@ class ConversationState(TypedDict, total=False):
     category: Annotated[Optional[str], take_first]
     country: Annotated[Optional[str], take_first]
 
-    # ⭐ FIXED HERE
     number_of_influencers: Annotated[Optional[int], take_second]
 
     reply: Annotated[Optional[str], take_second_allow_none]

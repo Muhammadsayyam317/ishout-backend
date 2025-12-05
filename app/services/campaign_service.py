@@ -1,6 +1,14 @@
 from time import timezone
 from typing import Dict, Any
-from datetime import datetime
+from datetime import timezone
+from fastapi import HTTPException
+from app.models.campaign_model import CampaignStatus
+from app.db.connection import get_db
+from app.models.whatsappconversation_model import ConversationState
+
+
+from datetime import datetime, timezone
+from typing import Dict, Any
 from fastapi import HTTPException
 from app.models.campaign_model import CampaignStatus
 from app.db.connection import get_db
@@ -12,23 +20,28 @@ async def create_campaign(state: ConversationState) -> Dict[str, Any]:
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
+
         campaign_name = state.get("name")
         if not campaign_name:
-            campaign_name = f"Campaign - {', '.join(state.get("category", []))} - {', '.join(state.get("platform", []))}"
+            campaign_name = (
+                f"Campaign - {state.get('category')} - {state.get('platform')}"
+            )
 
         campaign_doc = {
             "name": campaign_name,
-            "platform": state.get("platform", []),
-            "category": state.get("category", []),
-            "followers": state.get("followers", []),
-            "country": state.get("country", []),
+            "platform": state.get("platform"),
+            "category": state.get("category"),
+            "followers": state.get("followers"),
+            "country": state.get("country"),
             "user_id": state.get("sender_id"),
             "status": CampaignStatus.PENDING,
             "limit": state.get("number_of_influencers"),
             "created_at": datetime.now(timezone.utc),
             "updated_at": datetime.now(timezone.utc),
         }
+
         result = await campaigns_collection.insert_one(campaign_doc)
+
         return {
             "message": (
                 "Thank you! I have received all your campaign details. "
