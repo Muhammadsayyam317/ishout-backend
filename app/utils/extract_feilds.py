@@ -58,7 +58,7 @@ def extract_platform(message: str) -> Optional[str]:
 
 
 def extract_limit(message: str) -> Optional[int]:
-    msg = (message or "").lower()
+    msg = (message or "").lower().strip()
     m = re.search(r"between\s+(\d+)\s+and\s+(\d+)", msg)
     if m:
         try:
@@ -68,10 +68,10 @@ def extract_limit(message: str) -> Optional[int]:
 
     patterns = [
         r"number\s+of\s+influencers?\s*(?:is|:|=)\s*(\d+)",
-        r"(\d+)\s+(?:number\s+of\s+)?(?:influencers?|creators?)",
+        r"(\d+)\s+number\s+of\s+influencers?",
+        r"(\d+)\s+(?:influencers?|creators?)",
         r"(\d+)\s*(?:-|to)\s*(\d+)\s*(?:influencers?|creators?)?",
         r"^\s*(\d+)\s*$",
-        r"(\d+)\s*(?:influencers?|creators?)",
     ]
 
     for p in patterns:
@@ -84,6 +84,14 @@ def extract_limit(message: str) -> Optional[int]:
             return int(m.group(1))
         except Exception:
             pass
+    if len(msg.split()) <= 3:
+        m = re.search(r"\b(\d+)\b", msg)
+        if m:
+            try:
+                return int(m.group(1))
+            except Exception:
+                pass
+
     return None
 
 
