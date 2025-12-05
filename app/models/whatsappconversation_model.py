@@ -8,7 +8,6 @@ def take_first(a, b):
 
 
 def take_second(a, b):
-    """Prefer the second (newer) value if it's not None, otherwise take the first"""
     if b is not None:
         return b
     return a
