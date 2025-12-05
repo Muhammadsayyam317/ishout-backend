@@ -10,10 +10,9 @@ async def handle_whatsapp_events(request: Request):
     event_data = event["entry"][0]["changes"][0]["value"]
 
     if "messages" not in event_data:
-        return {"status": "ok", "message": "Status update, skipping"}
-
+        return {"status": "ok"}
     if not event_data.get("messages"):
-        return {"status": "ok", "message": "No messages to process"}
+        return {"status": "ok"}
 
     first_message = event_data["messages"][0]
     thread_id = first_message.get("from")
@@ -56,7 +55,6 @@ async def handle_whatsapp_events(request: Request):
         state["sender_id"] = thread_id
 
     whatsapp_agent = await build_whatsapp_agent()
-
     final_state = await whatsapp_agent.ainvoke(
         state,
         config={"configurable": {"thread_id": thread_id}},
@@ -64,5 +62,4 @@ async def handle_whatsapp_events(request: Request):
 
     if final_state:
         await update_user_state(thread_id, final_state)
-
     return {"status": "ok"}

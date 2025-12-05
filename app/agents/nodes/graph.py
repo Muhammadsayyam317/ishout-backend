@@ -23,13 +23,8 @@ graph.add_node("acknowledge_user", node_acknowledge_user)
 
 # Entry point
 graph.set_entry_point("debug_before")
-
-# BEFORE -> requirements
 graph.add_edge("debug_before", "requirements")
-
-# After requirements, go to debug_after for logging
 graph.add_edge("requirements", "debug_after")
-
 # Core decision logic
 graph.add_conditional_edges(
     "debug_after",
