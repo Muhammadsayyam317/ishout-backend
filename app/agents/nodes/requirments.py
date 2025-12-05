@@ -52,6 +52,7 @@ async def node_requirements(state: ConversationState, config):
 
     missing = missing_fields(state)
     logging.info(f"[node_requirements] Missing fields: {missing}")
+
     if missing:
         provided_items = []
         counter = 1
