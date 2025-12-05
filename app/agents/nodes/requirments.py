@@ -23,17 +23,19 @@ async def node_debug_after(state, config):
     return state
 
 
-async def node_requirements(state: ConversationState, config):
-    msg = state.get("user_message", "") or ""
+async def node_requirements(state, config):
+    msg = state.get("user_message", "")
     if state.get("done"):
         state["reply"] = "Conversation already completed, skipping"
         return state
 
+    # Extract fields
     platform = extract_platform(msg)
     limit = extract_limit(msg)
     country = extract_country(msg)
     category = extract_category(msg)
 
+    # Update state if new values found
     if platform:
         state["platform"] = platform
     if limit is not None:
@@ -45,12 +47,10 @@ async def node_requirements(state: ConversationState, config):
         state["category"] = category
 
     logging.info(
-        f"[node_requirements] Extracted - platform: {platform}, category: {category}, country: {country}, limit: {limit}"
-    )
-    logging.info(
         f"[node_requirements] State after updates - platform: {state.get('platform')}, category: {state.get('category')}, country: {state.get('country')}, number_of_influencers: {state.get('number_of_influencers')}"
     )
 
+    # Check missing fields
     missing = missing_fields(state)
     logging.info(f"[node_requirements] Missing fields: {missing}")
 
@@ -88,21 +88,21 @@ async def node_requirements(state: ConversationState, config):
             needed.append("number of influencers")
 
         if provided_items:
-            reply = "Thanks! I got:\n"
-            reply += "\n".join(provided_items)
-            reply += "\n\n"
-            reply += f"I still need: {', '.join(needed)}.\n\n"
-            reply += "Please provide the missing details."
+            reply = "Thanks! I got:\n" + "\n".join(provided_items) + "\n\n"
+            reply += f"I still need: {', '.join(needed)}.\n\nPlease provide the missing details."
         else:
-            reply = "To help you find the right influencers, I need:\n"
-            reply += "• " + "\n• ".join(needed) + "\n\n"
-            reply += "Please provide all these details in your message."
+            reply = "To help you find the right influencers, I need:\n• " + "\n• ".join(
+                needed
+            )
+            reply += "\n\nPlease provide all these details in your message."
 
         state["reply"] = reply
     else:
         state["reply"] = None
+        state["reply_sent"] = False
+
         logging.info(
-            "[node_requirements] All fields present, reply set to None - should proceed to create_campaign"
+            "[node_requirements] All fields present, reply cleared - should proceed to create_campaign"
         )
 
     return state
