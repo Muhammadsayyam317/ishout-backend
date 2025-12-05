@@ -27,11 +27,8 @@ graph.set_entry_point("debug_before")
 # BEFORE -> requirements
 graph.add_edge("debug_before", "requirements")
 
-# After every main node → go to debug_after
+# After requirements, go to debug_after for logging
 graph.add_edge("requirements", "debug_after")
-graph.add_edge("create_campaign", "debug_after")
-graph.add_edge("acknowledge_user", "debug_after")
-graph.add_edge("ask_user", "debug_after")
 
 # Core decision logic
 graph.add_conditional_edges(
