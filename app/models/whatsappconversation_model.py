@@ -13,6 +13,10 @@ def take_second(a, b):
     return a
 
 
+def take_second_allow_none(a, b):
+    return b
+
+
 class ConversationState(TypedDict, total=False):
     sender_id: Annotated[Optional[str], take_first]
     user_message: Annotated[Optional[str], take_second]
@@ -23,11 +27,11 @@ class ConversationState(TypedDict, total=False):
     country: Annotated[Optional[str], take_first]
     number_of_influencers: Annotated[Optional[int], take_first]
 
-    reply: Annotated[Optional[str], take_second]
+    reply: Annotated[Optional[str], take_second_allow_none]
     last_active: Annotated[Optional[float], take_first]
     event_data: Annotated[dict, take_first]
     campaign_id: Annotated[Optional[str], take_first]
-    done: Annotated[Optional[bool], take_first]
-    reply_sent: Annotated[Optional[bool], take_first]
+    done: Annotated[Optional[bool], take_second]
+    reply_sent: Annotated[Optional[bool], take_second]
     thread_id: Annotated[Optional[str], take_first]
     debug_log: Annotated[Optional[list], take_first]
