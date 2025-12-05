@@ -1,9 +1,9 @@
 from typing import TypedDict, Optional, Annotated
 
 
-def take_first_sender_id(a, b):
-    """Binary reducer that takes the first non-None value for sender_id.
-    This prevents InvalidUpdateError when multiple nodes return state with sender_id.
+def take_first(a, b):
+    """Generic binary reducer that takes the first non-None value.
+    This prevents InvalidUpdateError when multiple nodes return state with the same field.
     LangGraph expects a binary function (a, b) -> c."""
     if a is not None:
         return a
@@ -11,8 +11,8 @@ def take_first_sender_id(a, b):
 
 
 class ConversationState(TypedDict, total=False):
-    sender_id: Annotated[Optional[str], take_first_sender_id]
-    user_message: Optional[str]
+    sender_id: Annotated[Optional[str], take_first]
+    user_message: Annotated[Optional[str], take_first]
     intent: Optional[str]
 
     platform: Optional[str]
@@ -20,7 +20,7 @@ class ConversationState(TypedDict, total=False):
     country: Optional[str]
     number_of_influencers: Optional[int]
 
-    reply: Optional[str]
+    reply: Annotated[Optional[str], take_first]
     last_active: Optional[float] = None
     event_data: dict
     campaign_id: Optional[str]
