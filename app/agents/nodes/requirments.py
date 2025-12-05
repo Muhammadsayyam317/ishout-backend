@@ -54,16 +54,27 @@ async def node_requirements(state, config):
     state["reply"] = None
 
     if missing:
-        # Build a user-friendly message acknowledging what we have and what we need
-        provided = []
+        provided_items = []
+        counter = 1
         if state.get("platform"):
-            provided.append(f"Platform: {state['platform']}")
+            provided_items.append(f"{counter}) platform: {state['platform'].title()}")
+            counter += 1
         if state.get("category"):
-            provided.append(f"Category: {state['category']}")
+            provided_items.append(f"{counter}) category: {state['category'].title()}")
+            counter += 1
         if state.get("country"):
-            provided.append(f"Country: {state['country']}")
+            country_display = (
+                state["country"].upper()
+                if len(state["country"]) <= 4
+                else state["country"].title()
+            )
+            provided_items.append(f"{counter}) country: {country_display}")
+            counter += 1
         if state.get("number_of_influencers"):
-            provided.append(f"Influencers: {state['number_of_influencers']}")
+            provided_items.append(
+                f"{counter}) number of influencers: {state['number_of_influencers']}"
+            )
+            counter += 1
 
         needed = []
         if "platform" in missing:
@@ -75,9 +86,10 @@ async def node_requirements(state, config):
         if "number_of_influencers" in missing:
             needed.append("number of influencers")
 
-        # Build the reply message
-        if provided:
-            reply = f"Thanks! I got: {', '.join(provided)}.\n\n"
+        if provided_items:
+            reply = "Thanks! I got:\n"
+            reply += "\n".join(provided_items)
+            reply += "\n\n"
             reply += f"I still need: {', '.join(needed)}.\n\n"
             reply += "Please provide the missing details."
         else:
@@ -87,7 +99,6 @@ async def node_requirements(state, config):
 
         state["reply"] = reply
     else:
-        # All fields are present, clear any previous reply
         state["reply"] = None
         logging.info(
             "[node_requirements] All fields present, reply set to None - should proceed to create_campaign"
