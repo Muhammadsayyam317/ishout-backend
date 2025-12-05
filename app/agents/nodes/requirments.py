@@ -107,7 +107,7 @@ async def node_requirements(state: ConversationState, config):
     return state
 
 
-async def node_ask_user(state: ConversationState, config):
+async def node_ask_user(state, config):
     sender = state.get("sender_id") or config["configurable"]["thread_id"]
     if state.get("reply") and not state.get("reply_sent"):
         await send_whatsapp_message(sender, state["reply"])

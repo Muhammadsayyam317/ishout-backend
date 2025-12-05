@@ -35,6 +35,7 @@ async def handle_whatsapp_events(request: Request):
         state["event_data"] = event_data
         state["thread_id"] = thread_id
         state["sender_id"] = thread_id
+        state["reply_sent"] = False
 
         state = await update_user_state(thread_id, state)
         whatsapp_agent = await build_whatsapp_agent()
