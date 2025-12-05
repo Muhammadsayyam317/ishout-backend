@@ -13,17 +13,18 @@ def take_first(a, b):
 class ConversationState(TypedDict, total=False):
     sender_id: Annotated[Optional[str], take_first]
     user_message: Annotated[Optional[str], take_first]
-    intent: Optional[str]
+    intent: Annotated[Optional[str], take_first]
 
-    platform: Optional[str]
-    category: Optional[str]
-    country: Optional[str]
-    number_of_influencers: Optional[int]
+    platform: Annotated[Optional[str], take_first]
+    category: Annotated[Optional[str], take_first]
+    country: Annotated[Optional[str], take_first]
+    number_of_influencers: Annotated[Optional[int], take_first]
 
     reply: Annotated[Optional[str], take_first]
-    last_active: Optional[float] = None
-    event_data: dict
-    campaign_id: Optional[str]
-    done: Optional[bool]
-    reply_sent: Optional[bool]
-    thread_id: Optional[str]
+    last_active: Annotated[Optional[float], take_first]
+    event_data: Annotated[dict, take_first]
+    campaign_id: Annotated[Optional[str], take_first]
+    done: Annotated[Optional[bool], take_first]
+    reply_sent: Annotated[Optional[bool], take_first]
+    thread_id: Annotated[Optional[str], take_first]
+    debug_log: Annotated[Optional[list], take_first]

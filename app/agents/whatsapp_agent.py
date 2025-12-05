@@ -8,13 +8,12 @@ async def handle_whatsapp_events(request: Request):
     event = await request.json()
     event_data = event["entry"][0]["changes"][0]["value"]
 
-    # Skip status updates
     if "messages" not in event_data:
         return {"status": "ok", "message": "Status update, skipping"}
+
     if not event_data.get("messages"):
         return {"status": "ok", "message": "No messages to process"}
 
-    # Get thread_id and user text from the first message
     first_message = event_data["messages"][0]
     thread_id = first_message.get("from")
     user_text = (
@@ -24,43 +23,45 @@ async def handle_whatsapp_events(request: Request):
     ) or ""
 
     if not thread_id:
-        return {"status": "error", "message": "No sender ID found in message"}
-    # Save user message in chat history
+        return {"status": "error", "message": "No sender ID found"}
+
     await save_chat_message(
         thread_id=thread_id,
         role="user",
         content=user_text,
         metadata={"source": "whatsapp_webhook"},
     )
-    # Get or create user state
+
+    # Load state
     state = await get_user_state(thread_id)
     state.pop("_id", None)
 
+    # If conversation is fully complete → start fresh
     if state.get("done") and state.get("reply_sent"):
-        return {"status": "ok", "message": "Conversation already completed, skipping"}
+        state = await reset_user_state(thread_id)
 
+    # Update state with new info
     state["user_message"] = user_text
     state["event_data"] = event_data
     state["thread_id"] = thread_id
-    # Ensure sender_id is always set from thread_id
     state["sender_id"] = thread_id
 
-    # Reset state if session expired but not done
+    # If done but reply not sent → reset
     if state.get("done") and not state.get("reply_sent"):
         state = await reset_user_state(thread_id)
-        state["sender_id"] = thread_id
         state["user_message"] = user_text
         state["event_data"] = event_data
         state["thread_id"] = thread_id
+        state["sender_id"] = thread_id
 
     whatsapp_agent = await build_whatsapp_agent()
+
     final_state = await whatsapp_agent.ainvoke(
         state,
-        config={
-            "configurable": {"thread_id": thread_id},
-        },
+        config={"configurable": {"thread_id": thread_id}},
     )
-    # Persist the latest state for this user/session
+
     if final_state:
         await update_user_state(thread_id, final_state)
+
     return {"status": "ok"}

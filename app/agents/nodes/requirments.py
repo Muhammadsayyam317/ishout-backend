@@ -1,8 +1,8 @@
 import json
 import logging
 from app.agents.nodes.message_to_whatsapp import send_whatsapp_message
-from app.agents.nodes.query_llm import Query_to_llm
 from app.models.whatsappconversation_model import ConversationState
+from app.services.campaign_service import create_campaign
 from app.utils.extract_feilds import (
     extract_platform,
     extract_limit,
@@ -23,8 +23,6 @@ async def node_debug_after(state, config):
 
 async def node_requirements(state, config):
     msg = state.get("user_message", "")
-    logging.info(f"[node_requirements] User message: {msg}")
-
     if state.get("done"):
         state["reply"] = "Conversation already completed, skipping"
         return state
@@ -74,28 +72,27 @@ async def node_ask_user(state, config):
     return state
 
 
-# async def node_create_campaign(state: ConversationState):
-#     result = await create_campaign(state)
-#     state["campaign_id"] = result["campaign_id"]
-#     state["reply"] = result["message"]
-#     return state
-
-
-# Node 2: Search influencers
-async def node_search(state, config):
-    result = await Query_to_llm(state)
-    state["reply"] = result
+async def node_create_campaign(state: ConversationState):
+    result = await create_campaign(state)
+    state["campaign_id"] = result["campaign_id"]
+    state["campaign_created"] = True
+    state["reply"] = None
     return state
 
 
-# Node 3: Send reply
-async def node_send(state, config):
-    sender_id = state.get("sender_id") or config["configurable"]["thread_id"]
-    if state.get("reply"):
-        await send_whatsapp_message(sender_id, state["reply"])
-        state["done"] = True
-        state["reply_sent"] = True
-    # Don't modify sender_id - it should already be set
+async def node_acknowledge_user(state, config):
+    sender = state.get("sender_id") or config["configurable"]["thread_id"]
+
+    final_msg = (
+        "Great! 🎉 I got all your campaign details.\n"
+        "Our admin team will review them and we’ll notify you once it's approved. 👍"
+    )
+
+    await send_whatsapp_message(sender, final_msg)
+
+    state["done"] = True
+    state["reply_sent"] = True
+
     return state
 
 
