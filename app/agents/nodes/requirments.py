@@ -5,6 +5,7 @@ from app.agents.nodes.state import update_user_state
 from app.models.whatsappconversation_model import ConversationState
 from app.services.campaign_service import create_campaign
 from app.utils.extract_feilds import (
+    extract_followers,
     extract_platform,
     extract_limit,
     extract_country,
@@ -32,16 +33,19 @@ async def node_requirements(state, config):
     limit = extract_limit(msg)
     country = extract_country(msg)
     category = extract_category(msg)
+    followers = extract_followers(msg)
 
     if platform:
         state["platform"] = platform
     if limit is not None:
-        state["number_of_influencers"] = limit
+        state["limit"] = limit
         logging.info(f"[node_requirements] Updated number_of_influencers to: {limit}")
     if country:
         state["country"] = country
     if category:
         state["category"] = category
+    if followers:
+        state["followers"] = followers
 
     logging.info(
         f"[node_requirements] State after updates - platform: {state.get('platform')}, category: {state.get('category')}, country: {state.get('country')}, number_of_influencers: {state.get('number_of_influencers')}"
@@ -71,10 +75,11 @@ async def node_requirements(state, config):
             provided_items.append(f"{counter}) country: {country_display}")
             counter += 1
 
-        if state.get("number_of_influencers"):
-            provided_items.append(
-                f"{counter}) number of influencers: {state['number_of_influencers']}"
-            )
+        if state.get("limit"):
+            provided_items.append(f"{counter}) number of influencers: {state['limit']}")
+            counter += 1
+        if state.get("followers"):
+            provided_items.append(f"{counter}) followers: {state['followers']}")
             counter += 1
 
         needed = []
@@ -84,8 +89,10 @@ async def node_requirements(state, config):
             needed.append("country (e.g., UAE, Kuwait, Saudi Arabia)")
         if "category" in missing:
             needed.append("category (e.g., fashion, beauty, food)")
-        if "number_of_influencers" in missing:
+        if "limit" in missing:
             needed.append("number of influencers")
+        if "followers" in missing:
+            needed.append("followers")
 
         if provided_items:
             reply = "Thanks! I got:\n" + "\n".join(provided_items) + "\n\n"
@@ -125,7 +132,8 @@ async def node_create_campaign(state: ConversationState, config):
         "platform": state.get("platform"),
         "category": state.get("category"),
         "country": state.get("country"),
-        "limit": state.get("number_of_influencers"),
+        "limit": state.get("limit"),
+        "followers": state.get("followers"),
         "user_id": state.get("sender_id"),
         "source": "whatsapp",
     }

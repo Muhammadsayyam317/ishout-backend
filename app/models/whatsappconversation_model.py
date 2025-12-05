@@ -1,4 +1,4 @@
-from typing import TypedDict, Optional, Annotated
+from typing import List, TypedDict, Optional, Annotated
 
 
 def take_first(a, b):
@@ -22,11 +22,11 @@ class ConversationState(TypedDict, total=False):
     user_message: Annotated[Optional[str], take_second]
     intent: Annotated[Optional[str], take_first]
 
-    platform: Annotated[Optional[str], take_first]
-    category: Annotated[Optional[str], take_first]
-    country: Annotated[Optional[str], take_first]
-
-    number_of_influencers: Annotated[Optional[int], take_second]
+    platform: Annotated[Optional[List[str]], take_first]
+    category: Annotated[Optional[List[str]], take_first]
+    country: Annotated[Optional[List[str]], take_first]
+    limit: Annotated[Optional[int], take_second]
+    followers: Annotated[Optional[List[str]], take_first]
 
     reply: Annotated[Optional[str], take_second_allow_none]
     last_active: Annotated[Optional[float], take_first]

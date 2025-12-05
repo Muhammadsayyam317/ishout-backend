@@ -1,6 +1,5 @@
-# app/utils/extract_fields.py
 import re
-from typing import Optional
+from typing import List, Optional
 
 PLATFORM_SYNS = {
     "instagram": ["instagram", "insta", "instagtam", "instgram"],
@@ -146,10 +145,25 @@ def extract_category(message: str) -> Optional[str]:
     return None
 
 
+def extract_followers(message: str) -> Optional[List[str]]:
+    msg = (message or "").lower()
+    patterns = [
+        r"followers\s*(?:is|:|=)\s*([a-z\s]{2,30})",
+        r"followers\s+([a-z\s]{2,30})",
+    ]
+    for pattern in patterns:
+        m = re.search(pattern, msg)
+        if m:
+            cand = m.group(1).strip().lower()
+            return cand
+    return None
+
+
 def extract_all_fields(message: str):
     return {
         "platform": extract_platform(message),
         "category": extract_category(message),
         "country": extract_country(message),
-        "number_of_influencers": extract_limit(message),
+        "limit": extract_limit(message),
+        "followers": extract_followers(message),
     }
