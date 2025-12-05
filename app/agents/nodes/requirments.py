@@ -1,3 +1,4 @@
+# app/agents/nodes/requirments.py
 import json
 import logging
 from app.agents.nodes.message_to_whatsapp import send_whatsapp_message
@@ -21,8 +22,8 @@ async def node_debug_after(state, config):
     return state
 
 
-async def node_requirements(state, config):
-    msg = state.get("user_message", "")
+async def node_requirements(state: ConversationState, config):
+    msg = state.get("user_message", "") or ""
     if state.get("done"):
         state["reply"] = "Conversation already completed, skipping"
         return state
@@ -51,8 +52,6 @@ async def node_requirements(state, config):
 
     missing = missing_fields(state)
     logging.info(f"[node_requirements] Missing fields: {missing}")
-    state["reply"] = None
-
     if missing:
         provided_items = []
         counter = 1
@@ -107,26 +106,32 @@ async def node_requirements(state, config):
     return state
 
 
-# Ask user missing fields
-async def node_ask_user(state, config):
+async def node_ask_user(state: ConversationState, config):
     sender = state.get("sender_id") or config["configurable"]["thread_id"]
-    if state.get("reply"):
+    if state.get("reply") and not state.get("reply_sent"):
         await send_whatsapp_message(sender, state["reply"])
         state["reply_sent"] = True
     return state
 
 
-async def node_create_campaign(state: ConversationState):
-    result = await create_campaign(state)
+async def node_create_campaign(state: ConversationState, config):
+    payload = {
+        "platform": state.get("platform"),
+        "category": state.get("category"),
+        "country": state.get("country"),
+        "limit": state.get("number_of_influencers"),
+        "user_id": state.get("sender_id"),
+        "source": "whatsapp",
+    }
+    result = await create_campaign(payload)
     state["campaign_id"] = result["campaign_id"]
     state["campaign_created"] = True
     state["reply"] = None
     return state
 
 
-async def node_acknowledge_user(state, config):
+async def node_acknowledge_user(state: ConversationState, config):
     sender = state.get("sender_id") or config["configurable"]["thread_id"]
-
     final_msg = (
         "Great! 🎉 I got all your campaign details.\n"
         "iShout admin team will review them and we’ll notify you once it's approved. 👍"
@@ -134,7 +139,6 @@ async def node_acknowledge_user(state, config):
     await send_whatsapp_message(sender, final_msg)
     state["done"] = True
     state["reply_sent"] = True
-
     return state
 
 
@@ -142,16 +146,12 @@ def missing_fields(state: ConversationState):
     missing = []
     for field in ["platform", "country", "number_of_influencers", "category"]:
         value = state.get(field)
-        # For number_of_influencers, 0 is also considered missing (need at least 1)
-        is_missing = (
-            value is None
-            or value == ""
-            or (field == "number_of_influencers" and value == 0)
-        )
+        if field == "number_of_influencers":
+            is_missing = value is None or (isinstance(value, int) and value <= 0)
+        else:
+            is_missing = value is None or value == ""
         if is_missing:
             missing.append(field)
-        logging.info(
-            f"[missing_fields] {field}: {repr(value)} (type: {type(value).__name__}, missing: {is_missing})"
-        )
+        logging.info(f"[missing_fields] {field}: {repr(value)} (missing: {is_missing})")
     logging.info(f"[missing_fields] Final missing list: {missing}")
     return missing

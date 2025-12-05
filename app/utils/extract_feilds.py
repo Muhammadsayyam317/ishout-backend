@@ -1,155 +1,155 @@
-import re
-from typing import Optional
-
-PLATFORM_SYNS = {
-    "instagram": ["instagram", "insta", "instagtam", "instgram"],
-    "tiktok": ["tiktok", "tik tok", "tik-tok"],
-    "youtube": ["youtube", "yt", "you tube"],
-}
-
-CATEGORIES = [
-    "fashion",
-    "beauty",
-    "tech",
-    "gaming",
-    "fitness",
-    "travel",
-    "food",
-    "lifestyle",
-    "finance",
-    "sports",
-    "education",
-]
-
-COUNTRIES = [
-    "uae",
-    "kuwait",
-    "iran",
-    "jordan",
-    "qatar",
-    "saudi arabia",
-    "saudi",
-    "bahrain",
-    "oman",
-]
+import json
+import logging
+from app.agents.nodes.message_to_whatsapp import send_whatsapp_message
+from app.models.whatsappconversation_model import ConversationState
+from app.services.campaign_service import create_campaign
+from app.utils.extract_feilds import (
+    extract_platform,
+    extract_limit,
+    extract_country,
+    extract_category,
+)
 
 
-def _fuzzy_platform(msg: str) -> Optional[str]:
-    for plat, synonyms in PLATFORM_SYNS.items():
-        for s in synonyms:
-            if s in msg:
-                return plat
-    return None
+async def node_debug_before(state, config):
+    logging.info("\n\n===== DEBUG BEFORE =====\n" + json.dumps(state, indent=2))
+    return state
 
 
-def extract_platform(message: str) -> Optional[str]:
-    msg = (message or "").lower()
-    return _fuzzy_platform(msg)
+async def node_debug_after(state, config):
+    logging.info("\n\n===== DEBUG AFTER =====\n" + json.dumps(state, indent=2))
+    return state
 
 
-def extract_limit(message: str) -> Optional[int]:
-    msg = (message or "").lower()
-    m = re.search(r"number\s+of\s+influencers?\s*(?:is|:|=)\s*(\d+)", msg)
-    if m:
-        try:
-            return int(m.group(1))
-        except ValueError:
-            pass
+async def node_requirements(state, config):
+    msg = state.get("user_message", "")
+    if state.get("done"):
+        state["reply"] = "Conversation already completed, skipping"
+        return state
 
-    m = re.search(r"(\d+)\s+(?:number\s+of\s+)?(?:influencers?|creators?)", msg)
-    if m:
-        try:
-            return int(m.group(1))
-        except ValueError:
-            pass
+    platform = extract_platform(msg)
+    limit = extract_limit(msg)
+    country = extract_country(msg)
+    category = extract_category(msg)
 
-    m = re.search(r"(\d+)\s*(?:-|to)\s*(\d+)\s*(?:influencers?|creators?)?", msg)
-    if m:
-        try:
-            return int(m.group(2) or m.group(1))
-        except ValueError:
-            pass
-    m = re.search(r"^\s*(\d+)\s*$", msg)
-    if m:
-        try:
-            num = int(m.group(1))
-            if 1 <= num <= 100:
-                return num
-        except ValueError:
-            pass
-    m = re.search(r"(\d+)\s*(?:influencers?|creators?)", msg)
-    if m:
-        try:
-            return int(m.group(1))
-        except ValueError:
-            pass
+    if platform:
+        state["platform"] = platform
+    if limit is not None:
+        state["number_of_influencers"] = limit
+        logging.info(f"[node_requirements] Updated number_of_influencers to: {limit}")
+    if country:
+        state["country"] = country
+    if category:
+        state["category"] = category
 
-    return None
+    logging.info(
+        f"[node_requirements] Extracted - platform: {platform}, category: {category}, country: {country}, limit: {limit}"
+    )
+    logging.info(
+        f"[node_requirements] State after updates - platform: {state.get('platform')}, category: {state.get('category')}, country: {state.get('country')}, number_of_influencers: {state.get('number_of_influencers')}"
+    )
 
+    missing = missing_fields(state)
+    logging.info(f"[node_requirements] Missing fields: {missing}")
+    state["reply"] = None
 
-def extract_country(message: str) -> Optional[str]:
-    msg = (message or "").lower()
-    country_patterns = [
-        r"country\s*(?:is|:|=)\s*([a-z\s]+?)(?:\s|$|,|category)",
-        r"country\s+([a-z\s]+?)(?:\s|$|,|category)",
-    ]
+    if missing:
+        provided_items = []
+        counter = 1
+        if state.get("platform"):
+            provided_items.append(f"{counter}) platform: {state['platform'].title()}")
+            counter += 1
+        if state.get("category"):
+            provided_items.append(f"{counter}) category: {state['category'].title()}")
+            counter += 1
+        if state.get("country"):
+            country_display = (
+                state["country"].upper()
+                if len(state["country"]) <= 4
+                else state["country"].title()
+            )
+            provided_items.append(f"{counter}) country: {country_display}")
+            counter += 1
+        if state.get("number_of_influencers"):
+            provided_items.append(
+                f"{counter}) number of influencers: {state['number_of_influencers']}"
+            )
+            counter += 1
 
-    for pattern in country_patterns:
-        m = re.search(pattern, msg)
-        if m:
-            cand = m.group(1).strip().lower()
-            for c in COUNTRIES:
-                if c in cand or cand in c:
-                    return c
-            if 2 <= len(cand) <= 30:
-                return cand
-    for c in COUNTRIES:
-        if c in msg:
-            return c
+        needed = []
+        if "platform" in missing:
+            needed.append("platform (Instagram, TikTok, or YouTube)")
+        if "country" in missing:
+            needed.append("country (e.g., UAE, Kuwait, Saudi Arabia)")
+        if "category" in missing:
+            needed.append("category (e.g., fashion, beauty, food)")
+        if "number_of_influencers" in missing:
+            needed.append("number of influencers")
 
-    m = re.search(r"\bin\s+([A-Za-z ]{2,30})\b", msg)
-    if m:
-        cand = m.group(1).strip().lower()
-        if len(cand) <= 30:
-            return cand
-    return None
+        if provided_items:
+            reply = "Thanks! I got:\n"
+            reply += "\n".join(provided_items)
+            reply += "\n\n"
+            reply += f"I still need: {', '.join(needed)}.\n\n"
+            reply += "Please provide the missing details."
+        else:
+            reply = "To help you find the right influencers, I need:\n"
+            reply += "• " + "\n• ".join(needed) + "\n\n"
+            reply += "Please provide all these details in your message."
 
+        state["reply"] = reply
+    else:
+        state["reply"] = None
+        logging.info(
+            "[node_requirements] All fields present, reply set to None - should proceed to create_campaign"
+        )
 
-# def extract_budget(message: str) -> Optional[str]:
-#     msg = (message or "").lower()
-#     m = re.search(r"\$\s?(\d{2,10})", msg)
-#     if m:
-#         return m.group(1)
-#     m2 = re.search(r"(\d{3,})\s*(usd|dollars)", msg)
-#     if m2:
-#         return m2.group(1)
-#     return None
-
-
-def extract_category(message: str) -> Optional[str]:
-    msg = (message or "").lower()
-    category_patterns = [
-        r"category\s*(?:is|:|=)\s*([a-z\s]+?)(?:\s|$|,|country|number)",
-        r"category\s+([a-z\s]+?)(?:\s|$|,|country|number)",
-    ]
-
-    for pattern in category_patterns:
-        m = re.search(pattern, msg)
-        if m:
-            cand = m.group(1).strip().lower()
-            for c in CATEGORIES:
-                if c in cand or cand in c:
-                    return c
-    for c in CATEGORIES:
-        if c in msg:
-            return c
-    return None
+    return state
 
 
-def extract_all_fields(message: str):
-    return {
-        "platform": extract_platform(message),
-        "category": extract_category(message),
-        "country": extract_country(message),
-        "number_of_influencers": extract_limit(message),
-    }
+async def node_ask_user(state, config):
+    sender = state.get("sender_id") or config["configurable"]["thread_id"]
+    if state.get("reply"):
+        await send_whatsapp_message(sender, state["reply"])
+        state["reply_sent"] = True
+    return state
+
+
+async def node_create_campaign(state: ConversationState):
+    result = await create_campaign(state)
+    state["campaign_id"] = result["campaign_id"]
+    state["campaign_created"] = True
+    state["reply"] = None
+    return state
+
+
+async def node_acknowledge_user(state, config):
+    sender = state.get("sender_id") or config["configurable"]["thread_id"]
+
+    final_msg = (
+        "Great! 🎉 I got all your campaign details.\n"
+        "iShout admin team will review them and we’ll notify you once it's approved. 👍"
+    )
+    await send_whatsapp_message(sender, final_msg)
+    state["done"] = True
+    state["reply_sent"] = True
+
+    return state
+
+
+def missing_fields(state: ConversationState):
+    missing = []
+    for field in ["platform", "country", "number_of_influencers", "category"]:
+        value = state.get(field)
+        is_missing = (
+            value is None
+            or value == ""
+            or (field == "number_of_influencers" and value == 0)
+        )
+        if is_missing:
+            missing.append(field)
+        logging.info(
+            f"[missing_fields] {field}: {repr(value)} (type: {type(value).__name__}, missing: {is_missing})"
+        )
+    logging.info(f"[missing_fields] Final missing list: {missing}")
+    return missing
