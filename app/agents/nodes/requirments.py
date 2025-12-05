@@ -43,6 +43,14 @@ async def node_requirements(state, config):
 
     missing = missing_fields(state)
 
+    logging.info(
+        f"[node_requirements] Extracted - platform: {platform}, category: {category}, country: {country}, limit: {limit}"
+    )
+    logging.info(
+        f"[node_requirements] Current state - platform: {state.get('platform')}, category: {state.get('category')}, country: {state.get('country')}, number_of_influencers: {state.get('number_of_influencers')}"
+    )
+    logging.info(f"[node_requirements] Missing fields: {missing}")
+
     if missing:
         # Build a user-friendly message acknowledging what we have and what we need
         provided = []
@@ -77,7 +85,11 @@ async def node_requirements(state, config):
 
         state["reply"] = reply
     else:
+        # All fields are present, clear any previous reply
         state["reply"] = None
+        logging.info(
+            "[node_requirements] All fields present, reply set to None - should proceed to create_campaign"
+        )
 
     return state
 
