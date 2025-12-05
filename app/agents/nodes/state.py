@@ -31,58 +31,37 @@ async def get_user_state(sender_id):
     state = await session_collection.find_one({"sender_id": sender_id})
     if state:
         state.pop("_id", None)
-    if not state:
-        return await create_new_state(sender_id)
+
     now = time.time()
-    last_active = state.get("last_active", 0)
-    if now - last_active > SESSION_EXPIRY_SECONDS:
+    if not state or now - state.get("last_active", 0) > SESSION_EXPIRY_SECONDS:
         return await create_new_state(sender_id)
     await session_collection.update_one(
         {"sender_id": sender_id}, {"$set": {"last_active": now}}
     )
     state["last_active"] = now
-    state.pop("_id", None)
     return state
 
 
 async def update_user_state(sender_id, new_data: dict):
-    """
-    Merge update: only update fields present (and not None) in new_data,
-    otherwise keep existing stored values. Prevent overwriting with None.
-    """
     new_data.pop("_id", None)
     session_collection = get_session_collection()
     existing = await session_collection.find_one({"sender_id": sender_id}) or {}
 
-    allowed_fields = [
-        "platform",
-        "country",
-        "category",
-        "number_of_influencers",
-        "user_message",
-        "reply",
-        "last_active",
-        "done",
-        "reply_sent",
-        "campaign_id",
-        "campaign_created",
-    ]
-
     update_fields = {}
-    for field in allowed_fields:
-        if field in new_data and new_data[field] is not None:
-            update_fields[field] = new_data[field]
-        else:
-            if field in existing:
-                update_fields[field] = existing[field]
-            else:
-                pass
+    for key, value in new_data.items():
+        if value is not None:
+            update_fields[key] = value
+
+    for key in existing:
+        if key not in update_fields:
+            update_fields[key] = existing[key]
 
     update_fields["last_active"] = time.time()
 
     await session_collection.update_one(
         {"sender_id": sender_id}, {"$set": update_fields}, upsert=True
     )
+
     updated = await session_collection.find_one({"sender_id": sender_id})
     updated.pop("_id", None)
     return updated
