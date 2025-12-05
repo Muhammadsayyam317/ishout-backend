@@ -43,23 +43,15 @@ async def get_user_state(sender_id):
 
 
 async def update_user_state(sender_id, new_data: dict):
-    new_data.pop("_id", None)
     session_collection = get_session_collection()
-    existing = await session_collection.find_one({"sender_id": sender_id}) or {}
 
-    update_fields = {}
-    for key, value in new_data.items():
-        if value is not None:
-            update_fields[key] = value
+    # clean input
+    new_data.pop("_id", None)
+    new_data["last_active"] = time.time()
 
-    for key in existing:
-        if key not in update_fields:
-            update_fields[key] = existing[key]
-
-    update_fields["last_active"] = time.time()
-
+    # Only update fields provided — do not merge old values back
     await session_collection.update_one(
-        {"sender_id": sender_id}, {"$set": update_fields}, upsert=True
+        {"sender_id": sender_id}, {"$set": new_data}, upsert=True
     )
 
     updated = await session_collection.find_one({"sender_id": sender_id})
