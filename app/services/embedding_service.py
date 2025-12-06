@@ -40,7 +40,7 @@ async def query_vector_store(
             embedding=embeddings,
             index_name=f"embedding_index_{platform}",
             relevance_score="cosine",
-        ).create_vector_search_index(dimension=1536)
+        )
         result = await store.similarity_search(query, k=limit)
         for res in result:
             result.append(res.page_content)
