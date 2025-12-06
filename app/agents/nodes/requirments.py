@@ -73,7 +73,9 @@ async def node_requirements(state):
             provided_items.append(f"{counter}) Number of influencers: {state['limit']}")
             counter += 1
         if state.get("followers"):
-            provided_items.append(f"{counter}) Followers count: {state['followers']}")
+            provided_items.append(
+                f"{counter}) Followers count: {', '.join(state['followers']).title()}"
+            )
             counter += 1
 
         needed = []
