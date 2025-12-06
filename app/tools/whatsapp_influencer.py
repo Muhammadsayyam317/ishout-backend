@@ -12,10 +12,10 @@ print(f"[find_influencers_for_whatsapp] Logger: {logger}")
 def find_influencers_for_whatsapp(
     platform: str,
     category: str,
-    number_of_influencers: int,
+    limit: int,
     country: Optional[str] = None,
 ) -> List[dict]:
-    query = f"Find {number_of_influencers} {category} influencers on {platform} in {country or 'any'}".strip()
+    query = f"Find {limit} {category} influencers on {platform} in {country or 'any'}".strip()
     print(f"[find_influencers_for_whatsapp] Query: {query}")
     try:
         collection_name = None
@@ -53,7 +53,7 @@ def find_influencers_for_whatsapp(
             relevance_score_fn="cosine",
         )
         print(f"[find_influencers_for_whatsapp] Query: {query}")
-        docs = store.similarity_search(query, k=number_of_influencers)
+        docs = store.similarity_search(query, k=limit)
         result = [doc.page_content for doc in docs]
         return result
 

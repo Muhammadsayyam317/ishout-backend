@@ -9,9 +9,10 @@ async def create_new_state(sender_id):
     new_state = {
         "sender_id": sender_id,
         "platform": None,
-        "country": None,
         "category": None,
-        "number_of_influencers": None,
+        "country": None,
+        "limit": None,
+        "followers": None,
         "user_message": None,
         "reply": None,
         "last_active": time.time(),

@@ -35,7 +35,7 @@ async def create_campaign(state: ConversationState) -> Dict[str, Any]:
             "country": state.get("country"),
             "user_id": state.get("sender_id"),
             "status": CampaignStatus.PENDING,
-            "limit": state.get("number_of_influencers"),
+            "limit": state.get("limit"),
             "created_at": datetime.now(timezone.utc),
             "updated_at": datetime.now(timezone.utc),
         }
