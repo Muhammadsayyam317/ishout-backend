@@ -56,6 +56,21 @@ def extract_platform(message: str) -> Optional[str]:
     return _fuzzy_platform(msg)
 
 
+def extract_platforms(message: str) -> List[str]:
+    """Extract all platforms from message, returning a list."""
+    msg = (message or "").lower()
+    platforms = []
+    found_platforms = set()
+
+    for plat, synonyms in PLATFORM_SYNS.items():
+        for s in synonyms:
+            if _word_search(s, msg) and plat not in found_platforms:
+                platforms.append(plat)
+                found_platforms.add(plat)
+
+    return platforms
+
+
 def extract_limit(message: str) -> Optional[int]:
     msg = (message or "").lower().strip()
     m = re.search(r"between\s+(\d+)\s+and\s+(\d+)", msg)
@@ -124,6 +139,52 @@ def extract_country(message: str) -> Optional[str]:
     return None
 
 
+def extract_countries(message: str) -> List[str]:
+    """Extract all countries from message, returning a list."""
+    msg = (message or "").lower()
+    countries = []
+    found_countries = set()
+
+    # Check explicit country patterns
+    patterns = [
+        r"country\s*(?:is|:|=)\s*([a-z\s]{2,30})",
+        r"country\s+([a-z\s]{2,30})",
+    ]
+    for pattern in patterns:
+        matches = re.finditer(pattern, msg)
+        for m in matches:
+            cand = m.group(1).strip().lower()
+            for c in COUNTRIES:
+                if c in cand or cand in c:
+                    mapped = COUNTRY_MAP.get(c, c)
+                    if mapped not in found_countries:
+                        countries.append(mapped)
+                        found_countries.add(mapped)
+                    break
+
+    # Check for country names in the message
+    for c in COUNTRIES:
+        if _word_search(c, msg):
+            mapped = COUNTRY_MAP.get(c, c)
+            if mapped not in found_countries:
+                countries.append(mapped)
+                found_countries.add(mapped)
+
+    # Check "in [country]" pattern
+    matches = re.finditer(r"\bin\s+([A-Za-z ]{2,30})\b", msg)
+    for m in matches:
+        cand = m.group(1).strip().lower()
+        for c in COUNTRIES:
+            if c in cand or cand in c:
+                mapped = COUNTRY_MAP.get(c, c)
+                if mapped not in found_countries:
+                    countries.append(mapped)
+                    found_countries.add(mapped)
+                break
+
+    return countries
+
+
 def extract_category(message: str) -> Optional[str]:
     msg = (message or "").lower()
     patterns = [
@@ -143,6 +204,41 @@ def extract_category(message: str) -> Optional[str]:
         if _word_search(c, msg):
             return c
     return None
+
+
+def extract_categories(message: str) -> List[str]:
+    """Extract all categories from message, returning a list."""
+    msg = (message or "").lower()
+    categories = []
+    found_categories = set()
+
+    # Check explicit category patterns
+    patterns = [
+        r"category\s*(?:is|:|=)\s*([a-z\s]{2,30})",
+        r"category\s+([a-z\s]{2,30})",
+    ]
+    for pattern in patterns:
+        matches = re.finditer(pattern, msg)
+        for m in matches:
+            cand = m.group(1).strip().lower()
+            matched = False
+            for c in CATEGORIES:
+                if c in cand or cand in c:
+                    if c not in found_categories:
+                        categories.append(c)
+                        found_categories.add(c)
+                    matched = True
+                    break
+            if not matched and cand not in found_categories:
+                categories.append(cand)
+                found_categories.add(cand)
+
+    for c in CATEGORIES:
+        if _word_search(c, msg) and c not in found_categories:
+            categories.append(c)
+            found_categories.add(c)
+
+    return categories
 
 
 def _parse_follower_value(value: str) -> Optional[int]:
@@ -208,10 +304,11 @@ def extract_followers(message: str) -> Optional[List[str]]:
 
 
 def extract_all_fields(message: str):
+    """Extract all fields from message, returning arrays for multi-value fields."""
     return {
-        "platform": extract_platform(message),
-        "category": extract_category(message),
-        "country": extract_country(message),
+        "platform": extract_platforms(message),
+        "category": extract_categories(message),
+        "country": extract_countries(message),
         "limit": extract_limit(message),
         "followers": extract_followers(message),
     }

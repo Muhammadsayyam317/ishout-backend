@@ -8,11 +8,11 @@ async def create_new_state(sender_id):
     session_collection = get_session_collection()
     new_state = {
         "sender_id": sender_id,
-        "platform": None,
-        "category": None,
-        "country": None,
+        "platform": [],
+        "category": [],
+        "country": [],
         "limit": None,
-        "followers": None,
+        "followers": [],
         "user_message": None,
         "reply": None,
         "last_active": time.time(),
@@ -46,11 +46,9 @@ async def get_user_state(sender_id):
 async def update_user_state(sender_id, new_data: dict):
     session_collection = get_session_collection()
 
-    # clean input
     new_data.pop("_id", None)
     new_data["last_active"] = time.time()
 
-    # Only update fields provided — do not merge old values back
     await session_collection.update_one(
         {"sender_id": sender_id}, {"$set": new_data}, upsert=True
     )

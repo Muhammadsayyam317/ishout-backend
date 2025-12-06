@@ -17,16 +17,33 @@ def take_second_allow_none(a, b):
     return b
 
 
+def merge_arrays(a, b):
+    """Merge two arrays, keeping unique values."""
+    if a is None:
+        a = []
+    if b is None:
+        b = []
+    if not isinstance(a, list):
+        a = [a] if a else []
+    if not isinstance(b, list):
+        b = [b] if b else []
+    result = list(a)
+    for item in b:
+        if item not in result:
+            result.append(item)
+    return result
+
+
 class ConversationState(TypedDict, total=False):
     sender_id: Annotated[Optional[str], take_first]
     user_message: Annotated[Optional[str], take_second]
     intent: Annotated[Optional[str], take_first]
 
-    platform: Annotated[Optional[List[str]], take_first]
-    category: Annotated[Optional[List[str]], take_first]
-    country: Annotated[Optional[List[str]], take_first]
+    platform: Annotated[Optional[List[str]], merge_arrays]
+    category: Annotated[Optional[List[str]], merge_arrays]
+    country: Annotated[Optional[List[str]], merge_arrays]
     limit: Annotated[Optional[int], take_second]
-    followers: Annotated[Optional[List[str]], take_first]
+    followers: Annotated[Optional[List[str]], merge_arrays]
 
     reply: Annotated[Optional[str], take_second_allow_none]
     last_active: Annotated[Optional[float], take_first]

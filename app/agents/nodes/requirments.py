@@ -6,10 +6,10 @@ from app.models.whatsappconversation_model import ConversationState
 from app.services.campaign_service import create_campaign
 from app.utils.extract_feilds import (
     extract_followers,
-    extract_platform,
+    extract_platforms,
     extract_limit,
-    extract_country,
-    extract_category,
+    extract_countries,
+    extract_categories,
 )
 
 
@@ -29,22 +29,24 @@ async def node_requirements(state):
         state["reply"] = "Conversation already completed, skipping"
         return state
 
-    platform = extract_platform(msg)
+    # Extract new values from current message
+    new_platforms = extract_platforms(msg)
     limit = extract_limit(msg)
-    country = extract_country(msg)
-    category = extract_category(msg)
-    followers = extract_followers(msg)
+    new_countries = extract_countries(msg)
+    new_categories = extract_categories(msg)
+    new_followers = extract_followers(msg)
 
-    if platform:
-        state["platform"] = platform
+    # Set new values - the merge_arrays reducer will handle merging with existing values
+    if new_platforms:
+        state["platform"] = new_platforms
     if limit is not None:
         state["limit"] = limit
-    if country:
-        state["country"] = country
-    if category:
-        state["category"] = category
-    if followers:
-        state["followers"] = followers
+    if new_countries:
+        state["country"] = new_countries
+    if new_categories:
+        state["category"] = new_categories
+    if new_followers:
+        state["followers"] = new_followers
 
     missing = missing_fields(state)
 
@@ -52,29 +54,44 @@ async def node_requirements(state):
         provided_items = []
         counter = 1
 
-        if state.get("platform"):
-            provided_items.append(f"{counter}) platform: {state['platform'].title()}")
-            counter += 1
-
-        if state.get("category"):
-            provided_items.append(f"{counter}) category: {state['category'].title()}")
-            counter += 1
-
-        if state.get("country"):
-            country_display = (
-                state["country"].upper()
-                if len(state["country"]) <= 4
-                else state["country"].title()
+        platforms = state.get("platform") or []
+        if platforms:
+            platform_list = (
+                [p.title() for p in platforms]
+                if isinstance(platforms, list)
+                else [platforms.title()]
             )
-            provided_items.append(f"{counter}) country: {country_display}")
+            provided_items.append(f"{counter}) Platform: {', '.join(platform_list)}")
+            counter += 1
+
+        categories = state.get("category") or []
+        if categories:
+            category_list = (
+                [c.title() for c in categories]
+                if isinstance(categories, list)
+                else [categories.title()]
+            )
+            provided_items.append(f"{counter}) Category: {', '.join(category_list)}")
+            counter += 1
+
+        countries = state.get("country") or []
+        if countries:
+            country_list = []
+            for c in countries if isinstance(countries, list) else [countries]:
+                country_display = c.upper() if len(c) <= 4 else c.title()
+                country_list.append(country_display)
+            provided_items.append(f"{counter}) Country: {', '.join(country_list)}")
             counter += 1
 
         if state.get("limit"):
             provided_items.append(f"{counter}) Number of influencers: {state['limit']}")
             counter += 1
-        if state.get("followers"):
+
+        followers = state.get("followers") or []
+        if followers:
+            follower_list = followers if isinstance(followers, list) else [followers]
             provided_items.append(
-                f"{counter}) Followers count: {', '.join(state['followers']).title()}"
+                f"{counter}) Followers count: {', '.join(follower_list)}"
             )
             counter += 1
 
@@ -161,10 +178,12 @@ def missing_fields(state: ConversationState):
         value = state.get(field)
         if field == "limit":
             is_missing = value is None or (isinstance(value, int) and value <= 0)
-        elif field == "followers":
-            is_missing = value is None or value == []
         else:
-            is_missing = value is None or value == []
+            # For list fields, check if empty list or None
+            if isinstance(value, list):
+                is_missing = len(value) == 0
+            else:
+                is_missing = value is None or value == []
         if is_missing:
             missing.append(field)
     return missing
