@@ -13,17 +13,17 @@ from app.utils.extract_feilds import (
 )
 
 
-async def node_debug_before(state, config):
+async def node_debug_before(state):
     logging.info("\n\n===== DEBUG BEFORE =====\n" + json.dumps(state, indent=2))
     return state
 
 
-async def node_debug_after(state, config):
+async def node_debug_after(state):
     logging.info("\n\n===== DEBUG AFTER =====\n" + json.dumps(state, indent=2))
     return state
 
 
-async def node_requirements(state, config):
+async def node_requirements(state):
     msg = state.get("user_message", "")
     if state.get("done"):
         state["reply"] = "Conversation already completed, skipping"
@@ -39,7 +39,6 @@ async def node_requirements(state, config):
         state["platform"] = platform
     if limit is not None:
         state["limit"] = limit
-        logging.info(f"[node_requirements] Updated number_of_influencers to: {limit}")
     if country:
         state["country"] = country
     if category:
@@ -47,12 +46,7 @@ async def node_requirements(state, config):
     if followers:
         state["followers"] = followers
 
-    logging.info(
-        f"[node_requirements] State after updates - platform: {state.get('platform')}, category: {state.get('category')}, country: {state.get('country')}, number_of_influencers: {state.get('number_of_influencers')}"
-    )
-
     missing = missing_fields(state)
-    logging.info(f"[node_requirements] Missing fields: {missing}")
 
     if missing:
         provided_items = []
@@ -76,23 +70,23 @@ async def node_requirements(state, config):
             counter += 1
 
         if state.get("limit"):
-            provided_items.append(f"{counter}) number of influencers: {state['limit']}")
+            provided_items.append(f"{counter}) Number of influencers: {state['limit']}")
             counter += 1
         if state.get("followers"):
-            provided_items.append(f"{counter}) followers: {state['followers']}")
+            provided_items.append(f"{counter}) Followers count: {state['followers']}")
             counter += 1
 
         needed = []
         if "platform" in missing:
-            needed.append("platform (Instagram, TikTok, or YouTube)")
+            needed.append("Platform (Instagram, TikTok, or YouTube)")
         if "country" in missing:
-            needed.append("country (e.g., UAE, Kuwait, Saudi Arabia)")
+            needed.append("Country (e.g., UAE, Kuwait, Saudi Arabia)")
         if "category" in missing:
-            needed.append("category (e.g., fashion, beauty, food)")
+            needed.append("Category (e.g., fashion, beauty, food)")
         if "limit" in missing:
-            needed.append("number of influencers")
+            needed.append("Number of influencers (e.g., 10, 20, 30)")
         if "followers" in missing:
-            needed.append("followers")
+            needed.append("Followers count (e.g., 10k, 2M, 3000K)")
 
         if provided_items:
             reply = "Thanks! I got:\n" + "\n".join(provided_items) + "\n\n"
@@ -147,8 +141,9 @@ async def node_create_campaign(state: ConversationState, config):
 async def node_acknowledge_user(state: ConversationState, config):
     sender = state.get("sender_id") or config["configurable"]["thread_id"]
     final_msg = (
-        "Great! 🎉 I got all your campaign details.\n"
-        "iShout admin team will review them and we’ll notify you once it's approved. 👍"
+        "Great! I got all your campaign details.\n"
+        "iShout admin team will review them and we’ll notify you once it's approved.\n"
+        "Thank you for using iShout! 🎉"
     )
     await send_whatsapp_message(sender, final_msg)
     state["done"] = True
@@ -174,6 +169,4 @@ def missing_fields(state: ConversationState):
             is_missing = value is None or value == []
         if is_missing:
             missing.append(field)
-        logging.info(f"[missing_fields] {field}: {repr(value)} (missing: {is_missing})")
-    logging.info(f"[missing_fields] Final missing list: {missing}")
     return missing
