@@ -158,12 +158,20 @@ async def node_acknowledge_user(state: ConversationState, config):
 
 def missing_fields(state: ConversationState):
     missing = []
-    for field in ["platform", "country", "number_of_influencers", "category"]:
+    for field in [
+        "platform",
+        "country",
+        "limit",
+        "category",
+        "followers",
+    ]:
         value = state.get(field)
-        if field == "number_of_influencers":
+        if field == "limit":
             is_missing = value is None or (isinstance(value, int) and value <= 0)
+        elif field == "followers":
+            is_missing = value is None or value == []
         else:
-            is_missing = value is None or value == ""
+            is_missing = value is None or value == []
         if is_missing:
             missing.append(field)
         logging.info(f"[missing_fields] {field}: {repr(value)} (missing: {is_missing})")
