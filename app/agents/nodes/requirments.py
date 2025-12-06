@@ -107,10 +107,6 @@ async def node_requirements(state):
     state["reply_sent"] = False
     state["done"] = True
 
-    logging.info(
-        "[node_requirements] All fields present. reply=None, done=True → proceed to create_campaign"
-    )
-
     return state
 
 
@@ -123,7 +119,7 @@ async def node_ask_user(state, config):
     return state
 
 
-async def node_create_campaign(state: ConversationState, config):
+async def node_create_campaign(state: ConversationState):
     payload = {
         "platform": state.get("platform"),
         "category": state.get("category"),
