@@ -11,7 +11,6 @@ async def create_campaign(state: ConversationState) -> Dict[str, Any]:
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
-
         campaign_name = state.get("name")
         if not campaign_name:
             categories = state.get("category") or []
@@ -33,7 +32,7 @@ async def create_campaign(state: ConversationState) -> Dict[str, Any]:
             "followers": state.get("followers"),
             "country": state.get("country"),
             "user_id": state.get("sender_id"),
-            "source": "whatsapp",
+            "user_type": "whatsapp",
             "status": CampaignStatus.PENDING,
             "limit": state.get("limit"),
             "created_at": datetime.now(timezone.utc),
