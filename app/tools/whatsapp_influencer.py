@@ -1,21 +1,18 @@
-import logging
-from typing import List, Optional
+from typing import List
 from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain_openai import OpenAIEmbeddings
 from app.config import config
 from app.db.connection import get_pymongo_db
-
-logger = logging.getLogger(__name__)
-print(f"[find_influencers_for_whatsapp] Logger: {logger}")
 
 
 def find_influencers_for_whatsapp(
     platform: str,
     category: str,
     limit: int,
-    country: Optional[str] = None,
+    country: str,
+    followers: str,
 ) -> List[dict]:
-    query = f"Find {limit} {category} influencers on {platform} in {country or 'any'}".strip()
+    query = f"Find {limit} {category} influencers on {platform} in {country } followers {followers}".strip()
     print(f"[find_influencers_for_whatsapp] Query: {query}")
     try:
         collection_name = None
@@ -58,5 +55,5 @@ def find_influencers_for_whatsapp(
         return result
 
     except Exception as e:
-        logger.error(f"Error finding influencers for WhatsApp: {str(e)}", exc_info=True)
+        print(f"Error finding influencers for WhatsApp: {str(e)}")
         return []

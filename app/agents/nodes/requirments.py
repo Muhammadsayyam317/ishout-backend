@@ -29,14 +29,12 @@ async def node_requirements(state):
         state["reply"] = "Conversation already completed, skipping"
         return state
 
-    # Extract new values from current message
     new_platforms = extract_platforms(msg)
     limit = extract_limit(msg)
     new_countries = extract_countries(msg)
     new_categories = extract_categories(msg)
     new_followers = extract_followers(msg)
 
-    # Set new values - the merge_arrays reducer will handle merging with existing values
     if new_platforms:
         state["platform"] = new_platforms
     if limit is not None:
@@ -137,16 +135,7 @@ async def node_ask_user(state, config):
 
 
 async def node_create_campaign(state: ConversationState):
-    payload = {
-        "platform": state.get("platform"),
-        "category": state.get("category"),
-        "country": state.get("country"),
-        "limit": state.get("limit"),
-        "followers": state.get("followers"),
-        "user_id": state.get("sender_id"),
-        "source": "whatsapp",
-    }
-    result = await create_campaign(payload)
+    result = await create_campaign(state)
     state["campaign_id"] = result["campaign_id"]
     state["campaign_created"] = True
     state["reply"] = None
@@ -179,7 +168,6 @@ def missing_fields(state: ConversationState):
         if field == "limit":
             is_missing = value is None or (isinstance(value, int) and value <= 0)
         else:
-            # For list fields, check if empty list or None
             if isinstance(value, list):
                 is_missing = len(value) == 0
             else:

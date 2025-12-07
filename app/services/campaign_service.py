@@ -1,18 +1,9 @@
-from time import timezone
 from typing import Dict, Any
-from datetime import timezone
 from fastapi import HTTPException
 from app.models.campaign_model import CampaignStatus
 from app.db.connection import get_db
 from app.models.whatsappconversation_model import ConversationState
-
-
 from datetime import datetime, timezone
-from typing import Dict, Any
-from fastapi import HTTPException
-from app.models.campaign_model import CampaignStatus
-from app.db.connection import get_db
-from app.models.whatsappconversation_model import ConversationState
 
 
 async def create_campaign(state: ConversationState) -> Dict[str, Any]:
@@ -23,9 +14,17 @@ async def create_campaign(state: ConversationState) -> Dict[str, Any]:
 
         campaign_name = state.get("name")
         if not campaign_name:
-            campaign_name = (
-                f"Campaign - {state.get('category')} - {state.get('platform')}"
+            categories = state.get("category") or []
+            platforms = state.get("platform") or []
+            category_str = (
+                ", ".join(categories)
+                if isinstance(categories, list)
+                else str(categories)
             )
+            platform_str = (
+                ", ".join(platforms) if isinstance(platforms, list) else str(platforms)
+            )
+            campaign_name = f"Campaign - {category_str} - {platform_str}"
 
         campaign_doc = {
             "name": campaign_name,
@@ -34,6 +33,7 @@ async def create_campaign(state: ConversationState) -> Dict[str, Any]:
             "followers": state.get("followers"),
             "country": state.get("country"),
             "user_id": state.get("sender_id"),
+            "source": "whatsapp",
             "status": CampaignStatus.PENDING,
             "limit": state.get("limit"),
             "created_at": datetime.now(timezone.utc),
