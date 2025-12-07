@@ -31,6 +31,12 @@ async def find_influencers_by_campaign(request_data: FindInfluencerRequest):
         countries = campaign["country"]
         limit = request_data.limit
 
+        print(f"PLATFORMS: {platforms}")
+        print(f"CATEGORIES: {categories}")
+        print(f"COUNTRY: {countries}")
+        print(f"FOLLOWERS: {followers_list}")
+        print(f"LIMIT: {limit}")
+
         if not platforms or not categories:
             raise HTTPException(
                 status_code=400,

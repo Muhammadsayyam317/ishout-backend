@@ -18,6 +18,9 @@ async def search_tiktok_influencers(
     country: List[str],
 ):
     try:
+        print(
+            f"TikTok search input: category: {category}, followers: {followers}, country: {country}, limit: {limit}"
+        )
         categories = category if category else [""]
         countries = country if country else [""]
         followers_list = followers if followers else [""]
