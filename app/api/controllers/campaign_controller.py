@@ -652,42 +652,22 @@ async def add_rejected_influencers(
 async def admin_generate_influencers(
     campaign_id: str, request_data: AdminGenerateInfluencersRequest
 ) -> Dict[str, Any]:
+    """Admin generates influencers for a campaign"""
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
         campaign = await campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
         if not campaign:
             raise HTTPException(status_code=404, detail="Campaign not found")
-
-        raw_user_id = campaign.get("user_id")
-        user_type = campaign.get("user_type", "web")
-
-        if user_type == "web":
-            try:
-                user_id = ObjectId(raw_user_id)
-            except Exception:
-                raise HTTPException(
-                    status_code=400, detail="Invalid ObjectId for web user."
-                )
-
-        elif user_type == "whatsapp":
-            user_id = str(raw_user_id)
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unknown user_type '{user_type}'. Allowed: web, whatsapp",
-            )
         campaign_limit = campaign.get("limit") or request_data.limit
-
         influencer_request = FindInfluencerRequest(
             campaign_id=campaign_id,
-            user_id=user_id,
+            user_id=campaign.get("user_id", ""),
             limit=campaign_limit,
         )
 
         result = await find_influencers_by_campaign(influencer_request)
         return result
-
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error in admin generate influencers: {str(e)}"

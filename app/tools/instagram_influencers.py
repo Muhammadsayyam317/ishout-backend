@@ -16,7 +16,7 @@ async def search_instagram_influencers(
 ):
     try:
         print(
-            f"Instagram search input: category: {category}, followers: {followers}, country: {country}, limit: {limit}"
+            f"INSTAGRAM TOOL CALLED WITH: category: {category}, followers: {followers}, country: {country}, limit: {limit}"
         )
         categories = category if category else [""]
         countries = country if country else [""]
