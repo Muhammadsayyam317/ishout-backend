@@ -217,7 +217,8 @@ def convert_to_number(v: str):
     return int(v)
 
 
-def normalize_follower_value(val: str):
+def normalize_follower_value(val: str) -> Tuple[int, int]:
+    """Convert '100k-200k' → (100000, 200000), '50k' → (50000, 50000)."""
     val = val.lower().replace(" ", "")
     if "-" in val:
         left, right = val.split("-")
@@ -226,8 +227,10 @@ def normalize_follower_value(val: str):
     return (num, num)
 
 
-def followers_in_range(influencer_followers: int, selected_ranges):
-    for min_f, max_f in selected_ranges:
-        if min_f <= influencer_followers <= max_f:
+def followers_in_range(influencer_count: int, ranges: List[Tuple[int, int]]):
+    if not ranges:
+        return True
+    for min_f, max_f in ranges:
+        if min_f <= influencer_count <= max_f:
             return True
     return False
