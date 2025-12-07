@@ -6,24 +6,23 @@ from app.models.whatsappconversation_model import ConversationState
 from datetime import datetime, timezone
 
 
-async def create_campaign(state: ConversationState) -> Dict[str, Any]:
+async def create_whatsapp_campaign(state: ConversationState) -> Dict[str, Any]:
     """Create a new campaign for whatsapp user"""
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
-        campaign_name = state.get("name")
-        if not campaign_name:
-            categories = state.get("category") or []
-            platforms = state.get("platform") or []
-            category_str = (
-                ", ".join(categories)
-                if isinstance(categories, list)
-                else str(categories)
-            )
-            platform_str = (
-                ", ".join(platforms) if isinstance(platforms, list) else str(platforms)
-            )
-            campaign_name = f"Campaign - {category_str} - {platform_str}"
+
+        categories = state.get("category") or []
+        platforms = state.get("platform") or []
+
+        category_str = (
+            ", ".join(categories) if isinstance(categories, list) else str(categories)
+        )
+        platform_str = (
+            ", ".join(platforms) if isinstance(platforms, list) else str(platforms)
+        )
+
+        campaign_name = f"Campaign - {category_str} - {platform_str}"
 
         campaign_doc = {
             "name": campaign_name,
