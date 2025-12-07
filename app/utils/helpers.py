@@ -217,14 +217,31 @@ def convert_to_number(v: str):
     return int(v)
 
 
-def normalize_follower_value(val: str) -> Tuple[int, int]:
-    """Convert '100k-200k' → (100000, 200000), '50k' → (50000, 50000)."""
-    val = val.lower().replace(" ", "")
-    if "-" in val:
-        left, right = val.split("-")
-        return (convert_to_number(left), convert_to_number(right))
-    num = convert_to_number(val)
-    return (num, num)
+def normalize_followers(followers: list[str]) -> list[str]:
+    ranges = []
+    for f in followers:
+        if "-" in f:  # already a range
+            ranges.append(f)
+        else:
+            num = int(f.replace("k", "000").replace("K", "000"))
+            if num <= 50000:
+                ranges.append("0-50k")
+            elif num <= 100000:
+                ranges.append("50k-100k")
+            elif num <= 200000:
+                ranges.append("100k-200k")
+            else:
+                ranges.append(f"{num//1000}k-{num//1000*2}k")
+    return ranges
+
+
+def normalize_country(country: str) -> str:
+    """Normalize country names to match embeddings."""
+    mapping = {
+        "uae": "United Arab Emirates",
+        "qatar": "Qatar",
+    }
+    return mapping.get(country.lower(), country)
 
 
 def followers_in_range(influencer_count: int, ranges: List[Tuple[int, int]]):
