@@ -25,7 +25,12 @@ async def node_debug_after(state):
 
 async def node_requirements(state):
     msg = state.get("user_message", "").lower()
+    if "step" not in state:
+        state["step"] = "platform"
 
+    if state.get("done"):
+        state["reply"] = "Conversation already completed, skipping"
+        return state
     # ----------------------------------------
     # STEP 1: ASK PLATFORM
     # ----------------------------------------
