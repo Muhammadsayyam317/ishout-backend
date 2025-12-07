@@ -24,136 +24,103 @@ async def node_debug_after(state):
 
 
 async def node_requirements(state):
-    msg = state.get("user_message", "").lower()
-    if "step" not in state:
-        state["step"] = "platform"
-
+    msg = state.get("user_message", "")
     if state.get("done"):
         state["reply"] = "Conversation already completed, skipping"
         return state
-    # ----------------------------------------
-    # STEP 1: ASK PLATFORM
-    # ----------------------------------------
-    if state["step"] == "platform":
-        platforms = extract_platforms(msg)
+
+    new_platforms = extract_platforms(msg)
+    limit = extract_limit(msg)
+    new_countries = extract_countries(msg)
+    new_categories = extract_categories(msg)
+    new_followers = extract_followers(msg)
+
+    if new_platforms:
+        state["platform"] = new_platforms
+    if limit is not None:
+        state["limit"] = limit
+    if new_countries:
+        state["country"] = new_countries
+    if new_categories:
+        state["category"] = new_categories
+    if new_followers:
+        state["followers"] = new_followers
+
+    missing = missing_fields(state)
+
+    if missing:
+        provided_items = []
+        counter = 1
+
+        platforms = state.get("platform") or []
         if platforms:
-            state["platform"] = platforms
-            state["step"] = "category"
-            state["reply"] = (
-                "Great! Now tell me the *category* of influencers.\n"
-                "Example: beauty, fashion, tech"
+            platform_list = (
+                [p.title() for p in platforms]
+                if isinstance(platforms, list)
+                else [platforms.title()]
             )
-        else:
-            state["reply"] = (
-                "Which platform do you want influencers from?\n"
-                "Instagram, TikTok, or YouTube?"
-            )
-        return state
+            provided_items.append(f"{counter}) Platform: {', '.join(platform_list)}")
+            counter += 1
 
-    # ----------------------------------------
-    # STEP 2: ASK CATEGORY
-    # ----------------------------------------
-    if state["step"] == "category":
-        categories = extract_categories(msg)
+        categories = state.get("category") or []
         if categories:
-            state["category"] = categories
-            state["step"] = "country"
-            state["reply"] = (
-                "Nice! Now tell me the *country*.\n"
-                "Example: UAE, Saudi Arabia, Kuwait"
+            category_list = (
+                [c.title() for c in categories]
+                if isinstance(categories, list)
+                else [categories.title()]
             )
-        else:
-            state["reply"] = (
-                "Please tell me the category.\n"
-                "Example: fashion, beauty, food, fitness"
-            )
-        return state
+            provided_items.append(f"{counter}) Category: {', '.join(category_list)}")
+            counter += 1
 
-    # ----------------------------------------
-    # STEP 3: ASK COUNTRY
-    # ----------------------------------------
-    if state["step"] == "country":
-        countries = extract_countries(msg)
+        countries = state.get("country") or []
         if countries:
-            state["country"] = countries
-            state["step"] = "followers"
-            state["reply"] = (
-                "Good! What *follower range* are you looking for?\n"
-                "Example: 10k-50k, 50k-200k"
-            )
-        else:
-            state["reply"] = (
-                "Please tell me the country.\n" "Example: UAE, Saudi Arabia"
-            )
-        return state
+            country_list = []
+            for c in countries if isinstance(countries, list) else [countries]:
+                country_display = c.upper() if len(c) <= 4 else c.title()
+                country_list.append(country_display)
+            provided_items.append(f"{counter}) Country: {', '.join(country_list)}")
+            counter += 1
 
-    # ----------------------------------------
-    # STEP 4: ASK FOLLOWERS
-    # ----------------------------------------
-    if state["step"] == "followers":
-        followers = extract_followers(msg)
+        if state.get("limit"):
+            provided_items.append(f"{counter}) Number of influencers: {state['limit']}")
+            counter += 1
+
+        followers = state.get("followers") or []
         if followers:
-            state["followers"] = followers
-            state["step"] = "limit"
-            state["reply"] = (
-                "Perfect! How many influencers do you want?\n" "Example: 5, 10, 15"
+            follower_list = followers if isinstance(followers, list) else [followers]
+            provided_items.append(
+                f"{counter}) Followers count: {', '.join(follower_list)}"
             )
+            counter += 1
+
+        needed = []
+        if "platform" in missing:
+            needed.append("Platform (Instagram, TikTok, or YouTube)")
+        if "country" in missing:
+            needed.append("Country (e.g., UAE, Kuwait, Saudi Arabia)")
+        if "category" in missing:
+            needed.append("Category (e.g., fashion, beauty, food)")
+        if "limit" in missing:
+            needed.append("Number of influencers (e.g., 10, 20, 30)")
+        if "followers" in missing:
+            needed.append("Followers count (e.g., 10k, 2M, 3000K)")
+
+        if provided_items:
+            reply = "Thanks! I got:\n" + "\n".join(provided_items) + "\n\n"
+            reply += f"I still need: {', '.join(needed)}.\n\nPlease provide the missing details."
         else:
-            state["reply"] = "Please enter follower range.\n" "Example: 10k-50k"
+            reply = "To help you find the right influencers, I need:\n• " + "\n• ".join(
+                needed
+            )
+            reply += "\n\nPlease provide all these details in your message."
+
+        state["reply"] = reply
+        state["done"] = False
         return state
 
-    # ----------------------------------------
-    # STEP 5: ASK LIMIT
-    # ----------------------------------------
-    if state["step"] == "limit":
-        limit = extract_limit(msg)
-        if limit:
-            state["limit"] = limit
-            state["step"] = "confirm"
-
-            # Show summary
-            state["reply"] = (
-                "**Please confirm your campaign details:**\n\n"
-                f"• Platform: {', '.join(state['platform'])}\n"
-                f"• Category: {', '.join(state['category'])}\n"
-                f"• Country: {', '.join(state['country'])}\n"
-                f"• Followers: {', '.join(state['followers'])}\n"
-                f"• Influencers Required: {state['limit']}\n\n"
-                "Reply *YES* to create your campaign or *NO* to restart."
-            )
-        else:
-            state["reply"] = "Please tell me how many influencers you need."
-        return state
-
-    # ----------------------------------------
-    # STEP 6: CONFIRMATION
-    # ----------------------------------------
-    if state["step"] == "confirm":
-        if "yes" in msg:
-            state["step"] = "creating"
-            state["done"] = True
-            state["reply"] = None
-            return state
-        elif "no" in msg:
-            # Reset flow
-            state.update(
-                {
-                    "step": "platform",
-                    "platform": [],
-                    "category": [],
-                    "country": [],
-                    "followers": [],
-                    "limit": None,
-                }
-            )
-            state["reply"] = (
-                "Okay, let's start again.\n\n"
-                "Which platform do you want influencers from?"
-            )
-            return state
-        else:
-            state["reply"] = "Please reply YES to confirm or NO to restart."
-            return state
+    state["reply"] = None
+    state["reply_sent"] = False
+    state["done"] = True
 
     return state
 
@@ -168,39 +135,11 @@ async def node_ask_user(state, config):
 
 
 async def node_create_campaign(state: ConversationState):
-    try:
-        logging.info("📌 Creating WhatsApp Campaign with state:")
-        logging.info(json.dumps(state, indent=2, default=str))
-
-        required = ["platform", "country", "category", "limit", "followers"]
-        missing = [key for key in required if not state.get(key)]
-
-        if missing:
-            state["reply"] = (
-                f"Missing required fields to create campaign: {', '.join(missing)}"
-            )
-            state["campaign_created"] = False
-            return state
-        result = await create_whatsapp_campaign(state)
-        if not result or "campaign_id" not in result:
-            state["reply"] = "Failed to create campaign. Please try again."
-            state["campaign_created"] = False
-            return state
-
-        state["campaign_id"] = result["campaign_id"]
-        state["campaign_created"] = True
-        state["reply"] = None
-
-        logging.info(f"🎉 Campaign created successfully: {result['campaign_id']}")
-
-        return state
-
-    except Exception as e:
-        logging.error(f"❌ Error creating WhatsApp campaign: {str(e)}")
-
-        state["reply"] = "Something went wrong while creating the campaign."
-        state["campaign_created"] = False
-        return state
+    result = await create_whatsapp_campaign(state)
+    state["campaign_id"] = result["campaign_id"]
+    state["campaign_created"] = True
+    state["reply"] = None
+    return state
 
 
 async def node_acknowledge_user(state: ConversationState, config):
