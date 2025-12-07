@@ -45,35 +45,17 @@ async def search_instagram_influencers(
         for cat in categories:
             for cntry in countries:
                 for follower_range_str in followers_list:
-                    query = build_combination_query(
-                        platform="Instagram",
-                        category=cat if cat else None,
-                        country=cntry if cntry else None,
-                        follower_range_str=(
-                            follower_range_str if follower_range_str else None
-                        ),
-                    )
-                    combination_follower_ranges = (
-                        parse_followers_list([follower_range_str])
-                        if follower_range_str
-                        else []
-                    )
+                    query_text = f"Instagram influencer {cat} from {cntry} with {follower_range_str} followers"
+                    print(f"INSTAGRAM VECTOR QUERY: {query_text}")
                     results = vectorstore.similarity_search(
-                        query, k=per_combination_limit
+                        query_text, k=per_combination_limit
                     )
-
                     for r in results:
                         influencer_data = extract_influencer_data(r, "Instagram")
                         username = influencer_data.get("username")
                         if username and username in seen_usernames:
                             continue
-                        if not filter_influencer_data(
-                            influencer_data,
-                            combination_follower_ranges,
-                            all_follower_ranges,
-                            cntry if cntry else None,
-                        ):
-                            continue
+
                         if username:
                             seen_usernames.add(username)
                         all_results.append(influencer_data)

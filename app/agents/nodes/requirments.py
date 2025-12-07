@@ -145,7 +145,12 @@ async def node_create_campaign(state: ConversationState):
 async def node_acknowledge_user(state: ConversationState, config):
     sender = state.get("sender_id") or config["configurable"]["thread_id"]
     final_msg = (
-        "Great! I got all your campaign details.\n"
+        "Great! I got all your campaign details.\n\n"
+        "1) Platform is: " + ", ".join(state["platform"]) + "\n\n"
+        "2) Category is: " + ", ".join(state["category"]) + "\n\n"
+        "3) Country is: " + ", ".join(state["country"]) + "\n\n"
+        "4) Followers count: " + ", ".join(state["followers"]) + "\n\n"
+        "5) Number of influencers: " + str(state["limit"]) + "\n\n"
         "iShout admin team will review them and we’ll notify you once it's approved.\n"
         "Thank you for using iShout! 🎉"
     )
