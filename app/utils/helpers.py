@@ -206,3 +206,28 @@ def convert_objectid(doc):
         if isinstance(value, ObjectId):
             doc[key] = str(value)
     return doc
+
+
+def convert_to_number(v: str):
+    v = v.lower().replace(" ", "")
+    if "k" in v:
+        return int(float(v.replace("k", "")) * 1000)
+    if "m" in v:
+        return int(float(v.replace("m", "")) * 1_000_000)
+    return int(v)
+
+
+def normalize_follower_value(val: str):
+    val = val.lower().replace(" ", "")
+    if "-" in val:
+        left, right = val.split("-")
+        return (convert_to_number(left), convert_to_number(right))
+    num = convert_to_number(val)
+    return (num, num)
+
+
+def followers_in_range(influencer_followers: int, selected_ranges):
+    for min_f, max_f in selected_ranges:
+        if min_f <= influencer_followers <= max_f:
+            return True
+    return False
