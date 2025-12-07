@@ -177,24 +177,25 @@ def matches_country_filter(
     return filter_lower in influencer_lower or influencer_lower in filter_lower
 
 
-from typing import Dict, Any, List, Optional, Tuple
-
-
 def filter_influencer_data(
     influencer_data: Dict[str, Any],
-    follower_ranges: List[Tuple[int, int]],
-    filter_country: Optional[str] = None,
+    combination_follower_ranges: List[Tuple[int, int]],
+    all_follower_ranges: List[Tuple[int, int]],
+    filter_country: Optional[str],
 ) -> bool:
 
-    if follower_ranges:
+    if combination_follower_ranges:
         if not matches_follower_count(
-            influencer_data.get("followers", 0), follower_ranges
+            influencer_data["followers"], combination_follower_ranges
         ):
             return False
-
-    if filter_country:
-        if not matches_country_filter(influencer_data.get("country"), filter_country):
+    elif all_follower_ranges:
+        if not matches_follower_count(
+            influencer_data["followers"], all_follower_ranges
+        ):
             return False
+    if not matches_country_filter(influencer_data.get("country"), filter_country):
+        return False
 
     return True
 

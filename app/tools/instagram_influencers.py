@@ -1,4 +1,4 @@
-from typing import List, Set, Dict, Any
+from typing import List, Set
 from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain_openai.embeddings import OpenAIEmbeddings
 from app.config.credentials_config import config
@@ -6,35 +6,27 @@ from app.db.connection import get_pymongo_db
 from app.utils.helpers import (
     extract_influencer_data,
     filter_influencer_data,
+    normalize_country,
+    normalize_followers,
     parse_followers_list,
 )
 
 
 async def search_instagram_influencers(
     category: List[str], limit: int, followers: List[str], country: List[str]
-) -> List[Dict[str, Any]]:
-    """
-    Search Instagram influencers based on category, followers, and country.
-
-    Handles both single follower values and ranges like '50k-100k'.
-    Ensures no duplicate influencers and respects the requested limit.
-    """
+):
     try:
         print(
-            f"INSTAGRAM TOOL CALLED WITH: category: {category}, followers: {followers}, country: {country}, limit: {limit}"
+            f"INSTAGRAM TOOL CALLED WITH: category={category}, followers={followers}, country={country}, limit={limit}"
         )
 
         # Normalize input
         categories = category if category else [""]
-        countries = country if country else [""]
-        followers_list = followers if followers else [""]
+        countries = [normalize_country(c) for c in country] if country else [""]
+        followers_list = normalize_followers(followers) if followers else [""]
 
-        # Parse all follower ranges once
-        all_follower_ranges = (
-            parse_followers_list(followers_list) if followers_list else []
-        )
+        all_follower_ranges = parse_followers_list(followers_list)
 
-        # Setup embeddings and vectorstore
         embeddings = OpenAIEmbeddings(
             api_key=config.OPENAI_API_KEY, model=config.EMBEDDING_MODEL
         )
@@ -50,11 +42,13 @@ async def search_instagram_influencers(
         )
 
         seen_usernames: Set[str] = set()
-        all_results: List[Dict[str, Any]] = []
+        all_results = []
 
-        # Target limit ensures we fetch enough results but respect final limit
-        target_limit = limit * 2 if limit > 0 else None
-        per_combination_limit = max(50, target_limit) if target_limit else 50
+        # Double the requested limit
+        target_limit = limit * 2
+        per_combination_limit = max(
+            50, target_limit * 2
+        )  # fetch extra to ensure enough results
 
         for cat in categories:
             for cntry in countries:
@@ -69,35 +63,29 @@ async def search_instagram_influencers(
                     for r in results:
                         influencer_data = extract_influencer_data(r, "Instagram")
                         username = influencer_data.get("username")
-
-                        # Skip duplicates
-                        if username and username in seen_usernames:
+                        if not username or username in seen_usernames:
                             continue
-
-                        # Filter by followers and country
                         if not filter_influencer_data(
                             influencer_data,
+                            parse_followers_list([follower_range_str]),
                             all_follower_ranges,
-                            cntry if cntry else None,
+                            cntry,
                         ):
                             continue
 
-                        if username:
-                            seen_usernames.add(username)
+                        seen_usernames.add(username)
                         all_results.append(influencer_data)
 
-                        # Stop collecting if we've reached the target limit
-                        if target_limit and len(all_results) >= target_limit:
+                        if len(all_results) >= target_limit:
                             break
-                    if target_limit and len(all_results) >= target_limit:
+                    if len(all_results) >= target_limit:
                         break
-                if target_limit and len(all_results) >= target_limit:
+                if len(all_results) >= target_limit:
                     break
-            if target_limit and len(all_results) >= target_limit:
+            if len(all_results) >= target_limit:
                 break
 
-        # Return exact requested limit
-        return all_results[:limit] if limit > 0 else all_results
+        return all_results[:target_limit]
 
     except Exception as e:
         raise ValueError(f"Error searching Instagram influencers: {str(e)}")
