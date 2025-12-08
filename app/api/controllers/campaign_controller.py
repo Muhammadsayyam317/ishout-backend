@@ -682,8 +682,16 @@ async def update_campaign_status(
     background_tasks: BackgroundTasks,
 ) -> Dict[str, Any]:
     try:
+        print("\n----------------------------")
+        print("UPDATE CAMPAIGN STATUS CALLED")
+        print("----------------------------")
+
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
+
+        print(f"Updating campaign ID: {request_data.campaign_id}")
+        print(f"New status: {request_data.status}")
+
         result = await campaigns_collection.update_one(
             {"_id": ObjectId(request_data.campaign_id)},
             {
@@ -695,13 +703,15 @@ async def update_campaign_status(
         )
 
         if result.modified_count == 0:
-            raise HTTPException(
-                status_code=404, detail="Campaign not found or no changes made"
-            )
+            print("No campaign updated!")
+            raise HTTPException(status_code=404, detail="No changes")
+
         if request_data.status == CampaignStatus.APPROVED:
+            print("Status is APPROVED → Adding background task...")
             background_tasks.add_task(
                 send_whatsapp_approved_influencers, request_data.campaign_id
             )
+            print("Background task added successfully!")
 
         return {
             "message": f"Campaign status updated to {request_data.status}",
@@ -710,7 +720,7 @@ async def update_campaign_status(
         }
 
     except Exception as e:
-        print(f"Error in update_campaign_status: {str(e)}")
+        print(f"Error in update_campaign_status: {e}")
         return {"error": str(e)}
 
 

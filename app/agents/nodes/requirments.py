@@ -52,7 +52,7 @@ async def node_requirements(state):
 
     if "platform" in missing:
         state["reply"] = (
-            "Great! Let's get started 🎯\n\n"
+            "Great! Let's get started\n\n"
             "Which platform should the influencers be from?\n"
             "Instagram, TikTok, or YouTube?"
         )
@@ -70,7 +70,7 @@ async def node_requirements(state):
         state["reply"] = (
             f"Category saved: {', '.join(state['category'])}\n\n"
             "Which *country* should the influencers be from?\n"
-            "e.g., UAE, Saudi Arabia, Kuwait, India"
+            "e.g., UAE, Saudi Arabia, Kuwait, Qatar"
         )
         return state
 
@@ -97,7 +97,7 @@ async def node_requirements(state):
         f"• Country: {', '.join(state['country'])}\n"
         f"• Number of influencers: {state['limit']}\n"
         f"• Followers range: {', '.join(state['followers'])}\n\n"
-        "Fetching the best influencers for you... 🔍✨"
+        "iShout is fetching the best influencers for you.Once Admin approves your request, we will share the matching influencers with you."
     )
     state["done"] = True
     return state
