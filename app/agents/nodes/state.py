@@ -20,6 +20,7 @@ async def create_new_state(sender_id):
         "reply_sent": False,
         "campaign_id": None,
         "campaign_created": False,
+        "ready_for_campaign": False,
     }
     await session_collection.update_one(
         {"sender_id": sender_id}, {"$set": new_state}, upsert=True

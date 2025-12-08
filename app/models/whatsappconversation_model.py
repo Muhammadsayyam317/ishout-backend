@@ -51,6 +51,8 @@ class ConversationState(TypedDict, total=False):
     reply_sent: Annotated[Optional[bool], take_second]
 
     campaign_id: Annotated[Optional[str], take_first]
+    campaign_created: Annotated[Optional[bool], take_second]
+    ready_for_campaign: Annotated[Optional[bool], take_second]
     done: Annotated[Optional[bool], take_second]
 
     last_active: Annotated[Optional[float], take_first]
