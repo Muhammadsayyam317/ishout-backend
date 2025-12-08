@@ -682,12 +682,29 @@ async def update_campaign_status(
             print("No campaign updated!")
             raise HTTPException(status_code=404, detail="No changes")
 
-        if request_data.status == CampaignStatus.APPROVED:
-            print("Status is APPROVED → Adding background task...")
+        # Now fetch campaign to check user_type
+        campaign = await campaigns_collection.find_one(
+            {"_id": ObjectId(request_data.campaign_id)}
+        )
+
+        if not campaign:
+            raise HTTPException(status_code=404, detail="Campaign not found")
+
+        user_type = campaign.get("user_type", None)
+        print(f"Campaign user_type: {user_type}")
+
+        # Send WhatsApp only if user_type = whatsapp
+        if request_data.status == CampaignStatus.APPROVED and user_type == "whatsapp":
+            print("Campaign is APPROVED & user_type = whatsapp")
+            print("Adding background task to send WhatsApp message...")
+
             background_tasks.add_task(
                 send_whatsapp_approved_influencers, request_data.campaign_id
             )
+
             print("Background task added successfully!")
+        else:
+            print("Skipping WhatsApp message (Not a WhatsApp user).")
 
         return {
             "message": f"Campaign status updated to {request_data.status}",
@@ -697,7 +714,7 @@ async def update_campaign_status(
 
     except Exception as e:
         print(f"Error in update_campaign_status: {e}")
-        return {"error": str(e)}
+        return {"message": "Campaign status updated successfully", "error": str(e)}
 
 
 async def get_campaign_generated_influencers(campaign_id: str) -> Dict[str, Any]:

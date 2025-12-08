@@ -61,27 +61,32 @@ async def node_requirements(state):
     missing = missing_fields(state)
     if "platform" in missing:
         state["reply"] = (
-            "Which platform should the influencers be from? (eg: Instagram, TikTok, YouTube)"
+            "Which platform should the influencers be from? \n\n"
+            "(e.g. Instagram, TikTok, YouTube)\n\n"
         )
         return state
     if "category" in missing:
         state["reply"] = (
-            f"Platform selected: {', '.join(state['platform'])}\nNow tell me the category you're targeting. (eg: fashion, beauty, tech)"
+            f"Platform selected: {', '.join(state['platform'])}\nNow tell me the category you're targeting. \n\n"
+            "(e.g. fashion, beauty, tech)\n\n"
         )
         return state
     if "country" in missing:
         state["reply"] = (
-            f"Category saved: {', '.join(state['category'])}\nWhich country should the influencers be from? (eg: UAE, Kuwait, Saudi Arabia)"
+            f"Category saved: {', '.join(state['category'])}\nWhich country should the influencers be from? \n\n"
+            "(e.g. UAE, Kuwait, Saudi Arabia)\n\n"
         )
         return state
     if "limit" in missing:
         state["reply"] = (
-            f"Country saved: {', '.join(state['country'])}\nHow many influencers do you want? (eg: 10, 20, 30)"
+            f"Country saved: {', '.join(state['country'])}\nHow many influencers do you want? \n\n"
+            "(e.g. 10, 20, 30)\n\n"
         )
         return state
     if "followers" in missing:
         state["reply"] = (
-            f"Number of influencers saved: {state.get('limit')}\nWhat follower range do you want? (eg: 10k, 50k-100k, 1M+)"
+            f"Number of influencers saved: {state.get('limit')}\nWhat follower range do you want? \n\n"
+            "(e.g. 10k, 50k-100k, 1M+)\n\n"
         )
         return state
 
