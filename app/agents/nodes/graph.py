@@ -30,15 +30,16 @@ graph.add_conditional_edges(
         else (
             "ask_user"
             if state.get("reply") and not state.get("reply_sent")
-            else "acknowledge_user"
+            else "requirements"
         )
     ),
     {
         "ask_user": "ask_user",
         "create_campaign": "create_campaign",
-        "acknowledge_user": "acknowledge_user",
+        "requirements": "requirements",
     },
 )
+
 
 graph.add_edge("ask_user", END)
 graph.add_edge("create_campaign", "acknowledge_user")
