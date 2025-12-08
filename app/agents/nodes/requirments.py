@@ -1,7 +1,7 @@
 import json
 import logging
 from app.agents.nodes.message_to_whatsapp import send_whatsapp_message
-from app.agents.nodes.state import update_user_state
+from app.agents.nodes.state import reset_user_state, update_user_state
 from app.models.whatsappconversation_model import ConversationState
 from app.services.campaign_service import create_whatsapp_campaign
 from app.utils.extract_feilds import (
@@ -133,9 +133,8 @@ async def node_acknowledge_user(state: ConversationState, config):
         "Thank you for using iShout! 🎉"
     )
     await send_whatsapp_message(sender, final_msg)
-    state["done"] = True
-    state["reply_sent"] = True
-    return state
+    cleared_state = await reset_user_state(sender)
+    return cleared_state
 
 
 def missing_fields(state: ConversationState):
