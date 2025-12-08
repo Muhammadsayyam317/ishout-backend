@@ -27,66 +27,63 @@ async def node_requirements(state):
     print("➡ Entered node_requirements")
     msg = state.get("user_message", "")
 
+    # Extract details
     new_platforms = extract_platforms(msg)
     limit = extract_limit(msg)
     new_countries = extract_countries(msg)
     new_categories = extract_categories(msg)
     new_followers = extract_followers(msg)
 
+    # Track if any new info is added
+    info_updated = False
+
     if new_platforms:
         state["platform"] = new_platforms
+        info_updated = True
 
     if limit is not None:
         state["limit"] = limit
+        info_updated = True
 
     if new_countries:
         state["country"] = new_countries
+        info_updated = True
 
     if new_categories:
         state["category"] = new_categories
+        info_updated = True
 
     if new_followers:
         state["followers"] = new_followers
+        info_updated = True
+
+    if info_updated:
+        state["reply_sent"] = False
 
     missing = missing_fields(state)
-
     if "platform" in missing:
         state["reply"] = (
-            "Great! Let's get started\n\n"
-            "Which platform should the influencers be from?\n"
-            "Instagram, TikTok, or YouTube?"
+            "Which platform should the influencers be from? Instagram, TikTok, or YouTube?"
         )
         return state
-
     if "category" in missing:
         state["reply"] = (
-            f"Thanks! Platform selected: {', '.join(state['platform'])}\n\n"
-            "Now tell me the *category* you're targeting.\n"
-            "For example: fashion, beauty, tech, food, travel."
+            f"Platform selected: {', '.join(state['platform'])}\nNow tell me the category you're targeting."
         )
         return state
-
     if "country" in missing:
         state["reply"] = (
-            f"Category saved: {', '.join(state['category'])}\n\n"
-            "Which *country* should the influencers be from?\n"
-            "e.g., UAE, Saudi Arabia, Kuwait, Qatar"
+            f"Category saved: {', '.join(state['category'])}\nWhich country should the influencers be from?"
         )
         return state
-
     if "limit" in missing:
         state["reply"] = (
-            f"Country saved: {', '.join(state['country'])}\n\n"
-            "How many influencers do you want?\n"
-            "Example: 5, 10, 20"
+            f"Country saved: {', '.join(state['country'])}\nHow many influencers do you want?"
         )
         return state
-
     if "followers" in missing:
         state["reply"] = (
-            f"Perfect! Number of influencers saved: {state.get('limit')}\n\n"
-            "What follower range do you want?\n"
-            "Examples: 10k, 50k-100k, 1M+"
+            f"Number of influencers saved: {state.get('limit')}\nWhat follower range do you want?"
         )
         return state
 

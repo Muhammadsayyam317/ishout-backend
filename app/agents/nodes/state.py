@@ -1,4 +1,5 @@
 import time
+from datetime import datetime
 from app.db.mongo_session import get_session_collection
 
 SESSION_EXPIRY_SECONDS = 600
@@ -15,7 +16,7 @@ async def create_new_state(sender_id):
         "followers": [],
         "user_message": None,
         "reply": None,
-        "last_active": time.time(),
+        "last_active": datetime.now(),
         "done": False,
         "reply_sent": False,
         "campaign_id": None,

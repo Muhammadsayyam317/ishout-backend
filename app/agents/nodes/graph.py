@@ -29,18 +29,11 @@ graph.add_conditional_edges(
     lambda state: (
         "create_campaign"
         if state.get("ready_for_campaign")
-        else (
-            "ask_user"
-            if state.get("reply") and not state.get("reply_sent")
-            else "requirements"
-        )
+        else ("ask_user" if state.get("reply") and not state.get("reply_sent") else END)
     ),
-    {
-        "ask_user": "ask_user",
-        "create_campaign": "create_campaign",
-        "requirements": "requirements",
-    },
+    {"ask_user": "ask_user", "create_campaign": "create_campaign", END: END},
 )
+
 
 graph.add_edge("ask_user", "debug_after")
 graph.add_edge("create_campaign", "acknowledge_user")
