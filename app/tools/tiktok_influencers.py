@@ -4,7 +4,6 @@ from langchain_openai.embeddings import OpenAIEmbeddings
 from app.config.credentials_config import config
 from app.db.connection import get_pymongo_db
 from app.utils.helpers import (
-    build_combination_query,
     extract_influencer_data,
     filter_influencer_data,
     parse_followers_list,
@@ -48,35 +47,22 @@ async def search_tiktok_influencers(
         for cat in categories:
             for cntry in countries:
                 for follower_range_str in followers_list:
-                    query = build_combination_query(
-                        platform="TikTok",
-                        category=cat if cat else None,
-                        country=cntry if cntry else None,
-                        follower_range_str=(
-                            follower_range_str if follower_range_str else None
-                        ),
-                    )
-                    combination_follower_ranges = (
-                        parse_followers_list([follower_range_str])
-                        if follower_range_str
-                        else []
-                    )
-
+                    query_text = f"TikTok influencer {cat} from {cntry} with {follower_range_str} followers"
+                    print(f"TIKTOK VECTOR QUERY: {query_text}")
                     results = vectorstore.similarity_search(
-                        query, k=per_combination_limit
+                        query_text, k=per_combination_limit
                     )
 
                     for r in results:
-                        influencer_data = extract_influencer_data(r, "TikTok")
+                        influencer_data = extract_influencer_data(r, "Instagram")
                         username = influencer_data.get("username")
-
-                        if username and username in seen_usernames:
+                        if not username or username in seen_usernames:
                             continue
                         if not filter_influencer_data(
                             influencer_data,
-                            combination_follower_ranges,
+                            parse_followers_list([follower_range_str]),
                             all_follower_ranges,
-                            cntry if cntry else None,
+                            cntry,
                         ):
                             continue
 
