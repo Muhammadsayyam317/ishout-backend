@@ -26,7 +26,7 @@ graph.add_conditional_edges(
     "debug_after",
     lambda state: (
         "create_campaign"
-        if state.get("done") and state.get("reply") is None
+        if state.get("ready_for_campaign") and state.get("reply_sent")
         else (
             "ask_user"
             if state.get("reply") and not state.get("reply_sent")

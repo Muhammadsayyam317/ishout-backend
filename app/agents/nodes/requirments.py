@@ -24,6 +24,7 @@ async def node_debug_after(state):
 
 
 async def node_requirements(state):
+    print("➡ Entered node_requirements")
     msg = state.get("user_message", "")
 
     # Extract details
@@ -99,7 +100,8 @@ async def node_requirements(state):
         f"• Followers range: {', '.join(state['followers'])}\n\n"
         "iShout is fetching the best influencers for you.Once Admin approves your request, we will share the matching influencers with you."
     )
-    state["done"] = True
+    state["ready_for_campaign"] = True
+    print(f"➡ State after node_requirements: {state}")
     return state
 
 
@@ -113,14 +115,17 @@ async def node_ask_user(state, config):
 
 
 async def node_create_campaign(state: ConversationState):
+    print("➡ Entered node_create_campaign")
     result = await create_whatsapp_campaign(state)
     state["campaign_id"] = result["campaign_id"]
     state["campaign_created"] = True
     state["reply"] = None
+    print(f"➡ State after node_create_campaign: {state}")
     return state
 
 
 async def node_acknowledge_user(state: ConversationState, config):
+    print("➡ Entered node_acknowledge_user")
     sender = state.get("sender_id") or config["configurable"]["thread_id"]
     final_msg = (
         "Great! I got all your campaign details.\n\n"
@@ -134,6 +139,7 @@ async def node_acknowledge_user(state: ConversationState, config):
     )
     await send_whatsapp_message(sender, final_msg)
     cleared_state = await reset_user_state(sender)
+    print(f"➡ Cleared state: {cleared_state}")
     return cleared_state
 
 

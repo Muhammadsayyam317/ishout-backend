@@ -112,6 +112,7 @@ async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]
             "country": request_data.country,
             "user_id": request_data.user_id,
             "company_name": request_data.company_name,
+            "user_type": "Website",
             "status": CampaignStatus.PENDING,
             "limit": request_data.limit,
             "created_at": datetime.now(timezone.utc),
@@ -196,22 +197,17 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
-        # Get campaign
         campaign = await campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
         if not campaign:
             return {"error": "Campaign not found"}
 
         campaign["_id"] = str(campaign["_id"])
-
-        # Get influencer details using optimized queries
         influencer_details = []
         missing_influencers = []
 
-        # Use influencer_references if available (new format), otherwise fall back to legacy
         influencer_references = campaign.get("influencer_references", [])
 
         if influencer_references:
-            # New format: we have platform info
             for ref in influencer_references:
                 influencer_id = ref.get("influencer_id")
                 platform = ref.get("platform")
@@ -262,7 +258,6 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                     if influencer:
                         influencer["_id"] = str(influencer["_id"])
                         influencer["platform"] = platform
-                        # Remove embedding field to reduce payload size
                         if "embedding" in influencer:
                             del influencer["embedding"]
                         influencer_details.append(influencer)
@@ -283,11 +278,9 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                         }
                     )
         else:
-            # Legacy format: search all platforms (less efficient)
             for influencer_id in campaign.get("influencer_ids", []):
                 found = False
                 for platform in ["instagram", "tiktok", "youtube"]:
-                    # Get collection name from centralized config
                     if platform == "instagram":
                         collection_name = config.MONGODB_ATLAS_COLLECTION_INSTAGRAM
                     elif platform == "tiktok":
@@ -309,7 +302,6 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                         if influencer:
                             influencer["_id"] = str(influencer["_id"])
                             influencer["platform"] = platform
-                            # Remove embedding field to reduce payload size
                             if "embedding" in influencer:
                                 del influencer["embedding"]
                             influencer_details.append(influencer)
@@ -325,8 +317,6 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                             "reason": "Influencer not found in any platform",
                         }
                     )
-
-        # Get rejected influencer details (rejected by admin)
         rejected_influencer_details = []
         missing_rejected_influencers = []
         rejected_ids = campaign.get("rejected_ids", [])
@@ -357,7 +347,6 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                     if influencer:
                         influencer["_id"] = str(influencer["_id"])
                         influencer["platform"] = platform
-                        # Remove embedding field to reduce payload size
                         if "embedding" in influencer:
                             del influencer["embedding"]
                         rejected_influencer_details.append(influencer)
@@ -374,7 +363,6 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                     }
                 )
 
-        # Get rejected by user influencer details
         rejected_by_user_details = []
         missing_rejected_by_user_influencers = []
         rejected_by_user_ids = campaign.get("rejectedByUser", [])
@@ -382,8 +370,6 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
         for rejected_id in rejected_by_user_ids:
             found = False
             for platform in ["instagram", "tiktok", "youtube"]:
-                # Get collection name using environment variables
-
                 if platform == "instagram":
                     collection_name = config.MONGODB_ATLAS_COLLECTION_INSTAGRAM
                 elif platform == "tiktok":
@@ -405,7 +391,6 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                     if influencer:
                         influencer["_id"] = str(influencer["_id"])
                         influencer["platform"] = platform
-                        # Remove embedding field to reduce payload size
                         if "embedding" in influencer:
                             del influencer["embedding"]
                         rejected_by_user_details.append(influencer)
@@ -422,17 +407,14 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                     }
                 )
 
-        # Populate user details
         user_id = campaign.get("user_id")
         user_details = None
         if user_id:
             user_details = await _populate_user_details(user_id)
 
-        # Populate approved influencer IDs with full details
         approved_ids = campaign.get("influencer_ids", [])
         approved_influencers_full = []
         if approved_ids:
-            # Get platform from influencer_references if available
             if influencer_references:
                 for ref in influencer_references:
                     inf_id = ref.get("influencer_id")
@@ -442,26 +424,20 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                         if details:
                             approved_influencers_full.extend(details)
             else:
-                # Try all platforms
                 approved_influencers_full = await _populate_influencer_details(
                     approved_ids
                 )
 
-        # Populate generated influencer IDs with full details
         generated_ids = campaign.get("generated_influencers", [])
         generated_influencers_full = []
         if generated_ids and len(generated_ids) > 0:
-            # Check if it's list of IDs (new format) or list of objects (legacy format)
             if isinstance(generated_ids[0], str):
-                # New format: list of IDs, populate full details
                 generated_influencers_full = await _populate_influencer_details(
                     generated_ids
                 )
             else:
-                # Legacy format: already full objects, return as is (remove embeddings)
                 for inf in generated_ids:
                     if isinstance(inf, dict):
-                        # Remove embedding if present
                         if "embedding" in inf:
                             inf_copy = inf.copy()
                             del inf_copy["embedding"]
