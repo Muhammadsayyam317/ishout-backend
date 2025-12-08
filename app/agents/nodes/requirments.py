@@ -27,14 +27,12 @@ async def node_requirements(state):
     print("➡ Entered node_requirements")
     msg = state.get("user_message", "")
 
-    # Extract details
     new_platforms = extract_platforms(msg)
     limit = extract_limit(msg)
     new_countries = extract_countries(msg)
     new_categories = extract_categories(msg)
     new_followers = extract_followers(msg)
 
-    # Track if any new info is added
     info_updated = False
 
     if new_platforms:
