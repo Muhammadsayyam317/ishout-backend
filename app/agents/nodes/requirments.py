@@ -25,10 +25,8 @@ async def node_debug_after(state):
 
 async def node_requirements(state):
     msg = state.get("user_message", "")
-    if state.get("done"):
-        state["reply"] = "Conversation already completed, skipping"
-        return state
 
+    # Extract details
     new_platforms = extract_platforms(msg)
     limit = extract_limit(msg)
     new_countries = extract_countries(msg)
@@ -37,91 +35,71 @@ async def node_requirements(state):
 
     if new_platforms:
         state["platform"] = new_platforms
+
     if limit is not None:
         state["limit"] = limit
+
     if new_countries:
         state["country"] = new_countries
+
     if new_categories:
         state["category"] = new_categories
+
     if new_followers:
         state["followers"] = new_followers
 
     missing = missing_fields(state)
 
-    if missing:
-        provided_items = []
-        counter = 1
-
-        platforms = state.get("platform") or []
-        if platforms:
-            platform_list = (
-                [p.title() for p in platforms]
-                if isinstance(platforms, list)
-                else [platforms.title()]
-            )
-            provided_items.append(f"{counter}) Platform: {', '.join(platform_list)}")
-            counter += 1
-
-        categories = state.get("category") or []
-        if categories:
-            category_list = (
-                [c.title() for c in categories]
-                if isinstance(categories, list)
-                else [categories.title()]
-            )
-            provided_items.append(f"{counter}) Category: {', '.join(category_list)}")
-            counter += 1
-
-        countries = state.get("country") or []
-        if countries:
-            country_list = []
-            for c in countries if isinstance(countries, list) else [countries]:
-                country_display = c.upper() if len(c) <= 4 else c.title()
-                country_list.append(country_display)
-            provided_items.append(f"{counter}) Country: {', '.join(country_list)}")
-            counter += 1
-
-        if state.get("limit"):
-            provided_items.append(f"{counter}) Number of influencers: {state['limit']}")
-            counter += 1
-
-        followers = state.get("followers") or []
-        if followers:
-            follower_list = followers if isinstance(followers, list) else [followers]
-            provided_items.append(
-                f"{counter}) Followers count: {', '.join(follower_list)}"
-            )
-            counter += 1
-
-        needed = []
-        if "platform" in missing:
-            needed.append("Platform (Instagram, TikTok, or YouTube)")
-        if "country" in missing:
-            needed.append("Country (e.g., UAE, Kuwait, Saudi Arabia)")
-        if "category" in missing:
-            needed.append("Category (e.g., fashion, beauty, food)")
-        if "limit" in missing:
-            needed.append("Number of influencers (e.g., 10, 20, 30)")
-        if "followers" in missing:
-            needed.append("Followers count (e.g., 10k, 2M, 3000K)")
-
-        if provided_items:
-            reply = "Thanks! I got:\n" + "\n".join(provided_items) + "\n\n"
-            reply += f"I still need: {', '.join(needed)}.\n\nPlease provide the missing details."
-        else:
-            reply = "To help you find the right influencers, I need:\n• " + "\n• ".join(
-                needed
-            )
-            reply += "\n\nPlease provide all these details in your message."
-
-        state["reply"] = reply
-        state["done"] = False
+    if "platform" in missing:
+        state["reply"] = (
+            "Great! Let's get started 🎯\n\n"
+            "Which platform should the influencers be from?\n"
+            "Instagram, TikTok, or YouTube?"
+        )
         return state
 
-    state["reply"] = None
-    state["reply_sent"] = False
-    state["done"] = True
+    if "category" in missing:
+        state["reply"] = (
+            f"Thanks! Platform selected: {', '.join(state['platform'])}\n\n"
+            "Now tell me the *category* you're targeting.\n"
+            "For example: fashion, beauty, tech, food, travel."
+        )
+        return state
 
+    if "country" in missing:
+        state["reply"] = (
+            f"Category saved: {', '.join(state['category'])}\n\n"
+            "Which *country* should the influencers be from?\n"
+            "e.g., UAE, Saudi Arabia, Kuwait, India"
+        )
+        return state
+
+    if "limit" in missing:
+        state["reply"] = (
+            f"Country saved: {', '.join(state['country'])}\n\n"
+            "How many influencers do you want?\n"
+            "Example: 5, 10, 20"
+        )
+        return state
+
+    if "followers" in missing:
+        state["reply"] = (
+            f"Perfect! Number of influencers saved: {state['limit']}\n\n"
+            "What follower range do you want?\n"
+            "Examples: 10k, 50k-100k, 1M+"
+        )
+        return state
+
+    state["reply"] = (
+        "Awesome! 🎉 I now have all the details:\n\n"
+        f"• Platform: {', '.join(state['platform'])}\n"
+        f"• Category: {', '.join(state['category'])}\n"
+        f"• Country: {', '.join(state['country'])}\n"
+        f"• Number of influencers: {state['limit']}\n"
+        f"• Followers range: {', '.join(state['followers'])}\n\n"
+        "Fetching the best influencers for you... 🔍✨"
+    )
+    state["done"] = True
     return state
 
 
@@ -146,11 +124,11 @@ async def node_acknowledge_user(state: ConversationState, config):
     sender = state.get("sender_id") or config["configurable"]["thread_id"]
     final_msg = (
         "Great! I got all your campaign details.\n\n"
-        "1) Platform is: " + ", ".join(state["platform"]) + "\n\n"
-        "2) Category is: " + ", ".join(state["category"]) + "\n\n"
-        "3) Country is: " + ", ".join(state["country"]) + "\n\n"
-        "4) Followers count: " + ", ".join(state["followers"]) + "\n\n"
-        "5) Number of influencers: " + str(state["limit"]) + "\n\n"
+        "1) Platform is: " + ", ".join(state["platform"]) + "\n"
+        "2) Category is: " + ", ".join(state["category"]) + "\n"
+        "3) Country is: " + ", ".join(state["country"]) + "\n"
+        "4) Followers count: " + ", ".join(state["followers"]) + "\n"
+        "5) Number of influencers: " + str(state["limit"]) + "\n"
         "iShout admin team will review them and we’ll notify you once it's approved.\n"
         "Thank you for using iShout! 🎉"
     )
