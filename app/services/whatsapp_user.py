@@ -20,11 +20,9 @@ async def create_whatsapp_user(
                 "total_messages": 0,
                 "is_blocked": False,
                 "created_at": time.time(),
-                "updated_at": time.time(),
             },
             "$set": {
                 "last_seen": time.time(),
-                "updated_at": time.time(),
             },
             "$inc": {"campaign_count": 1},
         }
