@@ -1,7 +1,10 @@
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 from bson import ObjectId
-from fastapi import HTTPException
+from fastapi import HTTPException, BackgroundTasks
+from app.api.controllers.admin.send_whatsapp_approved_influencers import (
+    send_whatsapp_approved_influencers,
+)
 from app.models.campaign_influencers_model import (
     CampaignInfluencerStatus,
     CampaignInfluencersRequest,
@@ -676,8 +679,8 @@ async def admin_generate_influencers(
 
 async def update_campaign_status(
     request_data: CampaignStatusUpdateRequest,
+    background_tasks: BackgroundTasks,
 ) -> Dict[str, Any]:
-    """Update campaign status"""
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
@@ -694,6 +697,10 @@ async def update_campaign_status(
         if result.modified_count == 0:
             raise HTTPException(
                 status_code=404, detail="Campaign not found or no changes made"
+            )
+        if request_data.status == CampaignStatus.APPROVED:
+            background_tasks.add_task(
+                send_whatsapp_approved_influencers, request_data.campaign_id
             )
 
         return {

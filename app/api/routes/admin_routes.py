@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from app.api.controllers.admin.onboarding_influencers import (
     onboarding_campaigns,
 )
@@ -127,11 +127,11 @@ def get_generated_influencers_route(
 @router.put("/campaigns/update-status", tags=["Admin"])
 async def update_campaign_status_route(
     request_data: CampaignStatusUpdateRequest,
+    background_tasks: BackgroundTasks,
     current_user: dict = Depends(require_admin_access),
 ):
-    """Update campaign status (admin only)"""
     try:
-        return await update_campaign_status(request_data)
+        return await update_campaign_status(request_data, background_tasks)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

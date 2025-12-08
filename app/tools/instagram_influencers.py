@@ -20,7 +20,6 @@ async def search_instagram_influencers(
             f"INSTAGRAM TOOL CALLED WITH: category={category}, followers={followers}, country={country}, limit={limit}"
         )
 
-        # Normalize input
         categories = category if category else [""]
         countries = [normalize_country(c) for c in country] if country else [""]
         followers_list = normalize_followers(followers) if followers else [""]
@@ -43,12 +42,8 @@ async def search_instagram_influencers(
 
         seen_usernames: Set[str] = set()
         all_results = []
-
-        # Double the requested limit
         target_limit = limit * 2
-        per_combination_limit = max(
-            50, target_limit * 2
-        )  # fetch extra to ensure enough results
+        per_combination_limit = max(50, target_limit * 2)
 
         for cat in categories:
             for cntry in countries:
