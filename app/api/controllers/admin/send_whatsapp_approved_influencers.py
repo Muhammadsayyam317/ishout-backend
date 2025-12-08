@@ -1,6 +1,5 @@
 from app.db.connection import get_db
 from bson import ObjectId
-from app.agents.nodes.message_to_whatsapp import send_whatsapp_message
 from fastapi import HTTPException
 
 from app.models.campaign_influencers_model import CampaignInfluencerStatus
@@ -16,7 +15,6 @@ async def send_whatsapp_approved_influencers(campaign_id: str):
     if not campaign:
         raise HTTPException(status_code=404, detail=f"Campaign {campaign_id} not found")
 
-    user_phone = campaign["user_id"]
     influencers = await influencer_collection.find(
         {
             "campaign_id": ObjectId(campaign_id),
