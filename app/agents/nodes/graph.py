@@ -11,6 +11,7 @@ from app.models.whatsappconversation_model import ConversationState
 
 graph = StateGraph(ConversationState)
 
+# Add all nodes
 graph.add_node("debug_before", node_debug_before)
 graph.add_node("requirements", node_requirements)
 graph.add_node("debug_after", node_debug_after)
@@ -18,6 +19,7 @@ graph.add_node("ask_user", node_ask_user)
 graph.add_node("create_campaign", node_create_campaign)
 graph.add_node("acknowledge_user", node_acknowledge_user)
 
+# Entry point
 graph.set_entry_point("debug_before")
 graph.add_edge("debug_before", "requirements")
 graph.add_edge("requirements", "debug_after")
@@ -40,7 +42,6 @@ graph.add_conditional_edges(
     },
 )
 
-
-graph.add_edge("ask_user", END)
+graph.add_edge("ask_user", "debug_after")
 graph.add_edge("create_campaign", "acknowledge_user")
 graph.add_edge("acknowledge_user", END)

@@ -27,7 +27,6 @@ async def node_requirements(state):
     print("➡ Entered node_requirements")
     msg = state.get("user_message", "")
 
-    # Extract details
     new_platforms = extract_platforms(msg)
     limit = extract_limit(msg)
     new_countries = extract_countries(msg)
@@ -85,23 +84,14 @@ async def node_requirements(state):
 
     if "followers" in missing:
         state["reply"] = (
-            f"Perfect! Number of influencers saved: {state['limit']}\n\n"
+            f"Perfect! Number of influencers saved: {state.get('limit')}\n\n"
             "What follower range do you want?\n"
             "Examples: 10k, 50k-100k, 1M+"
         )
         return state
 
-    state["reply"] = (
-        "Awesome! 🎉 I now have all the details:\n\n"
-        f"• Platform: {', '.join(state['platform'])}\n"
-        f"• Category: {', '.join(state['category'])}\n"
-        f"• Country: {', '.join(state['country'])}\n"
-        f"• Number of influencers: {state['limit']}\n"
-        f"• Followers range: {', '.join(state['followers'])}\n\n"
-        "iShout is fetching the best influencers for you.Once Admin approves your request, we will share the matching influencers with you."
-    )
+    state["reply"] = None
     state["ready_for_campaign"] = True
-    state["reply_sent"] = False
     print(f"➡ State after node_requirements: {state}")
     return state
 
@@ -146,13 +136,7 @@ async def node_acknowledge_user(state: ConversationState, config):
 
 def missing_fields(state: ConversationState):
     missing = []
-    for field in [
-        "platform",
-        "country",
-        "limit",
-        "category",
-        "followers",
-    ]:
+    for field in ["platform", "country", "limit", "category", "followers"]:
         value = state.get(field)
         if field == "limit":
             is_missing = value is None or (isinstance(value, int) and value <= 0)
