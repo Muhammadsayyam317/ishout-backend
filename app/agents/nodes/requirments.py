@@ -61,42 +61,44 @@ async def node_requirements(state):
     missing = missing_fields(state)
     if "platform" in missing:
         state["reply"] = (
-            "Which platform should the influencers be from? Instagram, TikTok, or YouTube?"
+            "Which platform should the influencers be from? (eg: Instagram, TikTok, YouTube)"
         )
         return state
     if "category" in missing:
         state["reply"] = (
-            f"Platform selected: {', '.join(state['platform'])}\nNow tell me the category you're targeting."
+            f"Platform selected: {', '.join(state['platform'])}\nNow tell me the category you're targeting. (eg: fashion, beauty, tech)"
         )
         return state
     if "country" in missing:
         state["reply"] = (
-            f"Category saved: {', '.join(state['category'])}\nWhich country should the influencers be from?"
+            f"Category saved: {', '.join(state['category'])}\nWhich country should the influencers be from? (eg: UAE, Kuwait, Saudi Arabia)"
         )
         return state
     if "limit" in missing:
         state["reply"] = (
-            f"Country saved: {', '.join(state['country'])}\nHow many influencers do you want?"
+            f"Country saved: {', '.join(state['country'])}\nHow many influencers do you want? (eg: 10, 20, 30)"
         )
         return state
     if "followers" in missing:
         state["reply"] = (
-            f"Number of influencers saved: {state.get('limit')}\nWhat follower range do you want?"
+            f"Number of influencers saved: {state.get('limit')}\nWhat follower range do you want? (eg: 10k, 50k-100k, 1M+)"
         )
         return state
 
     state["reply"] = None
     state["ready_for_campaign"] = True
-    print(f"➡ State after node_requirements: {state}")
+    print(f"➡ Exited node_requirements: {state}")
     return state
 
 
 async def node_ask_user(state, config):
+    print(f"➡ Entered node_ask_user: {state}")
     sender = state.get("sender_id") or config["configurable"]["thread_id"]
     if state.get("reply") and not state.get("reply_sent"):
         await send_whatsapp_message(sender, state["reply"])
         state["reply_sent"] = True
         await update_user_state(sender, state)
+    print(f"➡ Exited node_ask_user: {state}")
     return state
 
 
@@ -106,7 +108,7 @@ async def node_create_campaign(state: ConversationState):
     state["campaign_id"] = result["campaign_id"]
     state["campaign_created"] = True
     state["reply"] = None
-    print(f"➡ State after node_create_campaign: {state}")
+    print(f"➡ Exited node_create_campaign: {state}")
     return state
 
 
@@ -131,7 +133,7 @@ async def node_acknowledge_user(state: ConversationState, config):
 
 def missing_fields(state: ConversationState):
     missing = []
-    for field in ["platform", "country", "limit", "category", "followers"]:
+    for field in ["platform", "category", "country", "limit", "followers"]:
         value = state.get(field)
         if field == "limit":
             is_missing = value is None or (isinstance(value, int) and value <= 0)
