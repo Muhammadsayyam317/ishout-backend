@@ -1,4 +1,4 @@
-from app.db.connection import get_db, get_pymongo_db
+from app.db.connection import get_db
 from pymongo import ASCENDING
 
 SESSION_EXPIRY_SECONDS = 600  # 10 minutes
