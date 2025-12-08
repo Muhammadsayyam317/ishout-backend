@@ -101,6 +101,7 @@ async def node_requirements(state):
         "iShout is fetching the best influencers for you.Once Admin approves your request, we will share the matching influencers with you."
     )
     state["ready_for_campaign"] = True
+    state["reply_sent"] = False
     print(f"➡ State after node_requirements: {state}")
     return state
 

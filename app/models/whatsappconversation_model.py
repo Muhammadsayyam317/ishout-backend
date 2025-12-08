@@ -37,19 +37,24 @@ def merge_arrays(a, b):
 class ConversationState(TypedDict, total=False):
     sender_id: Annotated[Optional[str], take_first]
     user_message: Annotated[Optional[str], take_second]
+
     intent: Annotated[Optional[str], take_first]
 
     platform: Annotated[Optional[List[str]], merge_arrays]
     category: Annotated[Optional[List[str]], merge_arrays]
     country: Annotated[Optional[List[str]], merge_arrays]
-    limit: Annotated[Optional[int], take_second]
     followers: Annotated[Optional[List[str]], merge_arrays]
 
+    limit: Annotated[Optional[int], take_second]
+
     reply: Annotated[Optional[str], take_second_allow_none]
-    last_active: Annotated[Optional[float], take_first]
-    event_data: Annotated[dict, take_first]
+    reply_sent: Annotated[Optional[bool], take_second]
+
     campaign_id: Annotated[Optional[str], take_first]
     done: Annotated[Optional[bool], take_second]
-    reply_sent: Annotated[Optional[bool], take_second]
+
+    last_active: Annotated[Optional[float], take_first]
+    event_data: Annotated[dict, take_first]
     thread_id: Annotated[Optional[str], take_first]
+
     debug_log: Annotated[Optional[list], take_first]
