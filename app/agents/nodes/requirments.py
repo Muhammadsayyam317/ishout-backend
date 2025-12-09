@@ -62,7 +62,7 @@ async def node_requirements(state):
     if "platform" in missing:
         state["reply"] = (
             "👋 Welcome to iShout!\n\n"
-            "Let's find the perfect influencers for your campaign. "
+            "Let's find the perfect influencers for your campaign 🎲\n\n"
             "Which social media platform are you targeting?\n\n"
             "📱 Examples: Instagram, TikTok, YouTube"
         )
@@ -140,8 +140,8 @@ async def node_acknowledge_user(state: ConversationState, config):
             "🌍 *Location:* " + ", ".join(state["country"]) + "\n"
             "👥 *Followers:* " + ", ".join(state["followers"]) + "\n"
             "🔢 *Number of Influencers:* " + str(state["limit"]) + "\n\n"
-            "✨ Our team is now reviewing your campaign and finding the best matching influencers.\n\n"
-            "We'll notify you once we have curated the perfect list for you!\n\n"
+            "✨ Perfect iShout will shortlist matching influencers.\n\n"
+            "We'll notify you once we have curated the perfect influencers for you!\n\n"
             "Thank you for choosing iShout!🎉"
         )
         await send_whatsapp_message(sender, Acknowledgement_message)

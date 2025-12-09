@@ -1,78 +1,48 @@
-from bson import ObjectId
 from app.db.connection import get_db
+from bson import ObjectId
 from app.agents.nodes.message_to_whatsapp import send_whatsapp_message
 
 
 async def send_whatsapp_approved_influencers(campaign_id: str):
-    print("\n--- STARTING APPROVED INFLUENCERS WHATSAPP CAROUSEL TASK ---")
-
+    print("BACKGROUND TASK STARTED")
     db = get_db()
 
-    campaigns = db["campaigns"]
-    influencers_collection = db["campaign_influencers"]
+    campaigns_collection = db.get_collection("campaigns")
+    influencer_collection = db.get_collection("campaign_influencers")
 
-    campaign = await campaigns.find_one({"_id": ObjectId(campaign_id)})
+    campaign = await campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
     if not campaign:
-        print("Campaign not found")
+        print(f"Campaign not found: {campaign_id}")
         return
 
     user_phone = campaign.get("user_id")
-    influencers = await influencers_collection.find(
-        {"campaign_id": ObjectId(campaign_id), "status": "approved"}
-    ).to_list(100)
+    print(f"User phone found: {user_phone}")
+
+    influencers = await influencer_collection.find(
+        {
+            "campaign_id": ObjectId(campaign_id),
+            "status": "approved",
+        }
+    ).to_list(length=100)
+
+    print(f"Approved influencers found: {len(influencers)}")
 
     if not influencers:
-        print("No approved influencers")
+        print("No approved influencers found.")
         return
 
-    cards = []
+    message = "🎉 Your approved influencers are ready! \n\n"
     for idx, inf in enumerate(influencers, start=1):
-
-        cards.append(
-            {
-                "title": f"@{inf.get('username')}",
-                "description": (
-                    f"Followers: {inf.get('followers')}\n"
-                    f"Country: {inf.get('country')}\n"
-                    f"Pricing: {inf.get('pricing')}"
-                ),
-                "media": {
-                    "type": "image",
-                    "link": inf.get("pic"),
-                },
-                "buttons": [
-                    {
-                        "type": "reply",
-                        "reply": {
-                            "id": f"approve_{inf.get('influencer_id')}",
-                            "title": "Approve",
-                        },
-                    },
-                    {
-                        "type": "reply",
-                        "reply": {
-                            "id": f"reject_{inf.get('influencer_id')}",
-                            "title": "Reject",
-                        },
-                    },
-                ],
-            }
+        message += (
+            f"{idx}. @{inf.get('username')}\n"
+            f"Followers: {inf.get('followers')}\n"
+            f"Country: {inf.get('country')}\n"
+            f"Pricing: {inf.get('pricing')}\n"
+            f"Link: https://www.instagram.com/{inf.get('username')}\n\n"
         )
-
-    payload = {
-        "messaging_product": "whatsapp",
-        "to": user_phone,
-        "type": "interactive",
-        "interactive": {
-            "type": "carousel",
-            "body": {"text": "🎉 Your approved influencers are ready!"},
-            "carousel": {"cards": cards},
-        },
-    }
-
-    success = await send_whatsapp_message(payload)
+    success = await send_whatsapp_message(user_phone, message)
 
     if success:
-        print("Carousel sent successfully!")
+        print(" WhatsApp message sent successfully!")
     else:
-        print("Failed to send carousel message")
+        print(" WhatsApp message failed to send.")
