@@ -110,13 +110,7 @@ async def node_ask_user(state, config):
     print(f"➡ Entered node_ask_user: {state}")
     sender = state.get("sender_id") or config["configurable"]["thread_id"]
     if state.get("reply") and not state.get("reply_sent"):
-        payload = {
-            "messaging_product": "whatsapp",
-            "to": sender,
-            "type": "text",
-            "text": {"body": state["reply"]},
-        }
-        await send_whatsapp_message(payload)
+        await send_whatsapp_message(sender, state["reply"])
         state["reply_sent"] = True
         await update_user_state(sender, state)
     print(f"➡ Exited node_ask_user: {state}")
@@ -138,7 +132,7 @@ async def node_acknowledge_user(state: ConversationState, config):
     sender = state.get("sender_id") or config["configurable"]["thread_id"]
 
     if not state.get("acknowledged"):
-        final_msg = (
+        Acknowledgement_message = (
             "🎉 *Campaign Created Successfully!*\n\n"
             "Here's a summary of your campaign:\n\n"
             "📱 *Platform:* " + ", ".join(state["platform"]) + "\n"
@@ -150,13 +144,7 @@ async def node_acknowledge_user(state: ConversationState, config):
             "We'll notify you once we have curated the perfect list for you!\n\n"
             "Thank you for choosing iShout!🎉"
         )
-        payload = {
-            "messaging_product": "whatsapp",
-            "to": sender,
-            "type": "text",
-            "text": {"body": final_msg},
-        }
-        await send_whatsapp_message(payload)
+        await send_whatsapp_message(sender, Acknowledgement_message)
         state["acknowledged"] = True
 
     state["done"] = True
