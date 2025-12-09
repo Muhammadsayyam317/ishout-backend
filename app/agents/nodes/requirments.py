@@ -61,32 +61,42 @@ async def node_requirements(state):
     missing = missing_fields(state)
     if "platform" in missing:
         state["reply"] = (
-            "Which platform should the influencers be from? \n\n"
-            "(e.g. Instagram, TikTok, YouTube)\n\n"
+            "👋 Welcome to iShout!\n\n"
+            "Let's find the perfect influencers for your campaign. "
+            "Which social media platform are you targeting?\n\n"
+            "📱 Examples: Instagram, TikTok, YouTube"
         )
         return state
     if "category" in missing:
         state["reply"] = (
-            f"Platform selected: {', '.join(state['platform'])}\nNow tell me the category you're targeting. \n\n"
-            "(e.g. fashion, beauty, tech)\n\n"
+            f"✅ Great! *{', '.join(state['platform'])}* it is!\n\n"
+            "Now, what category or niche are you looking for?\n\n"
+            "💡 Examples: Fashion, Beauty, Tech, Fitness, Food, Travel, Gaming"
         )
         return state
     if "country" in missing:
         state["reply"] = (
-            f"Category saved: {', '.join(state['category'])}\nWhich country should the influencers be from? \n\n"
-            "(e.g. UAE, Kuwait, Saudi Arabia)\n\n"
+            f"✅ Perfect! *{', '.join(state['category'])}* influencers coming up!\n\n"
+            "Which country or region should these influencers be based in?\n\n"
+            "🌍 Examples: UAE, Kuwait, Saudi Arabia, Egypt, Qatar"
         )
         return state
     if "limit" in missing:
         state["reply"] = (
-            f"Country saved: {', '.join(state['country'])}\nHow many influencers do you want? \n\n"
-            "(e.g. 10, 20, 30)\n\n"
+            f"✅ Got it! Looking for influencers in *{', '.join(state['country'])}*\n\n"
+            "How many influencers would you like to connect with?\n\n"
+            "🔢 Examples: 5, 10, 20, 50"
         )
         return state
     if "followers" in missing:
         state["reply"] = (
-            f"Number of influencers saved: {state.get('limit')}\nWhat follower range do you want? \n\n"
-            "(e.g. 10k, 50k-100k, 1M+)\n\n"
+            f"✅ Noted! We'll find *{state.get('limit')}* influencers for you.\n\n"
+            "What follower range are you targeting?\n\n"
+            "👥 Examples:\n"
+            "• 5k-10k (Micro influencers)\n"
+            "• 200k (Mid-tier)\n"
+            "• 500k+ (Macro influencers)\n"
+            "• 1M+ (Mega influencers)"
         )
         return state
 
@@ -129,14 +139,16 @@ async def node_acknowledge_user(state: ConversationState, config):
 
     if not state.get("acknowledged"):
         final_msg = (
-            "Great! I got all your campaign details.\n\n"
-            "1) Platform is: " + ", ".join(state["platform"]) + "\n"
-            "2) Category is: " + ", ".join(state["category"]) + "\n"
-            "3) Country is: " + ", ".join(state["country"]) + "\n"
-            "4) Followers count: " + ", ".join(state["followers"]) + "\n"
-            "5) Number of influencers: " + str(state["limit"]) + "\n"
-            "iShout admin team will review them and we'll notify you once it's approved.\n"
-            "Thank you for using iShout! 🎉"
+            "🎉 *Campaign Created Successfully!*\n\n"
+            "Here's a summary of your campaign:\n\n"
+            "📱 *Platform:* " + ", ".join(state["platform"]) + "\n"
+            "🎯 *Category:* " + ", ".join(state["category"]) + "\n"
+            "🌍 *Location:* " + ", ".join(state["country"]) + "\n"
+            "👥 *Followers:* " + ", ".join(state["followers"]) + "\n"
+            "🔢 *Number of Influencers:* " + str(state["limit"]) + "\n\n"
+            "✨ Our team is now reviewing your campaign and finding the best matching influencers.\n\n"
+            "We'll notify you once we have curated the perfect list for you!\n\n"
+            "Thank you for choosing iShout!🎉"
         )
         payload = {
             "messaging_product": "whatsapp",

@@ -5,7 +5,6 @@ SESSION_EXPIRY_SECONDS = 600
 
 
 async def get_conversation_round(sender_id):
-    """Get the current conversation round number for checkpoint management"""
     session_collection = get_session_collection()
     state = await session_collection.find_one({"sender_id": sender_id})
     if state:
@@ -14,7 +13,6 @@ async def get_conversation_round(sender_id):
 
 
 async def increment_conversation_round(sender_id):
-    """Increment conversation round to start fresh checkpoint"""
     session_collection = get_session_collection()
     result = await session_collection.find_one_and_update(
         {"sender_id": sender_id},
