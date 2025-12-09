@@ -206,3 +206,48 @@ def convert_objectid(doc):
         if isinstance(value, ObjectId):
             doc[key] = str(value)
     return doc
+
+
+def convert_to_number(v: str):
+    v = v.lower().replace(" ", "")
+    if "k" in v:
+        return int(float(v.replace("k", "")) * 1000)
+    if "m" in v:
+        return int(float(v.replace("m", "")) * 1_000_000)
+    return int(v)
+
+
+def normalize_followers(followers: list[str]) -> list[str]:
+    ranges = []
+    for f in followers:
+        if "-" in f:  # already a range
+            ranges.append(f)
+        else:
+            num = int(f.replace("k", "000").replace("K", "000"))
+            if num <= 50000:
+                ranges.append("0-50k")
+            elif num <= 100000:
+                ranges.append("50k-100k")
+            elif num <= 200000:
+                ranges.append("100k-200k")
+            else:
+                ranges.append(f"{num//1000}k-{num//1000*2}k")
+    return ranges
+
+
+def normalize_country(country: str) -> str:
+    """Normalize country names to match embeddings."""
+    mapping = {
+        "uae": "United Arab Emirates",
+        "qatar": "Qatar",
+    }
+    return mapping.get(country.lower(), country)
+
+
+def followers_in_range(influencer_count: int, ranges: List[Tuple[int, int]]):
+    if not ranges:
+        return True
+    for min_f, max_f in ranges:
+        if min_f <= influencer_count <= max_f:
+            return True
+    return False

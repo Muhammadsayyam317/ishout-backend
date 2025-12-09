@@ -1,21 +1,18 @@
-import logging
-from typing import List, Optional
+from typing import List
 from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain_openai import OpenAIEmbeddings
 from app.config import config
 from app.db.connection import get_pymongo_db
 
-logger = logging.getLogger(__name__)
-print(f"[find_influencers_for_whatsapp] Logger: {logger}")
-
 
 def find_influencers_for_whatsapp(
     platform: str,
     category: str,
-    number_of_influencers: int,
-    country: Optional[str] = None,
+    limit: int,
+    country: str,
+    followers: str,
 ) -> List[dict]:
-    query = f"Find {number_of_influencers} {category} influencers on {platform} in {country or 'any'}".strip()
+    query = f"Find {limit} {category} influencers on {platform} in {country } followers {followers}".strip()
     print(f"[find_influencers_for_whatsapp] Query: {query}")
     try:
         collection_name = None
@@ -40,9 +37,6 @@ def find_influencers_for_whatsapp(
             )
         collection = get_pymongo_db()[collection_name]
         print(f"[find_influencers_for_whatsapp] Using collection: {collection_name}")
-        logger.info(
-            f"[find_influencers_for_whatsapp] Using collection: {collection_name}"
-        )
         embeddings = OpenAIEmbeddings(
             api_key=config.OPENAI_API_KEY,
             model=config.EMBEDDING_MODEL,
@@ -56,15 +50,10 @@ def find_influencers_for_whatsapp(
             relevance_score_fn="cosine",
         )
         print(f"[find_influencers_for_whatsapp] Query: {query}")
-        docs = store.similarity_search(query, k=number_of_influencers)
-        logger.info(f"[find_influencers_for_whatsapp] Found {len(docs)} documents")
-        print(f"[find_influencers_for_whatsapp] Found {len(docs)} documents")
+        docs = store.similarity_search(query, k=limit)
         result = [doc.page_content for doc in docs]
-        logger.info(
-            f"[find_influencers_for_whatsapp] Returning {len(result)} influencers"
-        )
         return result
 
     except Exception as e:
-        logger.error(f"Error finding influencers for WhatsApp: {str(e)}", exc_info=True)
+        print(f"Error finding influencers for WhatsApp: {str(e)}")
         return []
