@@ -8,25 +8,19 @@ async def create_whatsapp_user(sender_id: str, name: str = None):
     try:
         db = get_db()
         whatsapp_users = db.get_collection("whatsapp_users")
+
         update_doc = {
-            "$setOnInsert": {
-                "sender_id": sender_id,
-                "first_seen": time.time(),
-                "campaign_count": 0,
-                "campaign_ids": [],
-                "total_messages": 0,
-                "is_blocked": False,
-                "created_at": time.time(),
-            },
             "$set": {
                 "last_seen": time.time(),
                 "updated_at": time.time(),
             },
-            "$inc": {"total_messages": 1},
+            "$setOnInsert": {
+                "sender_id": sender_id,
+                "created_at": time.time(),
+                "first_seen": time.time(),
+                "name": name,
+            },
         }
-
-        if name:
-            update_doc["$set"]["name"] = name
 
         user = await whatsapp_users.find_one_and_update(
             {"sender_id": sender_id},
