@@ -35,7 +35,6 @@ async def handle_whatsapp_events(request: Request):
             event_data.get("contacts", [{}])[0].get("profile", {}).get("name")
         )
         await create_whatsapp_user(thread_id, profile_name)
-
         whatsapp_agent = await build_whatsapp_agent()
         stored_state = await get_user_state(thread_id)
         state = stored_state or {}

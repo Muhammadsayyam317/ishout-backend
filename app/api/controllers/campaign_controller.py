@@ -686,7 +686,6 @@ async def update_campaign_status(
             print("No campaign updated!")
             raise HTTPException(status_code=404, detail="No changes")
 
-        # Now fetch campaign to check user_type
         campaign = await campaigns_collection.find_one(
             {"_id": ObjectId(request_data.campaign_id)}
         )
@@ -697,7 +696,6 @@ async def update_campaign_status(
         user_type = campaign.get("user_type", None)
         print(f"Campaign user_type: {user_type}")
 
-        # Send WhatsApp only if user_type = whatsapp
         if request_data.status == CampaignStatus.APPROVED and user_type == "whatsapp":
             print("Campaign is APPROVED & user_type = whatsapp")
             print("Adding background task to send WhatsApp message...")
