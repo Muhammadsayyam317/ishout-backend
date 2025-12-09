@@ -10,7 +10,6 @@ async def create_whatsapp_user(
     try:
         db = get_db()
         whatsapp_users = db.get_collection("whatsapp_users")
-
         update_doc = {
             "$setOnInsert": {
                 "sender_id": sender_id,
@@ -23,8 +22,9 @@ async def create_whatsapp_user(
             },
             "$set": {
                 "last_seen": time.time(),
+                "updated_at": time.time(),
             },
-            "$inc": {"campaign_count": 1},
+            "$inc": {},
         }
 
         if name:
@@ -32,6 +32,10 @@ async def create_whatsapp_user(
 
         if increment_messages:
             update_doc["$inc"]["total_messages"] = 1
+
+        update_doc["$inc"]["campaign_count"] = update_doc["$inc"].get(
+            "campaign_count", 1
+        )
 
         user = await whatsapp_users.find_one_and_update(
             {"sender_id": sender_id},
