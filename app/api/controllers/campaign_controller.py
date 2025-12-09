@@ -486,6 +486,7 @@ async def AdminApprovedSingleInfluencer(
             "country": request_data.country,
             "status": request_data.status.value,
             "company_user_id": request_data.company_user_id,
+            "pricing": request_data.pricing,
             "admin_approved": True,
         }
         if existing:
