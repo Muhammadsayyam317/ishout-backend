@@ -15,6 +15,7 @@ async def create_new_state(sender_id):
         "followers": [],
         "user_message": None,
         "reply": None,
+        "name": None,
         "last_active": time.time(),
         "done": False,
         "reply_sent": False,

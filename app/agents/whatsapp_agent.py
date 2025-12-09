@@ -40,6 +40,7 @@ async def handle_whatsapp_events(request: Request):
                 "event_data": event_data,
                 "thread_id": thread_id,
                 "sender_id": thread_id,
+                "name": profile_name or state.get("name"),
             }
         )
 

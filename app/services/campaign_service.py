@@ -7,10 +7,10 @@ from datetime import datetime, timezone
 
 
 async def create_whatsapp_campaign(state: ConversationState) -> Dict[str, Any]:
-    """Create a new campaign for whatsapp user"""
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
+        whatsapp_users_collection = db.get_collection("whatsapp_users")
 
         categories = state.get("category") or []
         platforms = state.get("platform") or []
@@ -23,6 +23,15 @@ async def create_whatsapp_campaign(state: ConversationState) -> Dict[str, Any]:
         )
 
         campaign_name = f"Campaign - {category_str} - {platform_str}"
+        company_name = state.get("name")
+        if not company_name:
+            sender_id = state.get("sender_id")
+            if sender_id:
+                whatsapp_user = await whatsapp_users_collection.find_one(
+                    {"sender_id": sender_id}
+                )
+                if whatsapp_user:
+                    company_name = whatsapp_user.get("name")
 
         campaign_doc = {
             "name": campaign_name,
@@ -31,6 +40,7 @@ async def create_whatsapp_campaign(state: ConversationState) -> Dict[str, Any]:
             "followers": state.get("followers"),
             "country": state.get("country"),
             "user_id": state.get("sender_id"),
+            "company_name": company_name,
             "user_type": "whatsapp",
             "status": CampaignStatus.PENDING,
             "limit": state.get("limit"),
