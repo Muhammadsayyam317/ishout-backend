@@ -43,8 +43,8 @@ async def search_tiktok_influencers(
         )
         seen_usernames: Set[str] = set()
         all_results = []
-        target_limit = limit * 2 if limit > 0 else None
-        per_combination_limit = max(50, target_limit) if target_limit else 50
+        target_limit = limit * 2
+        per_combination_limit = max(50, target_limit * 2)
         for cat in categories:
             for cntry in countries:
                 for follower_range_str in followers_list:
