@@ -509,7 +509,10 @@ async def AdminApprovedSingleInfluencer(
             )
             await collection.insert_one(update_fields)
 
-        return {"message": "Influencer approved successfully"}
+        return {
+            "message": "Influencer approved successfully",
+            "pricing": request_data.pricing,
+        }
 
     except Exception as e:
         raise HTTPException(

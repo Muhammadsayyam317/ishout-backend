@@ -23,6 +23,7 @@ class CampaignInfluencersRequest(BaseModel):
     admin_approved: bool = False
     company_approved: bool = False
     company_user_id: str
+    pricing: Optional[float] = None
 
 
 class CampaignInfluencersResponse(BaseModel):
