@@ -6,6 +6,8 @@ from app.db.connection import get_pymongo_db
 from app.utils.helpers import (
     extract_influencer_data,
     filter_influencer_data,
+    normalize_country,
+    normalize_followers,
     parse_followers_list,
 )
 
@@ -21,11 +23,10 @@ async def search_youtube_influencers(
             f"YouTube search input: category: {category}, followers: {followers}, country: {country}, limit: {limit}"
         )
         categories = category if category else [""]
-        countries = country if country else [""]
-        followers_list = followers if followers else [""]
-        all_follower_ranges = (
-            parse_followers_list(followers_list) if followers_list else []
-        )
+        countries = [normalize_country(c) for c in country] if country else [""]
+        followers_list = normalize_followers(followers) if followers else [""]
+
+        all_follower_ranges = parse_followers_list(followers_list)
         embeddings = OpenAIEmbeddings(
             api_key=config.OPENAI_API_KEY, model=config.EMBEDDING_MODEL
         )
@@ -68,7 +69,6 @@ async def search_youtube_influencers(
                         if username:
                             seen_usernames.add(username)
                         all_results.append(influencer_data)
-                        # Stop collecting if we've reached the target limit
                         if target_limit and len(all_results) >= target_limit:
                             break
                     if target_limit and len(all_results) >= target_limit:
@@ -77,8 +77,6 @@ async def search_youtube_influencers(
                     break
             if target_limit and len(all_results) >= target_limit:
                 break
-
-        # Return limited results
         return all_results[:target_limit] if target_limit else all_results
     except Exception as e:
         raise ValueError(f"Error searching YouTube influencers: {str(e)}")

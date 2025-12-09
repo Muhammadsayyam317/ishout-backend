@@ -7,6 +7,8 @@ from app.utils.helpers import (
     extract_influencer_data,
     filter_influencer_data,
     parse_followers_list,
+    normalize_country,
+    normalize_followers,
 )
 
 
@@ -21,11 +23,10 @@ async def search_tiktok_influencers(
             f"TikTok search input: category: {category}, followers: {followers}, country: {country}, limit: {limit}"
         )
         categories = category if category else [""]
-        countries = country if country else [""]
-        followers_list = followers if followers else [""]
-        all_follower_ranges = (
-            parse_followers_list(followers_list) if followers_list else []
-        )
+        countries = [normalize_country(c) for c in country] if country else [""]
+        followers_list = normalize_followers(followers) if followers else [""]
+
+        all_follower_ranges = parse_followers_list(followers_list)
         embeddings = OpenAIEmbeddings(
             api_key=config.OPENAI_API_KEY, model=config.EMBEDDING_MODEL
         )
@@ -54,7 +55,7 @@ async def search_tiktok_influencers(
                     )
 
                     for r in results:
-                        influencer_data = extract_influencer_data(r, "Instagram")
+                        influencer_data = extract_influencer_data(r, "TikTok")
                         username = influencer_data.get("username")
                         if not username or username in seen_usernames:
                             continue
@@ -69,7 +70,7 @@ async def search_tiktok_influencers(
                         if username:
                             seen_usernames.add(username)
                         all_results.append(influencer_data)
-                        # Stop collecting if we've reached the target limit
+
                         if target_limit and len(all_results) >= target_limit:
                             break
                     if target_limit and len(all_results) >= target_limit:
