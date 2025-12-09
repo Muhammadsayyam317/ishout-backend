@@ -1,7 +1,7 @@
 import json
 import logging
 from app.agents.nodes.message_to_whatsapp import send_whatsapp_message
-from app.agents.nodes.state import reset_user_state, update_user_state
+from app.agents.nodes.state import update_user_state
 from app.models.whatsappconversation_model import ConversationState
 from app.services.campaign_service import create_whatsapp_campaign
 from app.utils.extract_feilds import (
@@ -120,20 +120,24 @@ async def node_create_campaign(state: ConversationState):
 async def node_acknowledge_user(state: ConversationState, config):
     print("➡ Entered node_acknowledge_user")
     sender = state.get("sender_id") or config["configurable"]["thread_id"]
-    final_msg = (
-        "Great! I got all your campaign details.\n\n"
-        "1) Platform is: " + ", ".join(state["platform"]) + "\n"
-        "2) Category is: " + ", ".join(state["category"]) + "\n"
-        "3) Country is: " + ", ".join(state["country"]) + "\n"
-        "4) Followers count: " + ", ".join(state["followers"]) + "\n"
-        "5) Number of influencers: " + str(state["limit"]) + "\n"
-        "iShout admin team will review them and we’ll notify you once it's approved.\n"
-        "Thank you for using iShout! 🎉"
-    )
-    await send_whatsapp_message(sender, final_msg)
-    cleared_state = await reset_user_state(sender)
-    print(f"➡ Cleared state: {cleared_state}")
-    return cleared_state
+
+    if not state.get("acknowledged"):
+        final_msg = (
+            "Great! I got all your campaign details.\n\n"
+            "1) Platform is: " + ", ".join(state["platform"]) + "\n"
+            "2) Category is: " + ", ".join(state["category"]) + "\n"
+            "3) Country is: " + ", ".join(state["country"]) + "\n"
+            "4) Followers count: " + ", ".join(state["followers"]) + "\n"
+            "5) Number of influencers: " + str(state["limit"]) + "\n"
+            "iShout admin team will review them and we'll notify you once it's approved.\n"
+            "Thank you for using iShout! 🎉"
+        )
+        await send_whatsapp_message(sender, final_msg)
+        state["acknowledged"] = True
+
+    state["done"] = True
+    print("➡ Campaign acknowledged, state marked as done")
+    return state
 
 
 def missing_fields(state: ConversationState):
