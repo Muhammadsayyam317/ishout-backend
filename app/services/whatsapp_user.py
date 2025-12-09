@@ -4,9 +4,7 @@ from pymongo import ReturnDocument
 import time
 
 
-async def create_whatsapp_user(
-    sender_id: str, name: str = None, increment_messages: bool = True
-):
+async def create_whatsapp_user(sender_id: str, name: str = None):
     try:
         db = get_db()
         whatsapp_users = db.get_collection("whatsapp_users")
@@ -24,18 +22,11 @@ async def create_whatsapp_user(
                 "last_seen": time.time(),
                 "updated_at": time.time(),
             },
-            "$inc": {},
+            "$inc": {"total_messages": 1},
         }
 
         if name:
             update_doc["$set"]["name"] = name
-
-        if increment_messages:
-            update_doc["$inc"]["total_messages"] = 1
-
-        update_doc["$inc"]["campaign_count"] = update_doc["$inc"].get(
-            "campaign_count", 1
-        )
 
         user = await whatsapp_users.find_one_and_update(
             {"sender_id": sender_id},
@@ -46,8 +37,6 @@ async def create_whatsapp_user(
 
         return user
 
-    except HTTPException as e:
-        raise e
     except Exception as e:
         raise HTTPException(
             status_code=500,
