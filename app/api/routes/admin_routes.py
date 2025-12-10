@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from app.api.controllers.admin.campaign_controller import update_status
 from app.api.controllers.admin.onboarding_influencers import (
     onboarding_campaigns,
 )
@@ -9,14 +10,14 @@ from app.api.controllers.admin.approved_campaign import (
 from app.api.controllers.admin.campaign_byId import campaign_by_id_controller
 from app.api.controllers.admin.delete_campaign import delete_campaign_ById
 from app.api.controllers.admin.delete_influencers import deleteInfluencerEmbedding
-from app.api.controllers.campaign_controller import (
+from app.api.controllers.admin.campaign_controller import (
     AdminApprovedSingleInfluencer,
     company_approved_campaign_influencers,
     get_all_campaigns,
     admin_generate_influencers,
-    update_campaign_status,
     get_campaign_generated_influencers,
     reject_and_regenerate_influencers,
+    update_campaignstatus_with_background_task,
 )
 from app.api.controllers.company.company_data import company_data
 from app.models.campaign_model import (
@@ -131,7 +132,20 @@ async def update_campaign_status_route(
     current_user: dict = Depends(require_admin_access),
 ):
     try:
-        return await update_campaign_status(request_data, background_tasks)
+        return await update_campaignstatus_with_background_task(
+            request_data, background_tasks
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.patch("/campaigns/status-update", tags=["Admin"])
+async def update_status_route(
+    request_data: CampaignStatusUpdateRequest,
+    current_user: dict = Depends(require_admin_access),
+):
+    try:
+        return await update_status(request_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -141,7 +155,6 @@ async def reject_and_regenerate_route(
     request_data: RejectInfluencersRequest,
     current_user: dict = Depends(require_admin_access),
 ):
-    """Reject influencers and generate new ones (admin only)"""
     try:
         return await reject_and_regenerate_influencers(request_data)
     except Exception as e:

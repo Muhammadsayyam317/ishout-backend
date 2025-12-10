@@ -11,7 +11,7 @@ from app.api.controllers.company.approved_influencers import (
     ReviewPendingInfluencersByCampaignId,
 )
 from app.middleware.auth_middleware import require_company_user_access
-from app.api.controllers.campaign_controller import (
+from app.api.controllers.admin.campaign_controller import (
     create_campaign,
     user_reject_influencers,
 )

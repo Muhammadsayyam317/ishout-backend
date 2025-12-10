@@ -657,7 +657,7 @@ async def admin_generate_influencers(
         ) from e
 
 
-async def update_campaign_status(
+async def update_campaignstatus_with_background_task(
     request_data: CampaignStatusUpdateRequest,
     background_tasks: BackgroundTasks,
 ) -> Dict[str, Any]:
@@ -717,6 +717,35 @@ async def update_campaign_status(
     except Exception as e:
         print(f"Error in update_campaign_status: {e}")
         return {"message": "Campaign status updated successfully", "error": str(e)}
+
+
+async def update_status(request_data: CampaignStatusUpdateRequest) -> Dict[str, Any]:
+    try:
+        db = get_db()
+        campaigns_collection = db.get_collection("campaigns")
+        result = await campaigns_collection.update_one(
+            {"_id": ObjectId(request_data.campaign_id)},
+            {
+                "$set": {
+                    "status": request_data.status,
+                    "updated_at": datetime.now(timezone.utc),
+                }
+            },
+        )
+
+        if result.modified_count == 0:
+            raise HTTPException(status_code=404, detail="No changes")
+
+        return {
+            "message": f"Campaign status updated to {request_data.status}",
+            "campaign_id": request_data.campaign_id,
+            "status": request_data.status,
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error in update status: {str(e)}",
+        ) from e
 
 
 async def get_campaign_generated_influencers(campaign_id: str) -> Dict[str, Any]:
