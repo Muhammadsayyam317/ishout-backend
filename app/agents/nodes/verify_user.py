@@ -9,13 +9,14 @@ def _normalize_phone(phone: str | None) -> str:
 
 async def node_verify_user(state, config):
     try:
-        user_phoneNumber = state.get("sender_phone")
-        print(f"user_phoneNumber: {user_phoneNumber}")
-        user_phoneNumber = _normalize_phone(user_phoneNumber)
+        user_phoneNumber = state.get("sender_id")
+        print(f"user phone number from state: {user_phoneNumber}")
 
+        user_phoneNumber = _normalize_phone(user_phoneNumber)
         db = get_db()
         users_collection = db.get_collection("users")
         user = await users_collection.find_one({"phone": user_phoneNumber})
+
         if not user:
             state["is_existing_user"] = False
             state["reply"] = (
@@ -23,7 +24,6 @@ async def node_verify_user(state, config):
                 "Please create an account to continue: https://ishout.vercel.app/auth/register"
             )
             state["reply_sent"] = False
-            state["done"] = True
             return state
 
         state["is_existing_user"] = True
@@ -34,6 +34,7 @@ async def node_verify_user(state, config):
             state.get("name") or user.get("contact_person") or user.get("company_name")
         )
         return state
+
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error verifying user: {str(e)}"
