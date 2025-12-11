@@ -25,10 +25,8 @@ async def send_whatsapp_approved_influencers(campaign_id: str):
         }
     ).to_list(length=100)
 
-    print(f"Approved influencers found: {len(influencers)}")
 
     if not influencers:
-        print("No approved influencers found.")
         return
 
     message = "🎉 Your approved influencers are ready! \n\n"

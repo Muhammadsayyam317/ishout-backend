@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from app.tools.instagram_influencers import search_instagram_influencers
 from app.tools.tiktok_influencers import search_tiktok_influencers
 from app.tools.youtube_influencers import search_youtube_influencers
+from langfuse import observe
 from app.models.influencers_model import (
     FindInfluencerRequest,
     MoreInfluencerRequest,
@@ -11,10 +12,7 @@ from app.db.connection import get_db
 from bson import ObjectId
 
 
-class Agent:
-    """Simple Agent class to mimic OpenAI's Agent functionality"""
-
-
+@observe(name="find_influencers_by_campaign")
 async def find_influencers_by_campaign(request_data: FindInfluencerRequest):
     try:
         db = get_db()
