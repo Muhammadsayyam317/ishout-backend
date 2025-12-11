@@ -1,0 +1,40 @@
+import re
+from fastapi import HTTPException
+from app.db.connection import get_db
+
+
+def _normalize_phone(phone: str | None) -> str:
+    return re.sub(r"[^\d]", "", phone or "")
+
+
+async def node_verify_user(state, config):
+    try:
+        raw_phone = state.get("sender_id") or config["configurable"]["thread_id"]
+        sender_phone = _normalize_phone(raw_phone)
+
+        db = get_db()
+        users_collection = db.get_collection("users")
+        user = await users_collection.find_one({"phone": sender_phone})
+
+        if not user:
+            state["is_existing_user"] = False
+            state["reply"] = (
+                "Hi! It looks like you are not registered with iShout.\n\n"
+                "Please create an account to continue: https://ishout.vercel.app/auth/register"
+            )
+            state["reply_sent"] = False
+            state["done"] = True
+            return state
+
+        state["is_existing_user"] = True
+        state["contact_person"] = user.get("contact_person")
+        state["company_name"] = user.get("company_name")
+        state["user_status"] = user.get("status")
+        state["name"] = (
+            state.get("name") or user.get("contact_person") or user.get("company_name")
+        )
+        return state
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error verifying user: {str(e)}"
+        ) from e
