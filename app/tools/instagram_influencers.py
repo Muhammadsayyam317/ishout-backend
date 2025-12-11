@@ -16,18 +16,13 @@ async def search_instagram_influencers(
     category: List[str], limit: int, followers: List[str], country: List[str]
 ):
     try:
-        print(
-            f"INSTAGRAM TOOL CALLED WITH: category={category}, followers={followers}, country={country}, limit={limit}"
-        )
-
         categories = category if category else [""]
         countries = [normalize_country(c) for c in country] if country else [""]
         followers_list = normalize_followers(followers) if followers else [""]
-
         all_follower_ranges = parse_followers_list(followers_list)
-
         embeddings = OpenAIEmbeddings(
-            api_key=config.OPENAI_API_KEY, model=config.EMBEDDING_MODEL
+            api_key=config.OPENAI_API_KEY,
+            model=config.EMBEDDING_MODEL,
         )
         pymongo_db = get_pymongo_db()
         collection = pymongo_db[config.MONGODB_ATLAS_COLLECTION_INSTAGRAM]
@@ -50,7 +45,6 @@ async def search_instagram_influencers(
                 for follower_range_str in followers_list:
                     query_text = f"Instagram influencer {cat} from {cntry} with {follower_range_str} followers"
                     print(f"INSTAGRAM VECTOR QUERY: {query_text}")
-
                     results = vectorstore.similarity_search(
                         query_text, k=per_combination_limit
                     )
@@ -58,6 +52,7 @@ async def search_instagram_influencers(
                     for r in results:
                         influencer_data = extract_influencer_data(r, "Instagram")
                         username = influencer_data.get("username")
+
                         if not username or username in seen_usernames:
                             continue
                         if not filter_influencer_data(
@@ -79,8 +74,7 @@ async def search_instagram_influencers(
                     break
             if len(all_results) >= target_limit:
                 break
-
         return all_results[:target_limit]
 
     except Exception as e:
-        raise ValueError(f"Error searching Instagram influencers: {str(e)}")
+        raise ValueError(f"Error searching Instagram influencers: {str(e)}") from e

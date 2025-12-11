@@ -1,6 +1,6 @@
 import aiosqlite
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
-from app.agents.graph.whats_graph import graph
+from app.agents.graph.whatsapp_graph import graph
 
 
 async def build_whatsapp_agent(sqlite_path: str | None = "whatsapp_agent.db"):

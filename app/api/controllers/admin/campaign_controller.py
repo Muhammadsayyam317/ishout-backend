@@ -671,7 +671,6 @@ async def update_campaignstatus_with_background_task(
         )
 
         if result.modified_count == 0:
-            print("No campaign updated!")
             raise HTTPException(status_code=404, detail="No changes")
 
         campaign = await campaigns_collection.find_one(
@@ -682,16 +681,11 @@ async def update_campaignstatus_with_background_task(
             raise HTTPException(status_code=404, detail="Campaign not found")
 
         user_type = campaign.get("user_type", None)
-        print(f"Campaign user_type: {user_type}")
 
         if request_data.status == CampaignStatus.APPROVED and user_type == "whatsapp":
             background_tasks.add_task(
                 send_whatsapp_approved_influencers, request_data.campaign_id
             )
-
-            print("Background task added successfully!")
-        else:
-            print("Skipping WhatsApp message.")
 
         return {
             "message": f"Campaign status updated to {request_data.status}",
@@ -700,8 +694,10 @@ async def update_campaignstatus_with_background_task(
         }
 
     except Exception as e:
-        print(f"Error in update_campaign_status: {e}")
-        return {"message": "Campaign status updated successfully", "error": str(e)}
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error in update_campaign_status: {str(e)}",
+        ) from e
 
 
 async def update_status(request_data: CampaignStatusUpdateRequest) -> Dict[str, Any]:

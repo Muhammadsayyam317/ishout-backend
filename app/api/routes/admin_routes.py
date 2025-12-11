@@ -16,9 +16,10 @@ from app.api.controllers.admin.campaign_controller import (
     get_all_campaigns,
     admin_generate_influencers,
     get_campaign_generated_influencers,
-    reject_and_regenerate_influencers,
     update_campaignstatus_with_background_task,
 )
+
+from app.api.controllers.admin.reject_influencers import reject_and_regenerate
 from app.api.controllers.company.company_data import company_data
 from app.models.campaign_model import (
     AdminGenerateInfluencersRequest,
@@ -156,7 +157,7 @@ async def reject_and_regenerate_route(
     current_user: dict = Depends(require_admin_access),
 ):
     try:
-        return await reject_and_regenerate_influencers(request_data)
+        return await reject_and_regenerate(request_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

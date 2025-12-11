@@ -1,5 +1,4 @@
-from fastapi import Request
-import logging
+from fastapi import Request, HTTPException
 from app.agents.nodes.state import (
     get_conversation_round,
     increment_conversation_round,
@@ -18,10 +17,8 @@ async def handle_whatsapp_events(request: Request):
 
         if "messages" not in event_data or not event_data["messages"]:
             return {"status": "ok"}
-
         first_message = event_data["messages"][0]
         thread_id = first_message.get("from")
-
         msg_text = (
             first_message.get("text", {}).get("body")
             if isinstance(first_message.get("text"), dict)
@@ -30,7 +27,6 @@ async def handle_whatsapp_events(request: Request):
 
         if not thread_id:
             return {"status": "error", "message": "No sender ID found"}
-
         profile_name = (
             event_data.get("contacts", [{}])[0].get("profile", {}).get("name")
         )
@@ -40,9 +36,6 @@ async def handle_whatsapp_events(request: Request):
         state = stored_state or {}
         conversation_round = await get_conversation_round(thread_id)
         if state.get("done") and state.get("acknowledged"):
-            logging.info(
-                f"Campaign completed for {thread_id}, starting new conversation round"
-            )
             conversation_round = await increment_conversation_round(thread_id)
             state = await reset_user_state(thread_id)
 
@@ -69,5 +62,4 @@ async def handle_whatsapp_events(request: Request):
         return {"status": "ok"}
 
     except Exception as e:
-        logging.exception("Error handling WhatsApp event")
-        return {"status": "error", "message": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))

@@ -52,9 +52,9 @@ async def create_whatsapp_campaign(state: ConversationState) -> Dict[str, Any]:
 
         return {
             "message": (
-                "Thank you! I have received all your campaign details. "
-                "Once our admin reviews your request, we will share the matching influencers with you."
-            ),
+                f"Thank you, {state.get('contact_person')}! I have received all your campaign details. "
+                "Once iShout admin reviews your request, iShout will share the matching influencers with you."
+            ).format(contact_person=state.get("contact_person")),
             "campaign_id": str(result.inserted_id),
         }
 
