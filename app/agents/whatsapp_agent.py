@@ -1,14 +1,14 @@
 from fastapi import Request
 import logging
 from app.agents.nodes.state import (
-    get_user_state,
-    update_user_state,
-    reset_user_state,
     get_conversation_round,
     increment_conversation_round,
 )
 from app.db.sqlite import build_whatsapp_agent
-from app.services.whatsapp_user import create_whatsapp_user
+from app.services.whatsapp.whatsapp_user import create_whatsapp_user
+from app.agents.state.get_user_state import get_user_state
+from app.agents.state.update_user_state import update_user_state
+from app.agents.state.reset_state import reset_user_state
 
 
 async def handle_whatsapp_events(request: Request):
