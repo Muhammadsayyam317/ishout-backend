@@ -25,11 +25,11 @@ graph.set_entry_point("debug_before")
 graph.add_edge("debug_before", "verify_user")
 graph.add_conditional_edges(
     "verify_user",
-    lambda state: "requirements" if state.get("is_existing_user") else "ask_user",
-    {"requirements": "requirements", "ask_user": "ask_user"},
+    lambda state: "requirements" if state.get("is_existing_user") else END,
+    {"requirements": "requirements", END: END},
 )
-graph.add_edge("requirements", "debug_after")
 
+graph.add_edge("requirements", "debug_after")
 graph.add_conditional_edges(
     "debug_after",
     lambda state: (

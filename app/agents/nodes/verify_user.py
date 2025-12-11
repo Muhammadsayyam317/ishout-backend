@@ -9,17 +9,17 @@ def _normalize_phone(phone: str | None) -> str:
 
 async def node_verify_user(state, config):
     try:
-        raw_phone = state.get("sender_id") or config["configurable"]["thread_id"]
-        sender_phone = _normalize_phone(raw_phone)
+        user_phoneNumber = state.get("sender_phone")
+        print(f"user_phoneNumber: {user_phoneNumber}")
+        user_phoneNumber = _normalize_phone(user_phoneNumber)
 
         db = get_db()
         users_collection = db.get_collection("users")
-        user = await users_collection.find_one({"phone": sender_phone})
-
+        user = await users_collection.find_one({"phone": user_phoneNumber})
         if not user:
             state["is_existing_user"] = False
             state["reply"] = (
-                "Hi! It looks like you are not registered with iShout.\n\n"
+                f"Hi {state.get('contact_person')}! It looks like you are not registered with iShout.\n\n"
                 "Please create an account to continue: https://ishout.vercel.app/auth/register"
             )
             state["reply_sent"] = False
