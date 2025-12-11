@@ -11,7 +11,7 @@ import logging
 from app.core.errors import register_exception_handlers
 import aiosqlite
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
-from app.agents.graph.whats_graph import graph
+from app.agents.graph.whatsapp_graph import graph
 
 
 try:
