@@ -76,8 +76,6 @@ class AdminGenerateInfluencersRequest(BaseModel):
 
 
 class CampaignStatusUpdateRequest(BaseModel):
-    """Request model to update campaign status"""
-
     campaign_id: str
     status: CampaignStatus
 

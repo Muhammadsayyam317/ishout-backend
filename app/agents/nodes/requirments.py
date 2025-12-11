@@ -1,9 +1,6 @@
 import json
 import logging
-from app.agents.nodes.message_to_whatsapp import send_whatsapp_message
-from app.agents.nodes.state import reset_user_state, update_user_state
 from app.models.whatsappconversation_model import ConversationState
-from app.services.campaign_service import create_whatsapp_campaign
 from app.utils.extract_feilds import (
     extract_followers,
     extract_platforms,
@@ -61,32 +58,42 @@ async def node_requirements(state):
     missing = missing_fields(state)
     if "platform" in missing:
         state["reply"] = (
-            "Which platform should the influencers be from? \n\n"
-            "(e.g. Instagram, TikTok, YouTube)\n\n"
+            "👋 Welcome to iShout!\n\n"
+            "Let's find the perfect influencers for your campaign 🎲\n\n"
+            "Which social media platform are you targeting?\n\n"
+            "📱 Examples: Instagram, TikTok, YouTube"
         )
         return state
     if "category" in missing:
         state["reply"] = (
-            f"Platform selected: {', '.join(state['platform'])}\nNow tell me the category you're targeting. \n\n"
-            "(e.g. fashion, beauty, tech)\n\n"
+            f"Great! *{', '.join(state['platform'])}* it is!\n\n"
+            "Now, what category or niche are you looking for?\n\n"
+            "💡 Examples: Fashion, Beauty, Tech, Fitness, Food, Travel, Gaming"
         )
         return state
     if "country" in missing:
         state["reply"] = (
-            f"Category saved: {', '.join(state['category'])}\nWhich country should the influencers be from? \n\n"
-            "(e.g. UAE, Kuwait, Saudi Arabia)\n\n"
+            f"Perfect! *{', '.join(state['category'])}* influencers coming up!\n\n"
+            "Which country or region should these influencers be based in?\n\n"
+            "🌍 Examples: UAE, Kuwait, Saudi Arabia, Egypt, Qatar"
         )
         return state
     if "limit" in missing:
         state["reply"] = (
-            f"Country saved: {', '.join(state['country'])}\nHow many influencers do you want? \n\n"
-            "(e.g. 10, 20, 30)\n\n"
+            f"Got it! Looking for influencers in *{', '.join(state['country'])}*\n\n"
+            "How many influencers would you like to connect with?\n\n"
+            "🔢 Examples: 5, 10, 20, 50"
         )
         return state
     if "followers" in missing:
         state["reply"] = (
-            f"Number of influencers saved: {state.get('limit')}\nWhat follower range do you want? \n\n"
-            "(e.g. 10k, 50k-100k, 1M+)\n\n"
+            f"Noted! We'll find *{state.get('limit')}* influencers for you.\n\n"
+            "What follower range are you targeting?\n\n"
+            "👥 Examples:\n"
+            "• 50k (Micro influencers)\n"
+            "• 200k (Mid-tier)\n"
+            "• 500k+ (Macro influencers)\n"
+            "• 1M+ (Mega influencers)"
         )
         return state
 
@@ -94,46 +101,6 @@ async def node_requirements(state):
     state["ready_for_campaign"] = True
     print(f"➡ Exited node_requirements: {state}")
     return state
-
-
-async def node_ask_user(state, config):
-    print(f"➡ Entered node_ask_user: {state}")
-    sender = state.get("sender_id") or config["configurable"]["thread_id"]
-    if state.get("reply") and not state.get("reply_sent"):
-        await send_whatsapp_message(sender, state["reply"])
-        state["reply_sent"] = True
-        await update_user_state(sender, state)
-    print(f"➡ Exited node_ask_user: {state}")
-    return state
-
-
-async def node_create_campaign(state: ConversationState):
-    print("➡ Entered node_create_campaign")
-    result = await create_whatsapp_campaign(state)
-    state["campaign_id"] = result["campaign_id"]
-    state["campaign_created"] = True
-    state["reply"] = None
-    print(f"➡ Exited node_create_campaign: {state}")
-    return state
-
-
-async def node_acknowledge_user(state: ConversationState, config):
-    print("➡ Entered node_acknowledge_user")
-    sender = state.get("sender_id") or config["configurable"]["thread_id"]
-    final_msg = (
-        "Great! I got all your campaign details.\n\n"
-        "1) Platform is: " + ", ".join(state["platform"]) + "\n"
-        "2) Category is: " + ", ".join(state["category"]) + "\n"
-        "3) Country is: " + ", ".join(state["country"]) + "\n"
-        "4) Followers count: " + ", ".join(state["followers"]) + "\n"
-        "5) Number of influencers: " + str(state["limit"]) + "\n"
-        "iShout admin team will review them and we’ll notify you once it's approved.\n"
-        "Thank you for using iShout! 🎉"
-    )
-    await send_whatsapp_message(sender, final_msg)
-    cleared_state = await reset_user_state(sender)
-    print(f"➡ Cleared state: {cleared_state}")
-    return cleared_state
 
 
 def missing_fields(state: ConversationState):

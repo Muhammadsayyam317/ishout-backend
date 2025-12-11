@@ -2,6 +2,9 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 from bson import ObjectId
 from fastapi import HTTPException, BackgroundTasks
+from app.api.controllers.admin.influencers_controller import (
+    find_influencers_by_campaign,
+)
 from app.api.controllers.admin.send_whatsapp_approved_influencers import (
     send_whatsapp_approved_influencers,
 )
@@ -16,7 +19,6 @@ from app.models.campaign_model import (
     CampaignStatus,
 )
 from app.models.influencers_model import FindInfluencerRequest
-from app.api.controllers.influencers_controller import find_influencers_by_campaign
 from app.db.connection import get_db
 from app.config import config
 from app.utils.helpers import convert_objectid
@@ -245,12 +247,6 @@ async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
                     continue
 
                 platform_collection = db.get_collection(collection_name)
-                print(
-                    "Looking for influencer {} in collection {}".format(
-                        influencer_id, collection_name
-                    )
-                )
-
                 try:
                     influencer = await platform_collection.find_one(
                         {"_id": ObjectId(influencer_id)}
@@ -634,8 +630,7 @@ async def add_rejected_influencers(
 
 async def admin_generate_influencers(
     campaign_id: str, request_data: AdminGenerateInfluencersRequest
-) -> Dict[str, Any]:
-    """Admin generates influencers for a campaign"""
+):
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
@@ -657,21 +652,14 @@ async def admin_generate_influencers(
         ) from e
 
 
-async def update_campaign_status(
+async def update_campaignstatus_with_background_task(
     request_data: CampaignStatusUpdateRequest,
     background_tasks: BackgroundTasks,
 ) -> Dict[str, Any]:
     try:
-        print("\n----------------------------")
         print("UPDATE CAMPAIGN STATUS CALLED")
-        print("----------------------------")
-
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
-
-        print(f"Updating campaign ID: {request_data.campaign_id}")
-        print(f"New status: {request_data.status}")
-
         result = await campaigns_collection.update_one(
             {"_id": ObjectId(request_data.campaign_id)},
             {
@@ -686,7 +674,6 @@ async def update_campaign_status(
             print("No campaign updated!")
             raise HTTPException(status_code=404, detail="No changes")
 
-        # Now fetch campaign to check user_type
         campaign = await campaigns_collection.find_one(
             {"_id": ObjectId(request_data.campaign_id)}
         )
@@ -697,18 +684,14 @@ async def update_campaign_status(
         user_type = campaign.get("user_type", None)
         print(f"Campaign user_type: {user_type}")
 
-        # Send WhatsApp only if user_type = whatsapp
         if request_data.status == CampaignStatus.APPROVED and user_type == "whatsapp":
-            print("Campaign is APPROVED & user_type = whatsapp")
-            print("Adding background task to send WhatsApp message...")
-
             background_tasks.add_task(
                 send_whatsapp_approved_influencers, request_data.campaign_id
             )
 
             print("Background task added successfully!")
         else:
-            print("Skipping WhatsApp message (Not a WhatsApp user).")
+            print("Skipping WhatsApp message.")
 
         return {
             "message": f"Campaign status updated to {request_data.status}",
@@ -719,6 +702,35 @@ async def update_campaign_status(
     except Exception as e:
         print(f"Error in update_campaign_status: {e}")
         return {"message": "Campaign status updated successfully", "error": str(e)}
+
+
+async def update_status(request_data: CampaignStatusUpdateRequest) -> Dict[str, Any]:
+    try:
+        db = get_db()
+        campaigns_collection = db.get_collection("campaigns")
+        result = await campaigns_collection.update_one(
+            {"_id": ObjectId(request_data.campaign_id)},
+            {
+                "$set": {
+                    "status": request_data.status,
+                    "updated_at": datetime.now(timezone.utc),
+                }
+            },
+        )
+
+        if result.modified_count == 0:
+            raise HTTPException(status_code=404, detail="No changes")
+
+        return {
+            "message": f"Campaign status updated to {request_data.status}",
+            "campaign_id": request_data.campaign_id,
+            "status": request_data.status,
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error in update status: {str(e)}",
+        ) from e
 
 
 async def get_campaign_generated_influencers(campaign_id: str) -> Dict[str, Any]:
@@ -751,144 +763,6 @@ async def get_campaign_generated_influencers(campaign_id: str) -> Dict[str, Any]
         raise HTTPException(
             status_code=500,
             detail=f"Error in get campaign generated influencers: {str(e)}",
-        ) from e
-
-
-async def reject_and_regenerate_influencers(request_data) -> Dict[str, Any]:
-    """Reject influencers and generate new ones"""
-    try:
-        db = get_db()
-        campaigns_collection = db.get_collection("campaigns")
-        # Get campaign
-        campaign = await campaigns_collection.find_one(
-            {"_id": ObjectId(request_data.campaign_id)}
-        )
-        if not campaign:
-            raise HTTPException(status_code=404, detail="Campaign not found")
-
-        # Get existing rejected IDs (both admin rejected and user rejected)
-        existing_rejected = set(campaign.get("rejected_ids", []))
-        existing_rejected_by_user = set(campaign.get("rejectedByUser", []))
-
-        # Add new rejected IDs
-        new_rejected_ids = list(set(request_data.influencer_ids))
-        existing_rejected.update(new_rejected_ids)
-
-        # Combine all rejected IDs for exclusion
-        all_rejected_ids = existing_rejected | existing_rejected_by_user
-
-        # Update campaign with rejected IDs
-        await campaigns_collection.update_one(
-            {"_id": ObjectId(request_data.campaign_id)},
-            {
-                "$set": {
-                    "rejected_ids": list(existing_rejected),
-                    "updated_at": datetime.now(timezone.utc),
-                }
-            },
-        )
-
-        # Use limit from campaign if available, otherwise use request limit
-        campaign_limit = campaign.get("limit") or request_data.limit or 10
-
-        # Create influencer search request with exclude_ids
-        influencer_request = FindInfluencerRequest(
-            campaign_id=request_data.campaign_id,
-            user_id=campaign.get("user_id", ""),
-            limit=campaign_limit,  # Use limit from campaign
-            exclude_ids=list(
-                all_rejected_ids
-            ),  # Exclude all rejected IDs (both admin and user rejected)
-        )
-
-        # Generate new influencers
-        result = await find_influencers_by_campaign(influencer_request)
-
-        print(f"Result from find_influencers_by_campaign (regenerate): {result}")
-
-        if "error" in result:
-            return result
-
-        # Get new influencers
-        new_influencers = result.get("influencers", [])
-        print(f"New influencers count: {len(new_influencers)}")
-
-        # Get existing generated influencer IDs (now stored as simple list of IDs)
-        existing_generated_ids = set()
-        existing_generated = campaign.get("generated_influencers", [])
-
-        # Check if it's list of IDs (new format) or list of objects (legacy format)
-        if existing_generated and isinstance(existing_generated[0], str):
-            # New format: list of IDs
-            existing_generated_ids = set(existing_generated)
-        else:
-            # Legacy format: list of objects, extract IDs
-            for inf in existing_generated:
-                inf_id = inf.get("influencer_id") or inf.get("_id") or inf.get("id")
-                if inf_id:
-                    existing_generated_ids.add(str(inf_id))
-
-        # Get IDs of already approved influencers (to exclude from regeneration results)
-        already_approved_ids = set(campaign.get("influencer_ids", []))
-
-        # Filter out already generated influencers AND already approved influencers
-        final_new_influencers = []
-        final_new_influencer_ids = []
-        for inf in new_influencers:
-            inf_id = inf.get("influencer_id") or inf.get("_id") or inf.get("id")
-            inf_id_str = str(inf_id) if inf_id else None
-
-            # Only include if not already generated AND not already approved
-            if (
-                inf_id_str
-                and inf_id_str not in existing_generated_ids
-                and inf_id_str not in already_approved_ids
-            ):
-                final_new_influencers.append(inf)
-                final_new_influencer_ids.append(inf_id_str)
-
-        # Limit to the requested number of new influencers
-        final_new_influencers = final_new_influencers[:campaign_limit]
-        final_new_influencer_ids = final_new_influencer_ids[:campaign_limit]
-
-        # Combine with existing generated influencers (as IDs)
-        all_generated_ids = existing_generated_ids | set(final_new_influencer_ids)
-
-        # Update campaign with merged generated influencer IDs only (not full objects)
-        await campaigns_collection.update_one(
-            {"_id": ObjectId(request_data.campaign_id)},
-            {
-                "$set": {
-                    "generated_influencers": list(all_generated_ids),  # Store only IDs
-                    "status": CampaignStatus.PROCESSING,
-                    "updated_at": datetime.now(timezone.utc),
-                }
-            },
-        )
-
-        return {
-            "message": f"Rejected {len(new_rejected_ids)} influencer(s) and generated {len(final_new_influencers)} new influencer(s)",
-            "campaign_id": request_data.campaign_id,
-            "rejected_count": len(new_rejected_ids),
-            "new_generated_count": len(final_new_influencers),
-            "total_generated": len(all_generated_ids),
-            "total_rejected": len(existing_rejected),
-            "total_rejected_by_user": len(existing_rejected_by_user),
-            "rejected_influencer_ids": new_rejected_ids,
-            "new_influencers": final_new_influencers,
-            "campaign": {
-                "name": campaign["name"],
-                "status": "processing",
-                "platform": campaign.get("platform", []),
-                "category": campaign.get("category", []),
-            },
-        }
-
-    except Exception as e:
-        print(f"Error in reject_and_regenerate_influencers: {str(e)}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error in reject and regenerate influencers: {str(e)}",
         ) from e
 
 

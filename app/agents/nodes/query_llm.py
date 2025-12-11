@@ -10,7 +10,6 @@ async def Query_to_llm(state: ConversationState):
     followers = state.get("followers") or []
     missing = []
 
-    # Check if arrays are empty
     if not platform or (isinstance(platform, list) and len(platform) == 0):
         missing.append("platform (e.g. Instagram, TikTok, YouTube)")
     if not country or (isinstance(country, list) and len(country) == 0):
