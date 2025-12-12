@@ -1,10 +1,9 @@
-import logging
 import httpx
 from fastapi import HTTPException
 from app.config.credentials_config import config
 
 
-async def send_whatsapp_message(
+async def send_whatsapp_interactive_message(
     recipient_id: str, message_text: str, influencer: dict
 ) -> bool:
 
@@ -39,14 +38,14 @@ async def send_whatsapp_message(
                     {
                         "type": "reply",
                         "reply": {
-                            "id": f"approve_{influencer.get('username')}",
+                            "id": f"approve_{influencer.get('_id')}",
                             "title": "Approve 👍",
                         },
                     },
                     {
                         "type": "reply",
                         "reply": {
-                            "id": f"reject_{influencer.get('username')}",
+                            "id": f"reject_{influencer.get('_id')}",
                             "title": "Reject 🚫",
                         },
                     },

@@ -1,5 +1,5 @@
-from app.agents.nodes.message_to_whatsapp import send_whatsapp_message
 from app.models.whatsappconversation_model import ConversationState
+from app.services.whatsapp.onboarding_Whatsapp_message import send_whatsapp_message
 
 
 async def node_acknowledge_user(state: ConversationState, config):

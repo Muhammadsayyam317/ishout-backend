@@ -1,6 +1,6 @@
-from app.agents.nodes.message_to_whatsapp import send_whatsapp_message
 from app.agents.state.update_user_state import update_user_state
 from app.models.whatsappconversation_model import ConversationState
+from app.services.whatsapp.onboarding_Whatsapp_message import send_whatsapp_message
 
 
 async def node_ask_user(state: ConversationState, config):

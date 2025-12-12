@@ -1,7 +1,8 @@
-from app.agents.nodes.message_to_whatsapp import send_whatsapp_message
 from app.db.connection import get_db
 from bson import ObjectId
 from fastapi import HTTPException
+from app.models.campaign_influencers_model import CampaignInfluencerStatus
+from app.services.whatsapp.onboarding_Whatsapp_message import send_whatsapp_message
 
 
 async def send_whatsapp_approved_influencers(campaign_id: str):
@@ -20,7 +21,7 @@ async def send_whatsapp_approved_influencers(campaign_id: str):
         influencers = await influencer_collection.find(
             {
                 "campaign_id": ObjectId(campaign_id),
-                "status": "approved",
+                "status": CampaignInfluencerStatus.APPROVED.value,
             }
         ).to_list(length=100)
         if not influencers:

@@ -5,9 +5,6 @@ from fastapi import HTTPException, BackgroundTasks
 from app.api.controllers.admin.influencers_controller import (
     find_influencers_by_campaign,
 )
-from app.api.controllers.admin.send_whatsapp_approved_influencers import (
-    send_whatsapp_approved_influencers,
-)
 from app.models.campaign_influencers_model import (
     CampaignInfluencerStatus,
     CampaignInfluencersRequest,
@@ -21,6 +18,9 @@ from app.models.campaign_model import (
 from app.models.influencers_model import FindInfluencerRequest
 from app.db.connection import get_db
 from app.config import config
+from app.services.whatsapp.whatsapp_interactive_message import (
+    send_whatsapp_interactive_message,
+)
 from app.utils.helpers import convert_objectid
 
 
@@ -684,7 +684,7 @@ async def update_campaignstatus_with_background_task(
 
         if request_data.status == CampaignStatus.APPROVED and user_type == "whatsapp":
             background_tasks.add_task(
-                send_whatsapp_approved_influencers, request_data.campaign_id
+                send_whatsapp_interactive_message, request_data.campaign_id
             )
 
         return {
