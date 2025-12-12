@@ -18,11 +18,15 @@ async def node_verify_user(state, config):
         user = await users_collection.find_one({"phone": user_phoneNumber})
 
         if not user:
+            print(
+                f"[node_verify_user] User not found for phone number: {user_phoneNumber}"
+            )
             state["is_existing_user"] = False
             state["reply"] = (
                 f"Hi {state.get('contact_person')}! It looks like you are not registered with iShout.\n\n"
                 "Please create an account to continue: https://ishout.vercel.app/auth/register"
             )
+
             state["reply_sent"] = False
             return state
 

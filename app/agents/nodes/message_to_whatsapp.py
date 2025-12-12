@@ -8,6 +8,9 @@ async def send_whatsapp_message(
     recipient_id: str, message_text: str, influencer: dict
 ) -> bool:
 
+    print(
+        f"[send_whatsapp_message] Sending message to {recipient_id} with content: {influencer}"
+    )
     headers = {
         "Authorization": f"Bearer {config.META_WHATSAPP_ACCESSSTOKEN}",
         "Content-Type": "application/json",
@@ -52,7 +55,9 @@ async def send_whatsapp_message(
         },
     }
 
-    logging.info(f"Sending message to {recipient_id} with content: {message_payload}")
+    print(
+        f"[send_whatsapp_message] Sending message to {recipient_id} with content: {message_payload}"
+    )
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
             response = await client.post(
