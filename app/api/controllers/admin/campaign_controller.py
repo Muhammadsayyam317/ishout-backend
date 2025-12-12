@@ -685,7 +685,7 @@ async def update_campaignstatus_with_background_task(
         if request_data.status == CampaignStatus.APPROVED and user_type == "whatsapp":
             background_tasks.add_task(
                 send_whatsapp_interactive_message,
-                request_data.campaign_id,
+                campaign.get("user_id"),
                 "Approve or Reject this influencer?",
                 campaign,
             )
