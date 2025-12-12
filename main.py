@@ -7,40 +7,15 @@ from fastapi.openapi.utils import get_openapi
 from app.api.api import api_router
 from contextlib import asynccontextmanager
 import os
-import logging
 from app.core.errors import register_exception_handlers
 import aiosqlite
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from app.agents.graph.whatsapp_graph import graph
 
 
-try:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-        handlers=[logging.StreamHandler()],
-        force=True,
-    )
-except TypeError:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-        handlers=[logging.StreamHandler()],
-    )
-
-logging.getLogger().setLevel(logging.INFO)
-logging.getLogger("app").setLevel(logging.INFO)
-logging.getLogger("app.agents").setLevel(logging.INFO)
-logging.getLogger("app.tools").setLevel(logging.INFO)
-logging.info("Logging configured successfully")
-
 security = HTTPBearer(
     scheme_name="Bearer", description="Enter your Bearer token", auto_error=False
 )
-
-# Security scheme for OpenAPI documentation
 security_schemes = {
     "Bearer": {
         "type": "http",
@@ -110,5 +85,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=8000,
         reload=True,
-        log_level="info",
     )

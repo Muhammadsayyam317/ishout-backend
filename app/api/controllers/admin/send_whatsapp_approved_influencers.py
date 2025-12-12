@@ -1,7 +1,7 @@
+from app.agents.nodes.message_to_whatsapp import send_whatsapp_message
 from app.db.connection import get_db
 from bson import ObjectId
 from fastapi import HTTPException
-from app.agents.nodes.message_to_whatsapp import send_whatsapp_message
 
 
 async def send_whatsapp_approved_influencers(campaign_id: str):
@@ -23,27 +23,17 @@ async def send_whatsapp_approved_influencers(campaign_id: str):
                 "status": "approved",
             }
         ).to_list(length=100)
-
         if not influencers:
             return
 
-        message = "🎉 Your approved influencers are ready! \n\n"
-        for idx, inf in enumerate(influencers, start=1):
-            message += (
-                f"{idx}. @{inf.get('username')}\n"
-                f"Followers: {inf.get('followers')}\n"
-                f"Country: {inf.get('country')}\n"
-                f"Pricing: {inf.get('pricing')}\n"
-                f"Link: https://www.instagram.com/{inf.get('username')}\n\n"
+        for influencer in influencers:
+            success = await send_whatsapp_message(
+                user_phone, "Approve or Reject this influencer?", influencer
             )
-        success = await send_whatsapp_message(user_phone, message)
-        if not success:
-            raise HTTPException(
-                status_code=500, detail="WhatsApp message failed to send."
-            )
+            if not success:
+                raise HTTPException(
+                    status_code=500, detail="WhatsApp message failed to send."
+                )
         return {"message": "WhatsApp message sent successfully!"}
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error in send_whatsapp_approved_influencers: {str(e)}",
-        ) from e
+        raise HTTPException(status_code=500, detail=str(e)) from e
