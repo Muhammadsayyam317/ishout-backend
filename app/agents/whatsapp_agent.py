@@ -3,7 +3,7 @@ from app.agents.nodes.state import (
     get_conversation_round,
     increment_conversation_round,
 )
-from app.db.sqlite import build_whatsapp_agent
+from app.core.redis import redis_checkpointer
 from app.agents.state.get_user_state import get_user_state
 from app.agents.state.update_user_state import update_user_state
 from app.agents.state.reset_state import reset_user_state
@@ -18,7 +18,6 @@ async def handle_whatsapp_events(request: Request):
         event = await request.json()
         logger.info(f"Incoming WhatsApp event: {event}")
 
-        # ✅ Safe guards
         entry = event.get("entry", [])
         if not entry:
             return {"status": "ok"}
@@ -29,7 +28,6 @@ async def handle_whatsapp_events(request: Request):
 
         value = changes[0].get("value", {})
 
-        # ✅ Ignore non-message events (delivery, read, status)
         messages = value.get("messages")
         if not messages:
             return {"status": "ok"}
@@ -49,8 +47,7 @@ async def handle_whatsapp_events(request: Request):
 
         profile_name = value.get("contacts", [{}])[0].get("profile", {}).get("name")
 
-        whatsapp_agent = await build_whatsapp_agent()
-
+        whatsapp_agent = await redis_checkpointer()
         stored_state = await get_user_state(thread_id)
         state = stored_state or {}
 
