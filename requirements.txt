@@ -30,6 +30,7 @@ langchain-community
 langchain-mongodb
 langchain-text-splitters
 langgraph-checkpoint-redis
+redis
 # tiktoken
 # lark
 # pyyaml
