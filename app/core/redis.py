@@ -10,10 +10,13 @@ async def redis_checkpointer():
 
     if config.REDIS_USERNAME and config.REDIS_PASSWORD:
         redis_url = f"{scheme}://{config.REDIS_USERNAME}:{config.REDIS_PASSWORD}@{config.REDIS_HOST}:{config.REDIS_PORT}"
+        print(redis_url)
     elif config.REDIS_PASSWORD:
         redis_url = f"{scheme}://:{config.REDIS_PASSWORD}@{config.REDIS_HOST}:{config.REDIS_PORT}"
+        print(redis_url)
     else:
         redis_url = f"{scheme}://{config.REDIS_HOST}:{config.REDIS_PORT}"
+        print(redis_url)
 
     redis = Redis.from_url(redis_url, decode_responses=True)
 
