@@ -1,5 +1,5 @@
 from typing import Any, Dict, List, Optional, Tuple
-
+import re
 from bson import ObjectId
 
 
@@ -201,7 +201,6 @@ def filter_influencer_data(
 
 
 def convert_objectid(doc):
-    """Convert all ObjectId fields in a document to strings."""
     for key, value in doc.items():
         if isinstance(value, ObjectId):
             doc[key] = str(value)
@@ -220,7 +219,7 @@ def convert_to_number(v: str):
 def normalize_followers(followers: list[str]) -> list[str]:
     ranges = []
     for f in followers:
-        if "-" in f:  # already a range
+        if "-" in f:
             ranges.append(f)
         else:
             num = int(f.replace("k", "000").replace("K", "000"))
@@ -236,10 +235,18 @@ def normalize_followers(followers: list[str]) -> list[str]:
 
 
 def normalize_country(country: str) -> str:
-    """Normalize country names to match embeddings."""
     mapping = {
         "uae": "United Arab Emirates",
         "qatar": "Qatar",
+        "saudi": "Saudi Arabia",
+        "saudi arabia": "Saudi Arabia",
+        "kuwait": "Kuwait",
+        "iran": "Iran",
+        "jordan": "Jordan",
+        "oman": "Oman",
+        "bahrain": "Bahrain",
+        "lebanon": "Lebanon",
+        "syria": "Syria",
     }
     return mapping.get(country.lower(), country)
 
@@ -251,3 +258,9 @@ def followers_in_range(influencer_count: int, ranges: List[Tuple[int, int]]):
         if min_f <= influencer_count <= max_f:
             return True
     return False
+
+
+def normalize_phone(phone: str | None) -> str | None:
+    if not phone:
+        return None
+    return re.sub(r"[^\d]", "", phone)

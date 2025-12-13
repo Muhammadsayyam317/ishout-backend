@@ -4,7 +4,6 @@ from app.agents.nodes.state import (
     increment_conversation_round,
 )
 from app.db.sqlite import build_whatsapp_agent
-from app.services.whatsapp.whatsapp_user import create_whatsapp_user
 from app.agents.state.get_user_state import get_user_state
 from app.agents.state.update_user_state import update_user_state
 from app.agents.state.reset_state import reset_user_state
@@ -30,7 +29,7 @@ async def handle_whatsapp_events(request: Request):
         profile_name = (
             event_data.get("contacts", [{}])[0].get("profile", {}).get("name")
         )
-        await create_whatsapp_user(thread_id, profile_name)
+
         whatsapp_agent = await build_whatsapp_agent()
         stored_state = await get_user_state(thread_id)
         state = stored_state or {}
@@ -40,7 +39,6 @@ async def handle_whatsapp_events(request: Request):
             state = await reset_user_state(thread_id)
 
         checkpoint_thread_id = f"{thread_id}-r{conversation_round}"
-
         state.update(
             {
                 "user_message": msg_text,
@@ -58,7 +56,6 @@ async def handle_whatsapp_events(request: Request):
 
         if final_state:
             await update_user_state(thread_id, final_state)
-
         return {"status": "ok"}
 
     except Exception as e:

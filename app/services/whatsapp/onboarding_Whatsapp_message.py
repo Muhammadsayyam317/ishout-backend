@@ -21,7 +21,7 @@ async def send_whatsapp_message(recipient_id: str, message_text: str) -> bool:
     logging.info(f"Sending message to {recipient_id} with content: {message_payload}")
     try:
         response = await httpx.AsyncClient(timeout=15.0).post(
-            "https://graph.facebook.com/v24.0/912195958636325/messages",
+            f"https://graph.facebook.com/{config.WHATSAPP_GRAPH_API_VERSION}/{config.WHATSAPP_PHONE_NUMBER}/messages",
             headers=headers,
             json=message_payload,
         )
@@ -36,3 +36,6 @@ async def send_whatsapp_message(recipient_id: str, message_text: str) -> bool:
         return HTTPException(status_code=500, detail="HTTP request error")
     except Exception:
         return HTTPException(status_code=500, detail="Unexpected error")
+
+
+912195958636325
