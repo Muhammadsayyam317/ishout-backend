@@ -8,47 +8,71 @@ from app.agents.state.get_user_state import get_user_state
 from app.agents.state.update_user_state import update_user_state
 from app.agents.state.reset_state import reset_user_state
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 async def handle_whatsapp_events(request: Request):
     try:
         event = await request.json()
-        event_data = event["entry"][0]["changes"][0]["value"]
+        logger.info(f"Incoming WhatsApp event: {event}")
 
-        if "messages" not in event_data or not event_data["messages"]:
+        # ✅ Safe guards
+        entry = event.get("entry", [])
+        if not entry:
             return {"status": "ok"}
-        first_message = event_data["messages"][0]
+
+        changes = entry[0].get("changes", [])
+        if not changes:
+            return {"status": "ok"}
+
+        value = changes[0].get("value", {})
+
+        # ✅ Ignore non-message events (delivery, read, status)
+        messages = value.get("messages")
+        if not messages:
+            return {"status": "ok"}
+
+        first_message = messages[0]
+
         thread_id = first_message.get("from")
+        if not thread_id:
+            logger.warning("No sender ID found")
+            return {"status": "ok"}
+
         msg_text = (
             first_message.get("text", {}).get("body")
             if isinstance(first_message.get("text"), dict)
             else first_message.get("text")
         ) or ""
 
-        if not thread_id:
-            return {"status": "error", "message": "No sender ID found"}
-        profile_name = (
-            event_data.get("contacts", [{}])[0].get("profile", {}).get("name")
-        )
+        profile_name = value.get("contacts", [{}])[0].get("profile", {}).get("name")
 
         whatsapp_agent = await build_whatsapp_agent()
+
         stored_state = await get_user_state(thread_id)
         state = stored_state or {}
+
         conversation_round = await get_conversation_round(thread_id)
+
         if state.get("done") and state.get("acknowledged"):
             conversation_round = await increment_conversation_round(thread_id)
             state = await reset_user_state(thread_id)
 
         checkpoint_thread_id = f"{thread_id}-r{conversation_round}"
+
         state.update(
             {
                 "user_message": msg_text,
-                "event_data": event_data,
+                "event_data": value,
                 "thread_id": thread_id,
                 "sender_id": thread_id,
                 "name": profile_name or state.get("name"),
             }
         )
 
+        # ✅ FIX: no undefined config variable
         final_state = await whatsapp_agent.ainvoke(
             state,
             config={"configurable": {"thread_id": checkpoint_thread_id}},
@@ -56,7 +80,10 @@ async def handle_whatsapp_events(request: Request):
 
         if final_state:
             await update_user_state(thread_id, final_state)
+
         return {"status": "ok"}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Error in handle_whatsapp_events: {e}")
+        logger.exception("WhatsApp webhook failed")
+        raise HTTPException(status_code=500, detail="Webhook processing failed")
