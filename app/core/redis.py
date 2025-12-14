@@ -1,24 +1,15 @@
-from langgraph.checkpoint.redis.aio import AsyncRedisSaver
+from langgraph.checkpoint.redis import RedisSaver
 from app.agents.graph.whatsapp_graph import graph
 from app.config.credentials_config import config
 
-if (
-    not config.REDIS_USERNAME
-    or not config.REDIS_PASSWORD
-    or not config.REDIS_HOST
-    or not config.REDIS_PORT
-):
-    raise ValueError("Redis configuration is required")
 redis_url = f"redis://{config.REDIS_USERNAME}:{config.REDIS_PASSWORD}@{config.REDIS_HOST}:{config.REDIS_PORT}"
-if not redis_url:
-    raise ValueError("Redis URL is required")
-# Create checkpointer ONCE
-checkpointer = AsyncRedisSaver(
-    url=redis_url,
-    ttl=60 * 60 * 24,
-    key_prefix="whatsapp:agent",
-    retryDelayOnFailover=100,
-    maxRetriesPerRequest=3,
-)
 
-redis_checkpointer = graph.compile(checkpointer=checkpointer)
+checkpointer = RedisSaver.from_conn_string(redis_url)
+checkpointer.ttl = 60 * 60 * 24
+checkpointer.key_prefix = "whatsapp:agent"
+
+
+async def redis_checkpointer():
+    await checkpointer.setup()
+    compiled_graph = graph.compile(checkpointer=checkpointer)
+    return compiled_graph

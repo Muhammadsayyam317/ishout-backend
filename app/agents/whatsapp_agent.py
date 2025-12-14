@@ -43,15 +43,11 @@ async def handle_whatsapp_events(request: Request):
         whatsapp_agent = await redis_checkpointer()
         stored_state = await get_user_state(thread_id)
         state = stored_state or {}
-
         conversation_round = await get_conversation_round(thread_id)
-
         if state.get("done") and state.get("acknowledged"):
             conversation_round = await increment_conversation_round(thread_id)
             state = await reset_user_state(thread_id)
-
         checkpoint_thread_id = f"{thread_id}-r{conversation_round}"
-
         state.update(
             {
                 "user_message": msg_text,
