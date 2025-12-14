@@ -39,8 +39,9 @@ async def handle_whatsapp_events(request: Request):
         ) or ""
 
         profile_name = value.get("contacts", [{}])[0].get("profile", {}).get("name")
-
+        print("entering into redis checkpointer")
         whatsapp_agent = await redis_checkpointer()
+        print("existing from redis checkpointer")
         stored_state = await get_user_state(thread_id)
         state = stored_state or {}
         conversation_round = await get_conversation_round(thread_id)
