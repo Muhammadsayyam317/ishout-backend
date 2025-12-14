@@ -1,3 +1,4 @@
+from app.core.redis import init_redis_agent
 from app.db.connection import connect, close
 import uvicorn
 from fastapi import FastAPI
@@ -28,6 +29,8 @@ async def lifespan(app: FastAPI):
     print(f"🔧 Server PID: {os.getpid()}")
     await connect()
     print("connected successfully")
+    await init_redis_agent()
+    print("WhatsApp agent with Redis checkpointer ready")
     yield
     await close()
     print("🧹closed")
@@ -41,8 +44,6 @@ app = FastAPI(
     swagger_ui_init_oauth={"clientId": "swagger-ui"},
     swagger_ui_parameters={"persistAuthorization": True},
 )
-
-
 register_exception_handlers(app)
 
 

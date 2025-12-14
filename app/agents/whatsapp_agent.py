@@ -3,10 +3,10 @@ from app.agents.nodes.state import (
     get_conversation_round,
     increment_conversation_round,
 )
-from app.core.redis import redis_checkpointer
 from app.agents.state.get_user_state import get_user_state
 from app.agents.state.update_user_state import update_user_state
 from app.agents.state.reset_state import reset_user_state
+from app.core.redis import whatsapp_agent
 
 
 async def handle_whatsapp_events(request: Request):
@@ -21,13 +21,11 @@ async def handle_whatsapp_events(request: Request):
             return {"status": "ok"}
 
         value = changes[0].get("value", {})
-
         messages = value.get("messages")
         if not messages:
             return {"status": "ok"}
 
         first_message = messages[0]
-
         thread_id = first_message.get("from")
         if not thread_id:
             return {"status": "ok"}
@@ -39,15 +37,14 @@ async def handle_whatsapp_events(request: Request):
         ) or ""
 
         profile_name = value.get("contacts", [{}])[0].get("profile", {}).get("name")
-        print("entering into redis checkpointer")
-        whatsapp_agent = await redis_checkpointer()
-        print("existing from redis checkpointer")
         stored_state = await get_user_state(thread_id)
         state = stored_state or {}
         conversation_round = await get_conversation_round(thread_id)
+
         if state.get("done") and state.get("acknowledged"):
             conversation_round = await increment_conversation_round(thread_id)
             state = await reset_user_state(thread_id)
+
         checkpoint_thread_id = f"{thread_id}-r{conversation_round}"
         state.update(
             {
