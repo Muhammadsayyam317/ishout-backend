@@ -1,20 +1,17 @@
-import re
 from fastapi import HTTPException
+from app.config import config
 from app.db.connection import get_db
+from app.utils.helpers import normalize_phone
 
 
-def _normalize_phone(phone: str | None) -> str:
-    return re.sub(r"[^\d]", "", phone or "")
-
-
-async def node_verify_user(state, config):
+async def node_verify_user(state):
     try:
         user_phoneNumber = state.get("sender_id")
         print(f"user phone number from state: {user_phoneNumber}")
 
-        user_phoneNumber = _normalize_phone(user_phoneNumber)
+        user_phoneNumber = normalize_phone(user_phoneNumber)
         db = get_db()
-        users_collection = db.get_collection("users")
+        users_collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_USERS)
         user = await users_collection.find_one({"phone": user_phoneNumber})
 
         if not user:

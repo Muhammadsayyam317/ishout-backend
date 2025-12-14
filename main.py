@@ -8,9 +8,6 @@ from app.api.api import api_router
 from contextlib import asynccontextmanager
 import os
 from app.core.errors import register_exception_handlers
-import aiosqlite
-from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
-from app.agents.graph.whatsapp_graph import graph
 
 
 security = HTTPBearer(
@@ -30,14 +27,10 @@ security_schemes = {
 async def lifespan(app: FastAPI):
     print(f"🔧 Server PID: {os.getpid()}")
     await connect()
-    app.state.sqlite_db = await aiosqlite.connect("whatsapp_agent.db")
-    app.state.checkpointer = AsyncSqliteSaver(app.state.sqlite_db)
-    app.state.whatsapp_agent = graph.compile(checkpointer=app.state.checkpointer)
-    print("Whatsapp agent compiled successfully")
+    print("connected successfully")
     yield
     await close()
-    await app.state.sqlite_db.close()
-    print("🧹 SQLite closed")
+    print("🧹closed")
 
 
 app = FastAPI(

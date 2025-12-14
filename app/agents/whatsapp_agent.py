@@ -69,7 +69,6 @@ async def handle_whatsapp_events(request: Request):
             }
         )
 
-        # ✅ FIX: no undefined config variable
         final_state = await whatsapp_agent.ainvoke(
             state,
             config={"configurable": {"thread_id": checkpoint_thread_id}},

@@ -78,9 +78,6 @@ class Config(BaseModel):
     REDIS_PORT: int = Field(default=int(os.getenv("REDIS_PORT", "13814")))
     REDIS_USERNAME: str = Field(default=os.getenv("REDIS_USERNAME"))
     REDIS_PASSWORD: str = Field(default=os.getenv("REDIS_PASSWORD"))
-    REDIS_URL: str = Field(
-        default=f"redis://{REDIS_USERNAME}:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}"
-    )
 
 
 # config singleton instance
