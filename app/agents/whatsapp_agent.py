@@ -8,16 +8,10 @@ from app.agents.state.get_user_state import get_user_state
 from app.agents.state.update_user_state import update_user_state
 from app.agents.state.reset_state import reset_user_state
 
-import logging
-
-logger = logging.getLogger(__name__)
-
 
 async def handle_whatsapp_events(request: Request):
     try:
         event = await request.json()
-        logger.info(f"Incoming WhatsApp event: {event}")
-
         entry = event.get("entry", [])
         if not entry:
             return {"status": "ok"}
@@ -36,7 +30,6 @@ async def handle_whatsapp_events(request: Request):
 
         thread_id = first_message.get("from")
         if not thread_id:
-            logger.warning("No sender ID found")
             return {"status": "ok"}
 
         msg_text = (
@@ -81,5 +74,4 @@ async def handle_whatsapp_events(request: Request):
 
     except Exception as e:
         print(f"Error in handle_whatsapp_events: {e}")
-        logger.exception("WhatsApp webhook failed")
         raise HTTPException(status_code=500, detail="Webhook processing failed")
