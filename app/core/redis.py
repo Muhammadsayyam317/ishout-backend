@@ -10,5 +10,5 @@ whatsapp_agent = None
 async def init_redis_agent():
     global whatsapp_agent
     with RedisSaver.from_conn_string(REDIS_URI) as checkpointer:
+        checkpointer.setup()
         whatsapp_agent = graph.compile(checkpointer=checkpointer)
-    print("✅ Redis LangGraph agent initialized")
