@@ -15,13 +15,16 @@ async def node_verify_user(state):
         users_collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_USERS)
         user = await users_collection.find_one({"phone": user_phoneNumber})
 
+        # -----------------------------
+        # 1. New / unregistered user
+        # -----------------------------
         if not user:
             print(
                 f"[node_verify_user] User not found for phone number: {user_phoneNumber}"
             )
             state["is_existing_user"] = False
             state["reply"] = (
-                f"Hi {state.get('contact_person')}! It looks like you are not registered with iShout.\n\n"
+                "You are not registered with iShout.\n\n"
                 "Please create an account to continue: https://ishout.vercel.app/auth/register"
             )
 
@@ -30,6 +33,9 @@ async def node_verify_user(state):
             state["reply_sent"] = True
             return state
 
+        # -----------------------------
+        # 2. Existing / verified user
+        # -----------------------------
         state["is_existing_user"] = True
         state["contact_person"] = user.get("contact_person")
         state["company_name"] = user.get("company_name")
@@ -37,6 +43,15 @@ async def node_verify_user(state):
         state["name"] = (
             state.get("name") or user.get("contact_person") or user.get("company_name")
         )
+        # Send a confirmation / welcome message once user is verified
+        state["reply"] = (
+            f"Hi {state['name']}, you’re verified with iShout.\n\n"
+            "Tell us what kind of influencers you’re looking for and we’ll help you run your campaign."
+        )
+        state["reply_sent"] = False
+        await send_whatsapp_message(user_phoneNumber, state["reply"])
+        state["reply_sent"] = True
+
         return state
 
     except Exception as e:
