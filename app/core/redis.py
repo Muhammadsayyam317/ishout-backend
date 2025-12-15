@@ -9,17 +9,17 @@ checkpointer_contextmanager = None
 
 
 async def init_redis_agent():
-    global whatsapp_agent, _checkpointer_cm
+    global whatsapp_agent, checkpointer_contextmanager
     if whatsapp_agent is not None:
         return
 
     # Create context manager
-    checkpointer = AsyncRedisSaver.from_conn_string(
+    checkpointer_contextmanager = AsyncRedisSaver.from_conn_string(
         REDIS_URI,
         ttl=60 * 60 * 24,
     )
 
     # enter into async context manager
-    checkpointer = await checkpointer.__aenter__()
+    checkpointer = await checkpointer_contextmanager.__aenter__()
     whatsapp_agent = graph.compile(checkpointer=checkpointer)
     print("WhatsApp agent initialized with Redis")

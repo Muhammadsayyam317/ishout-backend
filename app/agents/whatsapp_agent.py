@@ -6,7 +6,7 @@ from app.agents.nodes.state import (
 from app.agents.state.get_user_state import get_user_state
 from app.agents.state.update_user_state import update_user_state
 from app.agents.state.reset_state import reset_user_state
-from app.core.redis import whatsapp_agent
+from app.core import redis as redis_core
 
 
 async def handle_whatsapp_events(request: Request):
@@ -56,12 +56,9 @@ async def handle_whatsapp_events(request: Request):
             }
         )
         print("entering into whatsapp agent")
-        if whatsapp_agent is None:
-            raise HTTPException(
-                status_code=503, detail="WhatsApp agent not initialized"
-            )
-        print("existing from whatsapp agent")
-        final_state = await whatsapp_agent.ainvoke(
+        if redis_core.whatsapp_agent is None:
+            await redis_core.init_redis_agent()
+        final_state = await redis_core.whatsapp_agent.ainvoke(
             state,
             config={"configurable": {"thread_id": checkpoint_thread_id}},
         )
