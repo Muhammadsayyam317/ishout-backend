@@ -36,6 +36,3 @@ async def send_whatsapp_message(recipient_id: str, message_text: str) -> bool:
         return HTTPException(status_code=500, detail="HTTP request error")
     except Exception:
         return HTTPException(status_code=500, detail="Unexpected error")
-
-
-912195958636325

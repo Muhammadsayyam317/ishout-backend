@@ -74,10 +74,7 @@ class Config(BaseModel):
     PAGE_ACCESS_TOKEN: str = Field(default=os.getenv("PAGE_ACCESS_TOKEN"))
     IG_GRAPH_API_VERSION: str = Field(default=os.getenv("IG_GRAPH_API_VERSION"))
 
-    REDIS_HOST: str = Field(default=os.getenv("REDIS_HOST"))
-    REDIS_PORT: int = Field(default=int(os.getenv("REDIS_PORT", "13814")))
-    REDIS_USERNAME: str = Field(default=os.getenv("REDIS_USERNAME"))
-    REDIS_PASSWORD: str = Field(default=os.getenv("REDIS_PASSWORD"))
+    REDIS_URL: str = Field(default=os.getenv("REDIS_URL"))
 
 
 # config singleton instance

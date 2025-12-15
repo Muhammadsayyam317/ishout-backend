@@ -1,6 +1,7 @@
 from fastapi import HTTPException
 from app.config import config
 from app.db.connection import get_db
+from app.services.whatsapp.onboarding_Whatsapp_message import send_whatsapp_message
 from app.utils.helpers import normalize_phone
 
 
@@ -25,6 +26,8 @@ async def node_verify_user(state):
             )
 
             state["reply_sent"] = False
+            await send_whatsapp_message(user_phoneNumber, state["reply"])
+            state["reply_sent"] = True
             return state
 
         state["is_existing_user"] = True
