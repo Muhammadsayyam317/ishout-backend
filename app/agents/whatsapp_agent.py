@@ -45,7 +45,6 @@ async def handle_whatsapp_events(request: Request):
             if isinstance(first_message.get("text"), dict)
             else first_message.get("text")
         ) or ""
-
         profile_name = value.get("contacts", [{}])[0].get("profile", {}).get("name")
 
         # -----------------------------
@@ -53,7 +52,6 @@ async def handle_whatsapp_events(request: Request):
         # -----------------------------
         app = request.app
         whatsapp_agent = getattr(app.state, "whatsapp_agent", None)
-
         if not whatsapp_agent:
             logger.error("WhatsApp agent not initialized")
             raise HTTPException(
@@ -75,7 +73,6 @@ async def handle_whatsapp_events(request: Request):
         if state.get("done") and state.get("acknowledged"):
             conversation_round = await increment_conversation_round(thread_id)
             state = await reset_user_state(thread_id)
-
         checkpoint_thread_id = f"{thread_id}-r{conversation_round}"
 
         # -----------------------------
@@ -104,15 +101,12 @@ async def handle_whatsapp_events(request: Request):
         # -----------------------------
         if final_state:
             await update_user_state(thread_id, final_state)
-
         return {"status": "ok"}
 
     except HTTPException:
         raise
 
     except Exception as e:
+        print(e)
         logger.exception("WhatsApp webhook failed")
-        raise HTTPException(
-            status_code=500,
-            detail="Webhook processing failed",
-        )
+        raise HTTPException(status_code=500, detail="Webhook processing failed")
