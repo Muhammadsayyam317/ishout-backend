@@ -14,16 +14,13 @@ logger = logging.getLogger(__name__)
 
 async def handle_whatsapp_events(request: Request):
     try:
-        # -----------------------------
         # 1. Parse webhook payload
-        # -----------------------------
         event = await request.json()
         logger.info("Incoming WhatsApp event: %s", event)
 
         entry = event.get("entry")
         if not entry:
             return {"status": "ok"}
-
         changes = entry[0].get("changes")
         if not changes:
             return {"status": "ok"}
@@ -32,7 +29,6 @@ async def handle_whatsapp_events(request: Request):
         messages = value.get("messages")
         if not messages:
             return {"status": "ok"}
-
         first_message = messages[0]
 
         thread_id = first_message.get("from")
@@ -47,9 +43,7 @@ async def handle_whatsapp_events(request: Request):
         ) or ""
         profile_name = value.get("contacts", [{}])[0].get("profile", {}).get("name")
 
-        # -----------------------------
         # 2. Load WhatsApp agent
-        # -----------------------------
         app = request.app
         whatsapp_agent = getattr(app.state, "whatsapp_agent", None)
         if not whatsapp_agent:
@@ -59,9 +53,7 @@ async def handle_whatsapp_events(request: Request):
                 detail="WhatsApp agent not initialized",
             )
 
-        # -----------------------------
-        # 3. Load user state (Mongo)
-        # -----------------------------
+        # Load user state (Mongo)
         stored_state = await get_user_state(thread_id)
         state = stored_state or {}
 
