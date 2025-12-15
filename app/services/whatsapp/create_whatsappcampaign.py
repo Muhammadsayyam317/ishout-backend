@@ -34,7 +34,7 @@ async def create_whatsapp_campaign(state: ConversationState) -> Dict[str, Any]:
             "category": categories,
             "followers": state.get("followers"),
             "country": state.get("country"),
-            "user_id": user["_id"],
+            "user_id": str(user["_id"]),
             "company_name": user.get("company_name"),
             "user_type": "whatsapp",
             "status": CampaignStatus.PENDING,
