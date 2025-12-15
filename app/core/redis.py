@@ -4,22 +4,17 @@ from app.config.credentials_config import config
 
 REDIS_URI = f"redis://:{config.REDIS_PASSWORD}@{config.REDIS_HOST}:{config.REDIS_PORT}"
 
-whatsapp_agent = None
-checkpointer_contextmanager = None
 
-
-async def init_redis_agent():
-    global whatsapp_agent, checkpointer_contextmanager
-    if whatsapp_agent is not None:
+async def init_redis_agent(app):
+    if hasattr(app.state, "whatsapp_agent"):
         return
 
-    # Create context manager
-    checkpointer_contextmanager = AsyncRedisSaver.from_conn_string(
+    cm = AsyncRedisSaver.from_conn_string(
         REDIS_URI,
         ttl=60 * 60 * 24,
     )
 
-    # enter into async context manager
-    checkpointer = await checkpointer_contextmanager.__aenter__()
-    whatsapp_agent = graph.compile(checkpointer=checkpointer)
-    print("WhatsApp agent initialized with Redis")
+    checkpointer = await cm.__aenter__()
+    app.state.whatsapp_agent = graph.compile(checkpointer=checkpointer)
+
+    print("✅ WhatsApp agent initialized with Redis")

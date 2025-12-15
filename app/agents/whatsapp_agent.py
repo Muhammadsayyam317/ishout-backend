@@ -1,4 +1,6 @@
 from fastapi import Request, HTTPException
+import logging
+
 from app.agents.nodes.state import (
     get_conversation_round,
     increment_conversation_round,
@@ -6,17 +8,23 @@ from app.agents.nodes.state import (
 from app.agents.state.get_user_state import get_user_state
 from app.agents.state.update_user_state import update_user_state
 from app.agents.state.reset_state import reset_user_state
-from app.core import redis as redis_core
+
+logger = logging.getLogger(__name__)
 
 
 async def handle_whatsapp_events(request: Request):
     try:
+        # -----------------------------
+        # 1. Parse webhook payload
+        # -----------------------------
         event = await request.json()
-        entry = event.get("entry", [])
+        logger.info("Incoming WhatsApp event: %s", event)
+
+        entry = event.get("entry")
         if not entry:
             return {"status": "ok"}
 
-        changes = entry[0].get("changes", [])
+        changes = entry[0].get("changes")
         if not changes:
             return {"status": "ok"}
 
@@ -26,8 +34,10 @@ async def handle_whatsapp_events(request: Request):
             return {"status": "ok"}
 
         first_message = messages[0]
+
         thread_id = first_message.get("from")
         if not thread_id:
+            logger.warning("No sender ID found")
             return {"status": "ok"}
 
         msg_text = (
@@ -37,8 +47,29 @@ async def handle_whatsapp_events(request: Request):
         ) or ""
 
         profile_name = value.get("contacts", [{}])[0].get("profile", {}).get("name")
+
+        # -----------------------------
+        # 2. Load WhatsApp agent
+        # -----------------------------
+        app = request.app
+        whatsapp_agent = getattr(app.state, "whatsapp_agent", None)
+
+        if not whatsapp_agent:
+            logger.error("WhatsApp agent not initialized")
+            raise HTTPException(
+                status_code=503,
+                detail="WhatsApp agent not initialized",
+            )
+
+        # -----------------------------
+        # 3. Load user state (Mongo)
+        # -----------------------------
         stored_state = await get_user_state(thread_id)
         state = stored_state or {}
+
+        # -----------------------------
+        # 4. Conversation round logic
+        # -----------------------------
         conversation_round = await get_conversation_round(thread_id)
 
         if state.get("done") and state.get("acknowledged"):
@@ -46,6 +77,10 @@ async def handle_whatsapp_events(request: Request):
             state = await reset_user_state(thread_id)
 
         checkpoint_thread_id = f"{thread_id}-r{conversation_round}"
+
+        # -----------------------------
+        # 5. Update state for graph
+        # -----------------------------
         state.update(
             {
                 "user_message": msg_text,
@@ -55,19 +90,29 @@ async def handle_whatsapp_events(request: Request):
                 "name": profile_name or state.get("name"),
             }
         )
-        print("entering into whatsapp agent")
-        if redis_core.whatsapp_agent is None:
-            await redis_core.init_redis_agent()
-        final_state = await redis_core.whatsapp_agent.ainvoke(
+
+        # -----------------------------
+        # 6. Invoke LangGraph agent
+        # -----------------------------
+        final_state = await whatsapp_agent.ainvoke(
             state,
             config={"configurable": {"thread_id": checkpoint_thread_id}},
         )
 
+        # -----------------------------
+        # 7. Persist updated state
+        # -----------------------------
         if final_state:
             await update_user_state(thread_id, final_state)
 
         return {"status": "ok"}
 
+    except HTTPException:
+        raise
+
     except Exception as e:
-        print(f"Error in handle_whatsapp_events: {e}")
-        raise HTTPException(status_code=500, detail="Webhook processing failed")
+        logger.exception("WhatsApp webhook failed")
+        raise HTTPException(
+            status_code=500,
+            detail="Webhook processing failed",
+        )

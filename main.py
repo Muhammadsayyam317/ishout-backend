@@ -29,7 +29,7 @@ async def lifespan(app: FastAPI):
     print(f"🔧 Server PID: {os.getpid()}")
     await connect()
     print("connected successfully")
-    await init_redis_agent()
+    await init_redis_agent(app)
     print("WhatsApp agent with Redis checkpointer ready")
     yield
     await close()
