@@ -55,7 +55,12 @@ async def handle_whatsapp_events(request: Request):
                 "name": profile_name or state.get("name"),
             }
         )
-
+        print("entering into whatsapp agent")
+        if whatsapp_agent is None:
+            raise HTTPException(
+                status_code=503, detail="WhatsApp agent not initialized"
+            )
+        print("existing from whatsapp agent")
         final_state = await whatsapp_agent.ainvoke(
             state,
             config={"configurable": {"thread_id": checkpoint_thread_id}},
