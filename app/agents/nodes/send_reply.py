@@ -2,13 +2,20 @@ from app.services.whatsapp.onboarding_Whatsapp_message import send_whatsapp_mess
 
 
 async def node_send_reply(state):
-    reply = state.get("reply")
+    try:
+        reply = state.get("reply")
+        sender_id = state.get("sender_id")
+        if not sender_id:
+            raise ValueError("sender_id missing in state")
+        if reply and not state.get("reply_sent"):
+            await send_whatsapp_message(sender_id, reply)
+            state["reply_sent"] = True
 
-    if reply and not state.get("reply_sent"):
-        await send_whatsapp_message(
-            state["sender_id"],
-            reply,
-        )
+        return state
+
+    except Exception as e:
+        print(f"❌ Error in node_send_reply: {e}")
         state["reply_sent"] = True
+        state["done"] = True
 
-    return state
+        return state
