@@ -732,37 +732,37 @@ async def update_status(request_data: CampaignStatusUpdateRequest) -> Dict[str, 
         ) from e
 
 
-# async def get_campaign_generated_influencers(campaign_id: str) -> Dict[str, Any]:
-#     try:
-#         db = get_db()
-#         campaigns_collection = db.get_collection("campaigns")
-#         campaign = await campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
-#         if not campaign:
-#             raise HTTPException(status_code=404, detail="Campaign not found")
+async def get_campaign_generated_influencers(campaign_id: str) -> Dict[str, Any]:
+    try:
+        db = get_db()
+        campaigns_collection = db.get_collection("campaigns")
+        campaign = await campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
+        if not campaign:
+            raise HTTPException(status_code=404, detail="Campaign not found")
 
-#         generated_influencer_ids = campaign.get("generated_influencers", [])
+        generated_influencer_ids = campaign.get("generated_influencers", [])
 
-#         generated_influencers_with_details = []
-#         if generated_influencer_ids and isinstance(generated_influencer_ids[0], str):
-#             generated_influencers_with_details = await _populate_influencer_details(
-#                 generated_influencer_ids
-#             )
-#         else:
-#             generated_influencers_with_details = generated_influencer_ids
+        generated_influencers_with_details = []
+        if generated_influencer_ids and isinstance(generated_influencer_ids[0], str):
+            generated_influencers_with_details = await _populate_influencer_details(
+                generated_influencer_ids
+            )
+        else:
+            generated_influencers_with_details = generated_influencer_ids
 
-#         return {
-#             "campaign_id": campaign_id,
-#             "campaign_name": campaign["name"],
-#             "status": campaign.get("status"),
-#             "generated_influencers": generated_influencers_with_details,
-#             "total_generated": len(generated_influencers_with_details),
-#         }
+        return {
+            "campaign_id": campaign_id,
+            "campaign_name": campaign["name"],
+            "status": campaign.get("status"),
+            "generated_influencers": generated_influencers_with_details,
+            "total_generated": len(generated_influencers_with_details),
+        }
 
-#     except Exception as e:
-#         raise HTTPException(
-#             status_code=500,
-#             detail=f"Error in get campaign generated influencers: {str(e)}",
-#         ) from e
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error in get campaign generated influencers: {str(e)}",
+        ) from e
 
 
 async def company_approved_campaign_influencers(
