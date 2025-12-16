@@ -674,7 +674,8 @@ async def update_campaignstatus_with_background_task(
 
         if result.modified_count == 0:
             raise HTTPException(status_code=404, detail="No changes")
-
+        # Fetch updated campaign details
+        print("Campaign status updated successfully")
         campaign = await campaigns_collection.find_one(
             {"_id": ObjectId(request_data.campaign_id)}
         )
@@ -687,15 +688,32 @@ async def update_campaignstatus_with_background_task(
 
         if request_data.status == CampaignStatus.APPROVED and user_type == "whatsapp":
             campaign_id = str(campaign["_id"])
+            print(f"Campaign ID: {campaign_id}")
             whatsapp_phone = campaign.get("whatsapp_phone")
+            print(f"Whatsapp phone: {whatsapp_phone}")
+            if not whatsapp_phone:
+                raise HTTPException(
+                    status_code=404,
+                    detail="WhatsApp phone number not found in campaign",
+                )
 
-            approved_influencers = await influencers_collection.find(
-                {"campaign_id": campaign_id, "admin_approved": True}
+            approved_influencers = influencers_collection.find(
+                {
+                    "campaign_id": ObjectId(campaign["_id"]),
+                    "admin_approved": True,
+                    "status": CampaignInfluencerStatus.APPROVED.value,
+                }
             )
             approved_influencers = await approved_influencers.to_list(length=None)
             print(f"Approved influencers: {approved_influencers}")
             for influencer in approved_influencers:
-                print(f"Sending influencer: {influencer.get('username')}")
+                username = influencer.get("username")
+                if not username:
+                    print(
+                        f"⚠ Skipping WhatsApp message to influencer without username: {influencer.get('_id')}"
+                    )
+                    continue
+                print(f"Sending influencer: {username}")
                 background_tasks.add_task(
                     send_whatsapp_interactive_message,
                     whatsapp_phone,
