@@ -1,5 +1,6 @@
 import httpx
 from app.config.credentials_config import config
+from app.utils.helpers import format_followers
 
 
 async def send_whatsapp_interactive_message(
@@ -7,7 +8,7 @@ async def send_whatsapp_interactive_message(
     message_text: str,
     influencer: dict,
 ) -> bool:
-    print(f"Sending interactive message to {recipient_id}")
+
     access_token = config.META_WHATSAPP_ACCESSSTOKEN
 
     headers = {
@@ -15,37 +16,41 @@ async def send_whatsapp_interactive_message(
         "Content-Type": "application/json",
     }
 
-    username = influencer.get("username") or "unknown"
-    followers = influencer.get("followers") or "N/A"
-    country = influencer.get("country") or "N/A"
-    pricing = influencer.get("pricing") or "N/A"
-    pic = influencer.get("pic")
+    username = influencer.get("username")
+    followers = influencer.get("followers")
+    country = influencer.get("country")
+    pricing = influencer.get("pricing")
+    pic = influencer.get("picture") or influencer.get("pic")
+
+    if not username:
+        print("⚠ Skipping influencer without username")
+        return False
+
+    message_body = (
+        f"👤 @{username}\n"
+        f"👥 Followers: {format_followers(followers)}\n"
+        f"🌍 Country: {country or 'N/A'}\n"
+        f"💰 Pricing: {pricing or 'N/A'}\n"
+        f"🔗 https://www.instagram.com/{username}"
+    )
 
     interactive = {
         "type": "button",
-        "body": {
-            "text": (
-                f"@{username}\n"
-                f"Followers: {followers}\n"
-                f"Country: {country}\n"
-                f"Pricing: {pricing}\n"
-                f"Link: https://www.instagram.com/{username}"
-            )
-        },
+        "body": {"text": message_body},
         "footer": {"text": message_text},
         "action": {
             "buttons": [
                 {
                     "type": "reply",
                     "reply": {
-                        "id": f"approve_{influencer.get('_id')}",
+                        "id": f"approve_{influencer['_id']}",
                         "title": "Approve 👍",
                     },
                 },
                 {
                     "type": "reply",
                     "reply": {
-                        "id": f"reject_{influencer.get('_id')}",
+                        "id": f"reject_{influencer['_id']}",
                         "title": "Reject 🚫",
                     },
                 },
@@ -66,20 +71,15 @@ async def send_whatsapp_interactive_message(
         "interactive": interactive,
     }
 
-    try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            response = await client.post(
-                "https://graph.facebook.com/v24.0/912195958636325/messages",
-                headers=headers,
-                json=payload,
-            )
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        response = await client.post(
+            "https://graph.facebook.com/v24.0/912195958636325/messages",
+            headers=headers,
+            json=payload,
+        )
 
-            if response.status_code != 200:
-                print("❌ WhatsApp API Error:", response.text)
-                return False
+        if response.status_code != 200:
+            print("❌ WhatsApp API Error:", response.text)
+            return False
 
-            return True
-
-    except Exception as e:
-        print("❌ WhatsApp send failed:", str(e))
-        return False
+        return True

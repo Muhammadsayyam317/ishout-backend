@@ -236,17 +236,15 @@ def normalize_followers(followers: list[str]) -> list[str]:
 
 def normalize_country(country: str) -> str:
     mapping = {
-        "uae": "United Arab Emirates",
+        "egypt": "Egypt",
+        "iraq": "Iraq",
+        "lebanon": "Lebanon",
+        "jordan": "Jordan",
+        "kuwait": "Kuwait",
+        "oman": "Oman",
         "qatar": "Qatar",
         "saudi": "Saudi Arabia",
-        "saudi arabia": "Saudi Arabia",
-        "kuwait": "Kuwait",
-        "iran": "Iran",
-        "jordan": "Jordan",
-        "oman": "Oman",
-        "bahrain": "Bahrain",
-        "lebanon": "Lebanon",
-        "syria": "Syria",
+        "uae": "United Arab Emirates",
     }
     return mapping.get(country.lower(), country)
 
@@ -264,3 +262,13 @@ def normalize_phone(phone: str | None) -> str | None:
     if not phone:
         return None
     return re.sub(r"[^\d]", "", phone)
+
+
+def format_followers(count):
+    if isinstance(count, (int, float)):
+        if count >= 1_000_000:
+            return f"{count/1_000_000:.1f}M"
+        if count >= 1_000:
+            return f"{count/1_000:.1f}K"
+        return str(count)
+    return "N/A"

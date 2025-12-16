@@ -660,6 +660,8 @@ async def update_campaignstatus_with_background_task(
         print("UPDATE CAMPAIGN STATUS CALLED")
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
+        influencers_collection = db.get_collection("campaign_influencers")
+
         result = await campaigns_collection.update_one(
             {"_id": ObjectId(request_data.campaign_id)},
             {
@@ -683,12 +685,20 @@ async def update_campaignstatus_with_background_task(
         user_type = campaign.get("user_type", None)
 
         if request_data.status == CampaignStatus.APPROVED and user_type == "whatsapp":
-            background_tasks.add_task(
-                send_whatsapp_interactive_message,
-                campaign.get("whatsapp_phone"),
-                "Approve or Reject this influencer?",
-                campaign,
+            campaign_id = str(campaign["_id"])
+            whatsapp_phone = campaign.get("whatsapp_phone")
+
+            approved_influencers = influencers_collection.find(
+                {"campaign_id": campaign_id, "admin_approved": True}
             )
+
+            async for influencer in approved_influencers:
+                background_tasks.add_task(
+                    send_whatsapp_interactive_message,
+                    whatsapp_phone,
+                    "Approve or Reject this influencer?",
+                    influencer,
+                )
 
         return {
             "message": f"Campaign status updated to {request_data.status}",

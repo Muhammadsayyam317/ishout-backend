@@ -61,10 +61,7 @@ async def node_requirements(state):
             "👋 Welcome to iShout!\n\n"
             "Let's find the perfect influencers for your campaign 🎲\n\n"
             "Which social media platform are you targeting?\n\n"
-            "📱 Available Platforms:"
-            "1) Instagram,\n"
-            "2) TikTok,"
-            "3) YouTube"
+            "📱 Available Platforms:Instagram,TikTok,YouTube"
         )
         return state
     if "category" in missing:
@@ -78,7 +75,7 @@ async def node_requirements(state):
         state["reply"] = (
             f"Perfect! *{', '.join(state['category'])}* influencers coming up!\n\n"
             "Which country or region should these influencers be based in?\n\n"
-            "🌍 Countries: UAE, Kuwait, Saudi Arabia, Qatar, Oman, Bahrain, Lebanon, Syria, Jordan, Iran"
+            "🌍 Countries: UAE, Kuwait, Saudi Arabia, Qatar, Oman, Lebanon, Jordan, Iraq,Egypt"
         )
         return state
     if "limit" in missing:
