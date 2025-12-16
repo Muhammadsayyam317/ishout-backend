@@ -8,12 +8,7 @@ async def send_whatsapp_interactive_message(
     influencer: dict,
 ) -> bool:
 
-    phone_number = config.WHATSAPP_PHONE_NUMBER
     access_token = config.META_WHATSAPP_ACCESSSTOKEN
-
-    if not phone_number:
-        print("❌ WhatsApp Phone Number ID is missing")
-        return False
 
     headers = {
         "Authorization": f"Bearer {access_token}",
