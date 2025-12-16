@@ -57,9 +57,6 @@ async def handle_whatsapp_events(request: Request):
         stored_state = await get_user_state(thread_id)
         state = stored_state or {}
 
-        # -----------------------------
-        # 4. Conversation round logic
-        # -----------------------------
         conversation_round = await get_conversation_round(thread_id)
 
         if state.get("done") and state.get("acknowledged"):
@@ -67,9 +64,6 @@ async def handle_whatsapp_events(request: Request):
             state = await reset_user_state(thread_id)
         checkpoint_thread_id = f"{thread_id}-r{conversation_round}"
 
-        # -----------------------------
-        # 5. Update state for graph
-        # -----------------------------
         state.update(
             {
                 "user_message": msg_text,
@@ -80,17 +74,11 @@ async def handle_whatsapp_events(request: Request):
             }
         )
 
-        # -----------------------------
-        # 6. Invoke LangGraph agent
-        # -----------------------------
         final_state = await whatsapp_agent.ainvoke(
             state,
             config={"configurable": {"thread_id": checkpoint_thread_id}},
         )
 
-        # -----------------------------
-        # 7. Persist updated state
-        # -----------------------------
         if final_state:
             await update_user_state(thread_id, final_state)
         return {"status": "ok"}

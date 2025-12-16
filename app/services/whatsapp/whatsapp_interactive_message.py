@@ -1,74 +1,90 @@
 import httpx
-from fastapi import HTTPException
 from app.config.credentials_config import config
 
 
 async def send_whatsapp_interactive_message(
-    recipient_id: str, message_text: str, influencer: dict
+    recipient_id: str,
+    message_text: str,
+    influencer: dict,
 ) -> bool:
 
-    print(
-        f"[send_whatsapp_message] Sending message to {recipient_id} with content: {influencer}"
-    )
+    phone_number = config.WHATSAPP_PHONE_NUMBER
+    access_token = config.META_WHATSAPP_ACCESSSTOKEN
+
+    if not phone_number:
+        print("❌ WhatsApp Phone Number ID is missing")
+        return False
+
     headers = {
-        "Authorization": f"Bearer {config.META_WHATSAPP_ACCESSSTOKEN}",
+        "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json",
     }
 
-    message_payload = {
-        "messaging_product": "whatsapp",
-        "to": recipient_id,
-        "type": "interactive",
-        "interactive": {
-            "type": "button",
-            "header": {"type": "image", "image": {"link": influencer.get("pic")}},
-            "body": {
-                "text": (
-                    f"@{influencer.get('username')}\n"
-                    f"Followers: {influencer.get('followers')}\n"
-                    f"Country: {influencer.get('country')}\n"
-                    f"Pricing: {influencer.get('pricing')}\n"
-                    f"Profile: {influencer.get('pic')}\n"
-                    f"Link: https://www.instagram.com/{influencer.get('username')}"
-                )
-            },
-            "footer": {"text": message_text},
-            "action": {
-                "buttons": [
-                    {
-                        "type": "reply",
-                        "reply": {
-                            "id": f"approve_{influencer.get('_id')}",
-                            "title": "Approve 👍",
-                        },
+    username = influencer.get("username") or "unknown"
+    followers = influencer.get("followers") or "N/A"
+    country = influencer.get("country") or "N/A"
+    pricing = influencer.get("pricing") or "N/A"
+    pic = influencer.get("pic")
+
+    interactive = {
+        "type": "button",
+        "body": {
+            "text": (
+                f"@{username}\n"
+                f"Followers: {followers}\n"
+                f"Country: {country}\n"
+                f"Pricing: {pricing}\n"
+                f"Link: https://www.instagram.com/{username}"
+            )
+        },
+        "footer": {"text": message_text},
+        "action": {
+            "buttons": [
+                {
+                    "type": "reply",
+                    "reply": {
+                        "id": f"approve_{influencer.get('_id')}",
+                        "title": "Approve 👍",
                     },
-                    {
-                        "type": "reply",
-                        "reply": {
-                            "id": f"reject_{influencer.get('_id')}",
-                            "title": "Reject 🚫",
-                        },
+                },
+                {
+                    "type": "reply",
+                    "reply": {
+                        "id": f"reject_{influencer.get('_id')}",
+                        "title": "Reject 🚫",
                     },
-                ]
-            },
+                },
+            ]
         },
     }
 
-    print(
-        f"[send_whatsapp_message] Sending message to {recipient_id} with content: {message_payload}"
-    )
+    if pic:
+        interactive["header"] = {
+            "type": "image",
+            "image": {"link": pic},
+        }
+
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": recipient_id,
+        "type": "interactive",
+        "interactive": interactive,
+    }
+
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
             response = await client.post(
-                f"https://graph.facebook.com/{config.WHATSAPP_GRAPH_API_VERSION}/{config.WHATSAPP_PHONE_NUMBER}/messages",
+                "https://graph.facebook.com/v24.0/912195958636325/messages",
                 headers=headers,
-                json=message_payload,
+                json=payload,
             )
+
             if response.status_code != 200:
-                raise HTTPException(
-                    status_code=500,
-                    detail=f"Error: {response.status_code}, {response.text}",
-                )
+                print("❌ WhatsApp API Error:", response.text)
+                return False
+
             return True
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        print("❌ WhatsApp send failed:", str(e))
+        return False
