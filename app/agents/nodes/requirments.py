@@ -8,7 +8,6 @@ from app.utils.extract_feilds import (
     extract_countries,
     extract_categories,
 )
-from app.utils.helpers import format_list_with_count
 
 
 async def node_debug_before(state):
@@ -58,33 +57,28 @@ async def node_requirements(state):
 
     missing = missing_fields(state)
     if "platform" in missing:
-        platforms = ["Instagram", "TikTok", "YouTube"]
         state["reply"] = (
             "👋 Welcome to iShout!\n\n"
             "Let's find the perfect influencers for your campaign 🎲\n\n"
             "Which social media platform are you targeting?\n\n"
-            "📱 Available Social Platforms:\n\n"
-            f"{format_list_with_count(platforms, '📱')}\n\n"
+            "📱 Available Platforms:"
+            "1) Instagram,\n"
+            "2) TikTok,"
+            "3) YouTube"
         )
         return state
     if "category" in missing:
-        categories = ["Fashion", "Beauty", "Sports", "Fitness", "Food"]
         state["reply"] = (
             f"Great! *{', '.join(state['platform'])}* it is!\n\n"
             "Now, what category or niche are you looking for?\n\n"
-            "💡 Catefories:\n"
-            f"{format_list_with_count(categories)}\n\n"
-            "and more categories are available",
+            "💡 Categories: Fashion, Beauty, Tech, Fitness, Food, Travel, Gaming"
         )
         return state
     if "country" in missing:
-        countries = ["UAE", "Kuwait", "Saudi Arabia", "Qatar", "Oman"]
         state["reply"] = (
             f"Perfect! *{', '.join(state['category'])}* influencers coming up!\n\n"
             "Which country or region should these influencers be based in?\n\n"
-            "🌍Countries:\n",
-            f"{format_list_with_count(countries)}\n\n"
-            "and more countires are available",
+            "🌍 Countries: UAE, Kuwait, Saudi Arabia, Qatar, Oman, Bahrain, Lebanon, Syria, Jordan, Iran"
         )
         return state
     if "limit" in missing:
@@ -95,18 +89,14 @@ async def node_requirements(state):
         )
         return state
     if "followers" in missing:
-        followers = [
-            "50k (Micro influencers)",
-            "200k (Mid-tier)",
-            "500k+ (Macro influencers)",
-            "1M+ (Mega influencers)",
-        ]
         state["reply"] = (
             f"Noted! We'll find *{state.get('limit')}* influencers for you.\n\n"
             "What follower range are you targeting?\n\n"
-            "👥 Follower Ranges:\n"
-            f"{format_list_with_count(followers)}\n\n"
-            "and more follower ranges are available",
+            "👥 Examples:\n"
+            "• 50k (Micro influencers)\n"
+            "• 200k (Mid-tier)\n"
+            "• 500k+ (Macro influencers)\n"
+            "• 1M+ (Mega influencers)"
         )
         return state
 

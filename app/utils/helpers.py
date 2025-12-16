@@ -264,7 +264,3 @@ def normalize_phone(phone: str | None) -> str | None:
     if not phone:
         return None
     return re.sub(r"[^\d]", "", phone)
-
-
-def format_list_with_count(items, emoji=""):
-    return "\n".join([f"{i+1}) {item}" for i, item in enumerate(items)])
