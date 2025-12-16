@@ -20,7 +20,6 @@ async def send_whatsapp_interactive_message(
     followers = influencer.get("followers")
     country = influencer.get("country")
     pricing = influencer.get("pricing")
-    pic = influencer.get("picture") or influencer.get("pic")
 
     if not username:
         print("⚠ Skipping influencer without username")
@@ -57,12 +56,6 @@ async def send_whatsapp_interactive_message(
             ]
         },
     }
-
-    if pic:
-        interactive["header"] = {
-            "type": "image",
-            "image": {"link": pic},
-        }
 
     payload = {
         "messaging_product": "whatsapp",
