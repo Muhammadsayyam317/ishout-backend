@@ -661,7 +661,7 @@ async def update_campaignstatus_with_background_task(
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
         influencers_collection = db.get_collection("campaign_influencers")
-
+        print(f"Updating campaign status to {request_data.status}")
         result = await campaigns_collection.update_one(
             {"_id": ObjectId(request_data.campaign_id)},
             {
@@ -683,16 +683,19 @@ async def update_campaignstatus_with_background_task(
             raise HTTPException(status_code=404, detail="Campaign not found")
 
         user_type = campaign.get("user_type", None)
+        print(f"User type: {user_type}")
 
         if request_data.status == CampaignStatus.APPROVED and user_type == "whatsapp":
             campaign_id = str(campaign["_id"])
             whatsapp_phone = campaign.get("whatsapp_phone")
 
-            approved_influencers = influencers_collection.find(
+            approved_influencers = await influencers_collection.find(
                 {"campaign_id": campaign_id, "admin_approved": True}
             )
-
-            async for influencer in approved_influencers:
+            approved_influencers = await approved_influencers.to_list(length=None)
+            print(f"Approved influencers: {approved_influencers}")
+            for influencer in approved_influencers:
+                print(f"Sending influencer: {influencer.get('username')}")
                 background_tasks.add_task(
                     send_whatsapp_interactive_message,
                     whatsapp_phone,

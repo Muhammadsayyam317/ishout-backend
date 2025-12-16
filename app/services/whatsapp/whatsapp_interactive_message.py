@@ -8,7 +8,7 @@ async def send_whatsapp_interactive_message(
     message_text: str,
     influencer: dict,
 ) -> bool:
-
+    print("Entering send_whatsapp_interactive_message")
     access_token = config.META_WHATSAPP_ACCESSSTOKEN
 
     headers = {
