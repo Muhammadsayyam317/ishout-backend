@@ -13,7 +13,6 @@ def find_influencers_for_whatsapp(
     followers: str,
 ) -> List[dict]:
     query = f"Find {limit} {category} influencers on {platform} in {country } followers {followers}".strip()
-    print(f"[find_influencers_for_whatsapp] Query: {query}")
     try:
         collection_name = None
         text_key = None
@@ -36,7 +35,6 @@ def find_influencers_for_whatsapp(
                 f"Collection name is empty for platform {platform}. Check your environment variables."
             )
         collection = get_pymongo_db()[collection_name]
-        print(f"[find_influencers_for_whatsapp] Using collection: {collection_name}")
         embeddings = OpenAIEmbeddings(
             api_key=config.OPENAI_API_KEY,
             model=config.EMBEDDING_MODEL,
@@ -49,7 +47,6 @@ def find_influencers_for_whatsapp(
             embedding_key="embedding",
             relevance_score_fn="cosine",
         )
-        print(f"[find_influencers_for_whatsapp] Query: {query}")
         docs = store.similarity_search(query, k=limit)
         result = [doc.page_content for doc in docs]
         return result

@@ -1,64 +1,58 @@
 from typing import Dict, Any
-from fastapi import HTTPException
+from datetime import datetime, timezone
 from app.models.campaign_model import CampaignStatus
 from app.db.connection import get_db
 from app.models.whatsappconversation_model import ConversationState
-from datetime import datetime, timezone
+from app.utils.helpers import normalize_phone
 
 
 async def create_whatsapp_campaign(state: ConversationState) -> Dict[str, Any]:
     try:
         db = get_db()
-        campaigns_collection = db.get_collection("campaigns")
-        whatsapp_users_collection = db.get_collection("whatsapp_users")
+        campaigns = db.get_collection("campaigns")
+        users = db.get_collection("users")
 
-        categories = state.get("category") or []
-        platforms = state.get("platform") or []
+        sender_id = state.get("sender_id")
+        if not sender_id:
+            return {"success": False, "error": "Sender ID missing"}
 
-        category_str = (
-            ", ".join(categories) if isinstance(categories, list) else str(categories)
+        phone = normalize_phone(sender_id)
+        if not phone:
+            return {"success": False, "error": "Invalid phone number"}
+
+        user = await users.find_one({"phone": phone})
+        if not user:
+            return {"success": False, "error": "User not found"}
+
+        categories = list(map(str, state.get("category") or []))
+        platforms = list(map(str, state.get("platform") or []))
+        followers = list(map(str, state.get("followers") or []))
+        country = list(map(str, state.get("country") or []))
+
+        campaign_name = (
+            f"Campaign - {', '.join(categories or ['General'])} - "
+            f"{', '.join(platforms or ['General'])}"
         )
-        platform_str = (
-            ", ".join(platforms) if isinstance(platforms, list) else str(platforms)
-        )
-
-        campaign_name = f"Campaign - {category_str} - {platform_str}"
-        company_name = state.get("name")
-        if not company_name:
-            sender_id = state.get("sender_id")
-            if sender_id:
-                whatsapp_user = await whatsapp_users_collection.find_one(
-                    {"sender_id": sender_id}
-                )
-                if whatsapp_user:
-                    company_name = whatsapp_user.get("name")
 
         campaign_doc = {
             "name": campaign_name,
-            "platform": state.get("platform"),
-            "category": state.get("category"),
-            "followers": state.get("followers"),
-            "country": state.get("country"),
-            "user_id": state.get("sender_id"),
-            "company_name": company_name,
+            "platform": platforms,
+            "category": categories,
+            "followers": followers,
+            "country": country,
+            "user_id": str(user["_id"]),
+            "whatsapp_phone": phone,
+            "company_name": user.get("company_name"),
             "user_type": "whatsapp",
             "status": CampaignStatus.PENDING,
-            "limit": state.get("limit"),
+            "limit": int(state.get("limit") or 1),
             "created_at": datetime.now(timezone.utc),
             "updated_at": datetime.now(timezone.utc),
         }
 
-        result = await campaigns_collection.insert_one(campaign_doc)
+        result = await campaigns.insert_one(campaign_doc)
 
-        return {
-            "message": (
-                "Thank you! I have received all your campaign details. "
-                "Once our admin reviews your request, we will share the matching influencers with you."
-            ),
-            "campaign_id": str(result.inserted_id),
-        }
+        return {"success": True, "campaign_id": str(result.inserted_id)}
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error in creating campaign: {str(e)}"
-        ) from e
+        return {"success": False, "error": str(e)}

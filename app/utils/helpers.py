@@ -1,5 +1,5 @@
 from typing import Any, Dict, List, Optional, Tuple
-
+import re
 from bson import ObjectId
 
 
@@ -15,7 +15,6 @@ def parse_follower_count(value: str) -> int:
         else:
             return int(float(value))
     except (ValueError, TypeError):
-        print(f"Could not parse follower count: {value}")
         return 0
 
 
@@ -29,8 +28,7 @@ def parse_follower_range(value: str) -> Tuple[int, int, str]:
         end_count = parse_follower_count(end_str)
 
         return start_count, end_count, value
-    except Exception as e:
-        print(f"Error parsing follower range '{value}': {str(e)}")
+    except Exception:
         return 0, 0, str(value)
 
 
@@ -201,7 +199,6 @@ def filter_influencer_data(
 
 
 def convert_objectid(doc):
-    """Convert all ObjectId fields in a document to strings."""
     for key, value in doc.items():
         if isinstance(value, ObjectId):
             doc[key] = str(value)
@@ -220,7 +217,7 @@ def convert_to_number(v: str):
 def normalize_followers(followers: list[str]) -> list[str]:
     ranges = []
     for f in followers:
-        if "-" in f:  # already a range
+        if "-" in f:
             ranges.append(f)
         else:
             num = int(f.replace("k", "000").replace("K", "000"))
@@ -236,10 +233,16 @@ def normalize_followers(followers: list[str]) -> list[str]:
 
 
 def normalize_country(country: str) -> str:
-    """Normalize country names to match embeddings."""
     mapping = {
-        "uae": "United Arab Emirates",
+        "egypt": "Egypt",
+        "iraq": "Iraq",
+        "lebanon": "Lebanon",
+        "jordan": "Jordan",
+        "kuwait": "Kuwait",
+        "oman": "Oman",
         "qatar": "Qatar",
+        "saudi": "Saudi Arabia",
+        "uae": "United Arab Emirates",
     }
     return mapping.get(country.lower(), country)
 
@@ -251,3 +254,19 @@ def followers_in_range(influencer_count: int, ranges: List[Tuple[int, int]]):
         if min_f <= influencer_count <= max_f:
             return True
     return False
+
+
+def normalize_phone(phone: str | None) -> str | None:
+    if not phone:
+        return None
+    return re.sub(r"[^\d]", "", phone)
+
+
+def format_followers(count):
+    if isinstance(count, (int, float)):
+        if count >= 1_000_000:
+            return f"{count/1_000_000:.1f}M"
+        if count >= 1_000:
+            return f"{count/1_000:.1f}K"
+        return str(count)
+    return "N/A"

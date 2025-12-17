@@ -50,7 +50,6 @@ async def search_influencers(
         combined_results = []
         for result in results:
             if isinstance(result, Exception):
-                print(f"Platform error: {result}")
                 continue
             combined_results.extend(result)
 

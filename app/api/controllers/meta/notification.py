@@ -14,7 +14,7 @@ from fastapi import (
 from fastapi.responses import JSONResponse
 from app.services.websocket_manager import ws_manager
 from app.config import config
-from app.core.auth import verify_token
+from app.core.token import verify_token
 
 
 PROFILE_CACHE: Dict[str, Dict] = {}
@@ -71,9 +71,6 @@ async def _get_ig_username(
                                         "name": participant.get("name"),
                                         "ts": now,
                                     }
-                                    print(
-                                        f"👤 Fetched username via Conversations API: {username}"
-                                    )
                                     return username
 
                     paging = conv_data.get("paging", {}).get("next")
@@ -101,9 +98,6 @@ async def _get_ig_username(
                                                 "name": participant.get("name"),
                                                 "ts": now,
                                             }
-                                            print(
-                                                f"👤 Fetched username via Conversations API (page 2): {username}"
-                                            )
                                             return username
                 elif conv_resp.status_code == 403:
                     error_data = (
@@ -136,7 +130,6 @@ async def _get_ig_username(
                         "follower_count": data.get("follower_count"),
                         "ts": now,
                     }
-                    print(f"Successfully fetched username for PSID {psid}: {username}")
                     return username
             elif resp.status_code == 403:
                 pass
@@ -148,7 +141,6 @@ async def _get_ig_username(
                     )
                     else {}
                 )
-                print(f" Failed to fetch username for PSID {psid}: {resp.status_code}")
                 print(
                     f"   Error: {error_data.get('error', {}).get('message', 'Unknown error')}"
                 )
@@ -173,10 +165,8 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
     try:
         body = await request.json()
     except json.JSONDecodeError:
-        print(" Invalid JSON received")
         return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
 
-    print("📩 Incoming Webhook Body:", json.dumps(body, indent=2))
     current_time = time.time()
     if hasattr(handle_webhook, "_last_cleanup"):
         if current_time - handle_webhook._last_cleanup > 3600:
@@ -192,7 +182,6 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
             if "message" in value:
                 message_id = value["message"].get("mid")
                 if message_id and message_id in PROCESSED_MESSAGES:
-                    print(f"Skipping duplicate message: {message_id}")
                     continue
 
                 if message_id:
@@ -203,7 +192,6 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                 text = message_data.get("text", "")
                 attachments = message_data.get("attachments", [])
 
-                # Process attachments
                 attachment_list = []
                 for attachment in attachments:
                     attachment_list.append(
@@ -213,30 +201,20 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                         }
                     )
 
-                # Only process if there's text or attachments
                 if text or attachments:
                     username = await _get_ig_username(
                         psid, value.get("to", {}).get("id")
                     )
                     display_name = username or f"User_{psid[:6]}"
-                    print("=========== IG MESSAGE RECEIVED (Direct) ===========")
-                    print(f" Username: {display_name}")
-                    print(f" PSID: {psid}")
-                    print(f" Message: {text}")
                     if attachments:
-                        print(
-                            f" Attachments: {len(attachments)} ({', '.join([a.get('type', 'unknown') for a in attachments])})"
-                        )
-                    print("===========================================")
-
-                    broadcast_data = {
-                        "type": "ig_reply",
-                        "from_psid": psid,
-                        "to_page_id": value.get("to", {}).get("id"),
-                        "from_username": display_name,
-                        "text": text,
-                        "timestamp": value.get("timestamp", time.time()),
-                    }
+                        broadcast_data = {
+                            "type": "ig_reply",
+                            "from_psid": psid,
+                            "to_page_id": value.get("to", {}).get("id"),
+                            "from_username": display_name,
+                            "text": text,
+                            "timestamp": value.get("timestamp", time.time()),
+                        }
 
                     if attachments:
                         broadcast_data["attachments"] = attachment_list
@@ -246,14 +224,12 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                         broadcast_data,
                     )
 
-        # Handle Facebook Messenger/Instagram format: entry[].messaging[]
         for messaging_event in entry.get("messaging", []):
             message = messaging_event.get("message")
-            # Process if message has text or attachments
+
             if message and (message.get("text") or message.get("attachments")):
                 message_id = message.get("mid")
                 if message_id and message_id in PROCESSED_MESSAGES:
-                    print(f"Skipping duplicate message: {message_id}")
                     continue
 
                 if message_id:
@@ -267,7 +243,6 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                 attachments = message.get("attachments", [])
                 timestamp = messaging_event.get("timestamp", time.time())
 
-                # Process attachments
                 attachment_list = []
                 for attachment in attachments:
                     attachment_list.append(
@@ -281,19 +256,14 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                 display_name = username or f"User_{psid[:8]}"
 
                 if attachments:
-                    print(
-                        f" Attachments: {len(attachments)} ({', '.join([a.get('type', 'unknown') for a in attachments])})"
-                    )
-                print("===========================================")
-
-                broadcast_data = {
-                    "type": "ig_reply",
-                    "from_psid": psid,
-                    "to_page_id": page_id,
-                    "from_username": display_name,
-                    "text": text,
-                    "timestamp": timestamp,
-                }
+                    broadcast_data = {
+                        "type": "ig_reply",
+                        "from_psid": psid,
+                        "to_page_id": page_id,
+                        "from_username": display_name,
+                        "text": text,
+                        "timestamp": timestamp,
+                    }
 
                 if attachments:
                     broadcast_data["attachments"] = attachment_list

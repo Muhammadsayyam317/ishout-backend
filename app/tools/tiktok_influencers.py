@@ -19,9 +19,6 @@ async def search_tiktok_influencers(
     country: List[str],
 ):
     try:
-        print(
-            f"TikTok search input: category: {category}, followers: {followers}, country: {country}, limit: {limit}"
-        )
         categories = category if category else [""]
         countries = [normalize_country(c) for c in country] if country else [""]
         followers_list = normalize_followers(followers) if followers else [""]
@@ -49,7 +46,6 @@ async def search_tiktok_influencers(
             for cntry in countries:
                 for follower_range_str in followers_list:
                     query_text = f"TikTok influencer {cat} from {cntry} with {follower_range_str} followers"
-                    print(f"TIKTOK VECTOR QUERY: {query_text}")
                     results = vectorstore.similarity_search(
                         query_text, k=per_combination_limit
                     )
@@ -80,7 +76,6 @@ async def search_tiktok_influencers(
             if target_limit and len(all_results) >= target_limit:
                 break
 
-        # Return limited results
         return all_results[:target_limit] if target_limit else all_results
     except Exception as e:
         raise ValueError(f"Error searching TikTok influencers: {str(e)}")

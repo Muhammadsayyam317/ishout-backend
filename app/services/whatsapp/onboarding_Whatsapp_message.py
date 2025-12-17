@@ -1,5 +1,6 @@
 import logging
 import httpx
+from fastapi import HTTPException
 from app.config.credentials_config import config
 
 
@@ -24,15 +25,14 @@ async def send_whatsapp_message(recipient_id: str, message_text: str) -> bool:
             headers=headers,
             json=message_payload,
         )
-        logging.info(f"Response status code: {response.status_code}")
 
         if response.status_code != 200:
-            logging.error(f"Error: {response.status_code}, {response.text}")
-            return False
+            raise HTTPException(
+                status_code=500,
+                detail=f"Error: {response.status_code}, {response.text}",
+            )
         return True
-    except httpx.RequestError as http_error:
-        logging.error(f"HTTP request error: {http_error}")
-        return False
-    except Exception as general_error:
-        logging.error(f"Unexpected error: {general_error}")
-        return False
+    except httpx.RequestError:
+        return HTTPException(status_code=500, detail="HTTP request error")
+    except Exception:
+        return HTTPException(status_code=500, detail="Unexpected error")

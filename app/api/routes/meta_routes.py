@@ -7,7 +7,6 @@ from app.api.controllers.meta.notification import (
 from app.api.controllers.meta.privacy_policy import get_privacy_policy
 from app.api.controllers.meta.whatsapp_webhook import verify_whatsapp_webhook
 from app.agents.whatsapp_agent import handle_whatsapp_events
-from app.tools.whatsapp_influencer import find_influencers_for_whatsapp
 
 router = APIRouter()
 

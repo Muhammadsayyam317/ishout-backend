@@ -21,7 +21,6 @@ async def node_debug_after(state):
 
 
 async def node_requirements(state):
-    print("➡ Entered node_requirements")
     msg = state.get("user_message", "")
 
     new_platforms = extract_platforms(msg)
@@ -61,21 +60,21 @@ async def node_requirements(state):
             "👋 Welcome to iShout!\n\n"
             "Let's find the perfect influencers for your campaign 🎲\n\n"
             "Which social media platform are you targeting?\n\n"
-            "📱 Examples: Instagram, TikTok, YouTube"
+            "📱 Available Platforms:Instagram,TikTok,YouTube"
         )
         return state
     if "category" in missing:
         state["reply"] = (
             f"Great! *{', '.join(state['platform'])}* it is!\n\n"
             "Now, what category or niche are you looking for?\n\n"
-            "💡 Examples: Fashion, Beauty, Tech, Fitness, Food, Travel, Gaming"
+            "💡 Categories: Fashion, Beauty, Tech, Fitness, Food, Travel, Gaming"
         )
         return state
     if "country" in missing:
         state["reply"] = (
             f"Perfect! *{', '.join(state['category'])}* influencers coming up!\n\n"
             "Which country or region should these influencers be based in?\n\n"
-            "🌍 Examples: UAE, Kuwait, Saudi Arabia, Egypt, Qatar"
+            "🌍 Countries: UAE, Kuwait, Saudi Arabia, Qatar, Oman, Lebanon, Jordan, Iraq,Egypt"
         )
         return state
     if "limit" in missing:
@@ -99,7 +98,6 @@ async def node_requirements(state):
 
     state["reply"] = None
     state["ready_for_campaign"] = True
-    print(f"➡ Exited node_requirements: {state}")
     return state
 
 

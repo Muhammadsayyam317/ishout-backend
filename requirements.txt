@@ -29,7 +29,8 @@ langchain_core
 langchain-community
 langchain-mongodb
 langchain-text-splitters
-langgraph-checkpoint-sqlite
+langgraph-checkpoint-redis
+redis
 # tiktoken
 # lark
 # pyyaml

@@ -1,3 +1,4 @@
+from app.core.redis import init_redis_agent
 from app.db.connection import connect, close
 import uvicorn
 from fastapi import FastAPI
@@ -7,40 +8,12 @@ from fastapi.openapi.utils import get_openapi
 from app.api.api import api_router
 from contextlib import asynccontextmanager
 import os
-import logging
 from app.core.errors import register_exception_handlers
-import aiosqlite
-from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
-from app.agents.graph.whats_graph import graph
 
-
-try:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-        handlers=[logging.StreamHandler()],
-        force=True,
-    )
-except TypeError:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-        handlers=[logging.StreamHandler()],
-    )
-
-logging.getLogger().setLevel(logging.INFO)
-logging.getLogger("app").setLevel(logging.INFO)
-logging.getLogger("app.agents").setLevel(logging.INFO)
-logging.getLogger("app.tools").setLevel(logging.INFO)
-logging.info("Logging configured successfully")
 
 security = HTTPBearer(
     scheme_name="Bearer", description="Enter your Bearer token", auto_error=False
 )
-
-# Security scheme for OpenAPI documentation
 security_schemes = {
     "Bearer": {
         "type": "http",
@@ -53,16 +26,12 @@ security_schemes = {
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print(f"🔧 Server PID: {os.getpid()}")
     await connect()
-    app.state.sqlite_db = await aiosqlite.connect("whatsapp_agent.db")
-    app.state.checkpointer = AsyncSqliteSaver(app.state.sqlite_db)
-    app.state.whatsapp_agent = graph.compile(checkpointer=app.state.checkpointer)
-    print("Whatsapp agent compiled successfully")
+    print("connected successfully")
+    await init_redis_agent(app)
     yield
     await close()
-    await app.state.sqlite_db.close()
-    print("🧹 SQLite closed")
+    print("🧹closed")
 
 
 app = FastAPI(
@@ -73,8 +42,6 @@ app = FastAPI(
     swagger_ui_init_oauth={"clientId": "swagger-ui"},
     swagger_ui_parameters={"persistAuthorization": True},
 )
-
-
 register_exception_handlers(app)
 
 
@@ -110,5 +77,4 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=8000,
         reload=True,
-        log_level="info",
     )

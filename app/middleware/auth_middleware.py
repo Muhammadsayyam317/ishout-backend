@@ -1,7 +1,7 @@
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional, Dict, Any
-from app.core.auth import get_current_user_from_token
+from app.core.token import get_current_user_from_token
 import inspect
 
 # Security scheme for Swagger UI (exported for use in routes)
@@ -13,46 +13,35 @@ security = HTTPBearer(
 
 
 class AuthMiddleware:
-    """Authentication middleware for token validation"""
-
     @staticmethod
     async def get_current_user_required(
         credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     ) -> Dict[str, Any]:
-        """Get current user with required authentication"""
         if not credentials:
             raise HTTPException(status_code=401, detail="Authentication required")
-
         token = credentials.credentials
         current_user = get_current_user_from_token(token)
-
         if not current_user:
             raise HTTPException(status_code=401, detail="Invalid or expired token")
-
         return current_user
 
     @staticmethod
     async def get_current_user_optional(
         credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     ) -> Optional[Dict[str, Any]]:
-        """Get current user with optional authentication"""
+
         if not credentials:
             return None
-
         token = credentials.credentials
         current_user = get_current_user_from_token(token)
-
         if not current_user:
             return None
-
         return current_user
 
     @staticmethod
     def require_admin(current_user: Dict[str, Any]) -> Dict[str, Any]:
-        """Require admin role"""
         if current_user.get("role") != "admin":
             raise HTTPException(status_code=403, detail="Admin access required")
-
         return current_user
 
     @staticmethod

@@ -9,10 +9,6 @@ class Config(BaseModel):
     DATABASE_URL: str = Field(default=os.getenv("MONGODB_ATLAS_URI"))
     DB_NAME: str = Field(default=os.getenv("MONGODB_ATLAS_DB_NAME"))
 
-    TWILIO_ACCOUNT_SID: str = Field(default=os.getenv("TWILIO_ACCOUNT_SID"))
-    TWILIO_AUTH_TOKEN: str = Field(default=os.getenv("TWILIO_AUTH_TOKEN"))
-    TWILLIO_NUMBER: str = Field(default=os.getenv("TWILLIO_NUMBER"))
-
     MONGODB_ATLAS_URI: str = Field(default=os.getenv("MONGODB_ATLAS_URI"))
     MONGODB_ATLAS_DB_NAME: str = Field(default=os.getenv("MONGODB_ATLAS_DB_NAME"))
 
@@ -28,6 +24,15 @@ class Config(BaseModel):
     MONGODB_VECTOR_INDEX_NAME: str = Field(
         default=os.getenv("MONGODB_VECTOR_INDEX_NAME")
     )
+    MONGODB_ATLAS_COLLECTION_USERS: str = Field(
+        default=os.getenv("MONGODB_ATLAS_COLLECTION_USERS")
+    )
+    MONGODB_ATLAS_COLLECTION_CAMPAIGNS: str = Field(
+        default=os.getenv("MONGODB_ATLAS_COLLECTION_CAMPAIGNS")
+    )
+    MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS: str = Field(
+        default=os.getenv("MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS")
+    )
 
     OPENAI_API_KEY: str = Field(default=os.getenv("OPENAI_API_KEY"))
     OPENAI_MODEL_NAME: str = Field(default=os.getenv("OPENAI_MODEL_NAME"))
@@ -42,7 +47,7 @@ class Config(BaseModel):
     RESEND_API_KEY: str = Field(default=os.getenv("RESEND_API_KEY"))
 
     RECIPENT_NUMBER: str = Field(default=os.getenv("RECIPENT_NUMBER"))
-    PHONE_NUMBER_ID: str = Field(default=os.getenv("PHONE_NUMBER_ID"))
+    WHATSAPP_PHONE_NUMBER: str = Field(default=os.getenv("WHATSAPP_PHONE_NUMBER"))
     META_APP_ID: str = Field(default=os.getenv("META_APP_ID"))
     META_WHATSAP_APP_SECRET: str = Field(default=os.getenv("META_WHATSAP_APP_SECRET"))
     META_WHATSAPP_ACCESSSTOKEN: str = Field(
@@ -51,7 +56,9 @@ class Config(BaseModel):
     WHATSAPP_BUSSINESS_ACCOUNT_ID: str = Field(
         default=os.getenv("WHATSAPP_BUSSINESS_ACCOUNT_ID")
     )
-    VERSION: str = Field(default=os.getenv("META_VERSION"))
+    WHATSAPP_GRAPH_API_VERSION: str = Field(
+        default=os.getenv("WHATSAPP_GRAPH_API_VERSION")
+    )
 
     LANGFUSE_SECRET_KEY: str = Field(default=os.getenv("LANGFUSE_SECRET_KEY"))
     LANGFUSE_PUBLIC_KEY: str = Field(default=os.getenv("LANGFUSE_PUBLIC_KEY"))
@@ -66,6 +73,8 @@ class Config(BaseModel):
     META_APP_SECRET: str = Field(default=os.getenv("META_APP_SECRET"))
     PAGE_ACCESS_TOKEN: str = Field(default=os.getenv("PAGE_ACCESS_TOKEN"))
     IG_GRAPH_API_VERSION: str = Field(default=os.getenv("IG_GRAPH_API_VERSION"))
+
+    REDIS_URL: str = Field(default=os.getenv("REDIS_URL"))
 
 
 # config singleton instance
