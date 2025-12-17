@@ -25,7 +25,6 @@ from app.utils.helpers import convert_objectid
 
 
 async def _populate_user_details(user_id: str) -> Dict[str, Any]:
-    """Populate user details from user_id"""
     try:
         if not user_id:
             return None
@@ -45,7 +44,6 @@ async def _populate_user_details(user_id: str) -> Dict[str, Any]:
             "company_size": user.get("company_size"),
         }
     except Exception as e:
-        print(f"Error populating user details: {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Error populating user details: {str(e)}"
         ) from e
@@ -586,7 +584,6 @@ async def user_reject_influencers(
             "total_rejected_by_user": len(current_rejected_by_user),
         }
     except Exception as e:
-        print(f"Error in user_reject_influencers: {str(e)}")
         return {"error": str(e)}
 
 
@@ -657,11 +654,9 @@ async def update_campaignstatus_with_background_task(
     background_tasks: BackgroundTasks,
 ) -> Dict[str, Any]:
     try:
-        print("UPDATE CAMPAIGN STATUS CALLED")
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
         influencers_collection = db.get_collection("campaign_influencers")
-        print(f"Updating campaign status to {request_data.status}")
         result = await campaigns_collection.update_one(
             {"_id": ObjectId(request_data.campaign_id)},
             {
@@ -674,8 +669,6 @@ async def update_campaignstatus_with_background_task(
 
         if result.modified_count == 0:
             raise HTTPException(status_code=404, detail="No changes")
-        # Fetch updated campaign details
-        print("Campaign status updated successfully")
         campaign = await campaigns_collection.find_one(
             {"_id": ObjectId(request_data.campaign_id)}
         )
@@ -684,13 +677,8 @@ async def update_campaignstatus_with_background_task(
             raise HTTPException(status_code=404, detail="Campaign not found")
 
         user_type = campaign.get("user_type", None)
-        print(f"User type: {user_type}")
-
         if request_data.status == CampaignStatus.APPROVED and user_type == "whatsapp":
-            campaign_id = str(campaign["_id"])
-            print(f"Campaign ID: {campaign_id}")
             whatsapp_phone = campaign.get("whatsapp_phone")
-            print(f"Whatsapp phone: {whatsapp_phone}")
             if not whatsapp_phone:
                 raise HTTPException(
                     status_code=404,
@@ -705,15 +693,10 @@ async def update_campaignstatus_with_background_task(
                 }
             )
             approved_influencers = await approved_influencers.to_list(length=None)
-            print(f"Approved influencers: {approved_influencers}")
             for influencer in approved_influencers:
                 username = influencer.get("username")
                 if not username:
-                    print(
-                        f"⚠ Skipping WhatsApp message to influencer without username: {influencer.get('_id')}"
-                    )
                     continue
-                print(f"Sending influencer: {username}")
                 background_tasks.add_task(
                     send_whatsapp_interactive_message,
                     whatsapp_phone,

@@ -19,9 +19,6 @@ async def search_youtube_influencers(
     country: List[str],
 ):
     try:
-        print(
-            f"YouTube search input: category: {category}, followers: {followers}, country: {country}, limit: {limit}"
-        )
         categories = category if category else [""]
         countries = [normalize_country(c) for c in country] if country else [""]
         followers_list = normalize_followers(followers) if followers else [""]
@@ -48,7 +45,7 @@ async def search_youtube_influencers(
             for cntry in countries:
                 for follower_range_str in followers_list:
                     query_text = f"YouTube influencer {cat} from {cntry} with {follower_range_str} followers"
-                    print(f"YOUTUBE VECTOR QUERY: {query_text}")
+
                     results = vectorstore.similarity_search(
                         query_text, k=per_combination_limit
                     )

@@ -10,7 +10,6 @@ async def reject_and_regenerate(request: RejectInfluencersRequest):
     try:
         db = get_db()
         campaigns = db["campaigns"]
-
         await campaigns.update_one(
             {"_id": ObjectId(request.campaign_id)},
             {"$addToSet": {"rejected_influencers": request.rejected_influencer_id}},

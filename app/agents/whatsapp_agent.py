@@ -1,6 +1,4 @@
 from fastapi import Request, HTTPException
-import logging
-
 from app.agents.nodes.state import (
     get_conversation_round,
     increment_conversation_round,
@@ -9,14 +7,10 @@ from app.agents.state.get_user_state import get_user_state
 from app.agents.state.update_user_state import update_user_state
 from app.agents.state.reset_state import reset_user_state
 
-logger = logging.getLogger(__name__)
-
 
 async def handle_whatsapp_events(request: Request):
     try:
-        # 1. Parse webhook payload
         event = await request.json()
-        logger.info("Incoming WhatsApp event: %s", event)
 
         entry = event.get("entry")
         if not entry:
@@ -33,7 +27,6 @@ async def handle_whatsapp_events(request: Request):
 
         thread_id = first_message.get("from")
         if not thread_id:
-            logger.warning("No sender ID found")
             return {"status": "ok"}
 
         msg_text = (
@@ -43,17 +36,14 @@ async def handle_whatsapp_events(request: Request):
         ) or ""
         profile_name = value.get("contacts", [{}])[0].get("profile", {}).get("name")
 
-        # 2. Load WhatsApp agent
         app = request.app
         whatsapp_agent = getattr(app.state, "whatsapp_agent", None)
         if not whatsapp_agent:
-            logger.error("WhatsApp agent not initialized")
             raise HTTPException(
                 status_code=503,
                 detail="WhatsApp agent not initialized",
             )
 
-        # Load user state (Mongo)
         stored_state = await get_user_state(thread_id)
         state = stored_state or {}
 
@@ -86,7 +76,5 @@ async def handle_whatsapp_events(request: Request):
     except HTTPException:
         raise
 
-    except Exception as e:
-        print(e)
-        logger.exception("WhatsApp webhook failed")
+    except Exception:
         raise HTTPException(status_code=500, detail="Webhook processing failed")

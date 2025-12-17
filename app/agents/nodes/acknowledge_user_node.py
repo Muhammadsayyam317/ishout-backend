@@ -1,5 +1,4 @@
 async def node_acknowledge_user(state):
-    print("➡ Entered node_acknowledge_user")
     if not state.get("acknowledged"):
         state["reply"] = (
             "🎉 *Campaign Created Successfully!*\n\n"
@@ -13,5 +12,4 @@ async def node_acknowledge_user(state):
         state["reply_sent"] = False
         state["acknowledged"] = True
         state["done"] = True
-    print("➡ Exited node_acknowledge_user")
     return state

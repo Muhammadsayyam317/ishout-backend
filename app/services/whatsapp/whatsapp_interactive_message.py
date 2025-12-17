@@ -8,7 +8,6 @@ async def send_whatsapp_interactive_message(
     message_text: str,
     influencer: dict,
 ) -> bool:
-    print("Entering send_whatsapp_interactive_message")
     access_token = config.META_WHATSAPP_ACCESSSTOKEN
 
     headers = {
@@ -22,7 +21,6 @@ async def send_whatsapp_interactive_message(
     pricing = influencer.get("pricing")
 
     if not username:
-        print("⚠ Skipping influencer without username")
         return False
 
     message_body = (
@@ -72,7 +70,6 @@ async def send_whatsapp_interactive_message(
         )
 
         if response.status_code != 200:
-            print("❌ WhatsApp API Error:", response.text)
             return False
 
         return True

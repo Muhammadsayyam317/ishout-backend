@@ -44,7 +44,6 @@ async def search_instagram_influencers(
             for cntry in countries:
                 for follower_range_str in followers_list:
                     query_text = f"Instagram influencer {cat} from {cntry} with {follower_range_str} followers"
-                    print(f"INSTAGRAM VECTOR QUERY: {query_text}")
                     results = vectorstore.similarity_search(
                         query_text, k=per_combination_limit
                     )

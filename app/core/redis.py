@@ -14,4 +14,3 @@ async def init_redis_agent(app):
 
     checkpointer = await contextmanager.__aenter__()
     app.state.whatsapp_agent = graph.compile(checkpointer=checkpointer)
-    print("✅ WhatsApp agent initialized with Redis")

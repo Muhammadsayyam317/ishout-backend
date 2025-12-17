@@ -21,7 +21,6 @@ async def node_debug_after(state):
 
 
 async def node_requirements(state):
-    print("➡ Entered node_requirements")
     msg = state.get("user_message", "")
 
     new_platforms = extract_platforms(msg)
@@ -99,7 +98,6 @@ async def node_requirements(state):
 
     state["reply"] = None
     state["ready_for_campaign"] = True
-    print(f"➡ Exited node_requirements: {state}")
     return state
 
 

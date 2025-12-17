@@ -25,21 +25,14 @@ async def send_whatsapp_approved_influencers(campaign_id: str):
             }
         ).to_list(length=100)
         if not influencers:
-            print(
-                f"[send_whatsapp_approved_influencers] No influencers found for campaign {campaign_id}"
-            )
             return
 
         for influencer in influencers:
-            print(
-                f"[send_whatsapp_approved_influencers] Sending message to {user_phone} with content: {influencer}"
-            )
             success = await send_whatsapp_message(
                 user_phone, "Approve or Reject this influencer?", influencer
             )
 
             if not success:
-                print(f"WhatsApp message failed to send to {user_phone}")
                 raise HTTPException(
                     status_code=500, detail="WhatsApp message failed to send."
                 )

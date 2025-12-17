@@ -19,7 +19,9 @@ from app.api.controllers.admin.campaign_controller import (
     update_campaignstatus_with_background_task,
 )
 
-from app.api.controllers.admin.reject_influencers import reject_and_regenerate
+from app.api.controllers.admin.reject_regenerate_influencers import (
+    reject_and_regenerate,
+)
 from app.api.controllers.company.company_data import company_data
 from app.models.campaign_model import (
     AdminGenerateInfluencersRequest,

@@ -15,7 +15,6 @@ def parse_follower_count(value: str) -> int:
         else:
             return int(float(value))
     except (ValueError, TypeError):
-        print(f"Could not parse follower count: {value}")
         return 0
 
 
@@ -29,8 +28,7 @@ def parse_follower_range(value: str) -> Tuple[int, int, str]:
         end_count = parse_follower_count(end_str)
 
         return start_count, end_count, value
-    except Exception as e:
-        print(f"Error parsing follower range '{value}': {str(e)}")
+    except Exception:
         return 0, 0, str(value)
 
 

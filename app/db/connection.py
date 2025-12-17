@@ -8,7 +8,6 @@ load_dotenv()
 client: AsyncIOMotorClient = None
 db = None
 
-# PyMongo client for langchain vector search (synchronous)
 pymongo_client: MongoClient = None
 pymongo_db = None
 
@@ -18,7 +17,6 @@ async def connect():
     global client, db, pymongo_client, pymongo_db
 
     if client and db:
-        print("⚙️ MongoDB already connected.")
         return
 
     try:
@@ -39,8 +37,6 @@ async def connect():
         )
         pymongo_db = pymongo_client[config.MONGODB_ATLAS_DB_NAME]
 
-        print("MongoDB connected successfully (Motor + PyMongo)")
-
     except Exception as e:
         client = None
         db = None
@@ -50,7 +46,6 @@ async def connect():
 
 
 async def close():
-    """Close MongoDB connection."""
     global client, db, pymongo_client, pymongo_db
 
     if client:
@@ -62,7 +57,6 @@ async def close():
         pymongo_client.close()
         pymongo_client = None
         pymongo_db = None
-        print("🧹 MongoDB connection closed.")
     else:
         print("MongoDB client not initialized.")
 
