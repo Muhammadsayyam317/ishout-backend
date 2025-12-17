@@ -29,7 +29,7 @@ async def handle_whatsapp_events(request: Request):
                 and first_message.get("interactive", {}).get("type") == "button_reply"
             ):
                 await handle_button_reply(first_message)
-                continue
+                return {"status": "ok"}
 
         thread_id = first_message.get("from")
         if not thread_id:
