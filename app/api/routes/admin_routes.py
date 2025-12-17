@@ -121,7 +121,6 @@ router.add_api_route(
 def get_generated_influencers_route(
     campaign_id: str, current_user: dict = Depends(require_admin_access)
 ):
-    """Get generated influencers for a campaign (admin only)"""
     try:
         return get_campaign_generated_influencers(campaign_id)
     except Exception as e:

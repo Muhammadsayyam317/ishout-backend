@@ -36,8 +36,27 @@ async def node_requirements(state):
         info_updated = True
 
     if limit is not None:
-        state["limit"] = limit
-        info_updated = True
+        if limit > 50:
+            state["reply"] = (
+                "You can select **maximum 50 influencers only**.\n\n"
+                "Please enter a number between **1 and 50**.\n"
+                "🔢 Examples: 5, 10, 20, 50"
+            )
+        state["limit"] = None
+        state["reply_sent"] = False
+        return state
+
+    if limit <= 0:
+        state["reply"] = (
+            "⚠️ Number of influencers must be **greater than 0**.\n\n"
+            "Please enter a valid number (1–50)."
+        )
+        state["limit"] = None
+        state["reply_sent"] = False
+        return state
+
+    state["limit"] = limit
+    info_updated = True
 
     if new_countries:
         state["country"] = new_countries

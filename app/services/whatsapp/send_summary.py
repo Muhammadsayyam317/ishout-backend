@@ -52,10 +52,10 @@ async def check_and_send_campaign_summary(campaign_id: str, sender_id: str):
         )
 
         summary_message = (
-            "📊 *Campaign Summary*\n\n"
-            f"✅ Approved Influencers: {approved}\n"
-            f"❌ Rejected Influencers: {rejected}\n\n"
-            "🎉 Your campaign selection is complete!"
+            "*Campaign Summary*\n\n"
+            f"✅ Number of Approved Influencers: {approved}\n"
+            f"❌ Number of Rejected Influencers: {rejected}\n\n"
+            "🎉 Your campaign Influencer selection is complete!"
         )
 
         # Send WhatsApp summary
