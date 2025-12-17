@@ -22,12 +22,12 @@ async def handle_button_reply(message: dict):
 
     influencer = await collection.find_one({"_id": ObjectId(influencer_doc_id)})
 
-    # 🔒 Prevent invalid / missing influencer
+    #  Prevent invalid / missing influencer
     if not influencer:
         await send_whatsapp_text_message(sender_id, "⚠ Influencer record not found.")
         return
 
-    # 🔒 PREVENT DOUBLE ACTION
+    # PREVENT DOUBLE ACTION
     if influencer.get("company_approved") is True:
         await send_whatsapp_text_message(
             sender_id, f"⚠ You already responded for @{influencer.get('username')}."
