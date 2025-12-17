@@ -195,13 +195,3 @@ router.add_api_route(
     methods=["GET"],
     tags=["Admin"],
 )
-
-
-# @router.post("/send-email", tags=["Admin"])
-# async def send_email_route(
-#     to: List[str],
-#     subject: str,
-#     html: str,
-#     current_user: dict = Depends(require_admin_access),
-# ):
-#     return await send_mail(to, subject, html)
