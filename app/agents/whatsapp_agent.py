@@ -6,12 +6,12 @@ from app.agents.nodes.state import (
 from app.agents.state.get_user_state import get_user_state
 from app.agents.state.update_user_state import update_user_state
 from app.agents.state.reset_state import reset_user_state
+from app.services.whatsapp.reply_button import handle_button_reply
 
 
 async def handle_whatsapp_events(request: Request):
     try:
         event = await request.json()
-
         entry = event.get("entry")
         if not entry:
             return {"status": "ok"}
@@ -23,7 +23,13 @@ async def handle_whatsapp_events(request: Request):
         messages = value.get("messages")
         if not messages:
             return {"status": "ok"}
-        first_message = messages[0]
+        for first_message in messages:
+            if (
+                first_message.get("type") == "interactive"
+                and first_message.get("interactive", {}).get("type") == "button_reply"
+            ):
+                await handle_button_reply(first_message)
+                continue
 
         thread_id = first_message.get("from")
         if not thread_id:
@@ -48,12 +54,10 @@ async def handle_whatsapp_events(request: Request):
         state = stored_state or {}
 
         conversation_round = await get_conversation_round(thread_id)
-
         if state.get("done") and state.get("acknowledged"):
             conversation_round = await increment_conversation_round(thread_id)
             state = await reset_user_state(thread_id)
         checkpoint_thread_id = f"{thread_id}-r{conversation_round}"
-
         state.update(
             {
                 "user_message": msg_text,
@@ -63,16 +67,13 @@ async def handle_whatsapp_events(request: Request):
                 "name": profile_name or state.get("name"),
             }
         )
-
         final_state = await whatsapp_agent.ainvoke(
             state,
             config={"configurable": {"thread_id": checkpoint_thread_id}},
         )
-
         if final_state:
             await update_user_state(thread_id, final_state)
         return {"status": "ok"}
-
     except HTTPException:
         raise
 
