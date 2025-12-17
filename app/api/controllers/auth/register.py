@@ -8,10 +8,19 @@ from app.models.user_model import (
     UserRole,
     UserStatus,
 )
-from fastapi import HTTPException
+from fastapi import HTTPException, BackgroundTasks
+from app.services.email_service import WELCOME_EMAIL_TEMPLATE_HTML, send_welcome_email
 
 
-async def register_company(request_data: CompanyRegistrationRequest) -> Dict[str, Any]:
+async def register_company(
+    request_data: CompanyRegistrationRequest, backgroundtask: BackgroundTasks
+) -> Dict[str, Any]:
+    backgroundtask.add_task(
+        send_welcome_email,
+        [request_data.email],
+        "Welcome to Ishout",
+        WELCOME_EMAIL_TEMPLATE_HTML,
+    )
     try:
         db = get_db()
         users_collection = db.get_collection("users")

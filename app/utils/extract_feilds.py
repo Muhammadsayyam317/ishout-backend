@@ -135,7 +135,6 @@ def extract_country(message: str) -> Optional[str]:
 
 
 def extract_countries(message: str) -> List[str]:
-    """Extract all countries from message, returning a list."""
     msg = (message or "").lower()
     countries = []
     found_countries = set()
@@ -202,7 +201,6 @@ def extract_category(message: str) -> Optional[str]:
 
 
 def extract_categories(message: str) -> List[str]:
-    """Extract all categories from message, returning a list."""
     msg = (message or "").lower()
     categories = []
     found_categories = set()
