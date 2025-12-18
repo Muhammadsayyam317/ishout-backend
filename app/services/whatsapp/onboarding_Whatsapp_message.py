@@ -20,11 +20,12 @@ async def send_whatsapp_message(recipient_id: str, message_text: str) -> bool:
 
     logging.info(f"Sending message to {recipient_id} with content: {message_payload}")
     try:
-        response = await httpx.AsyncClient(timeout=15.0).post(
-            "https://graph.facebook.com/v24.0/912195958636325/messages",
-            headers=headers,
-            json=message_payload,
-        )
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            response = await client.post(
+                "https://graph.facebook.com/v24.0/912195958636325/messages",
+                headers=headers,
+                json=message_payload,
+            )
 
         if response.status_code != 200:
             raise HTTPException(

@@ -4,6 +4,7 @@ from app.utils.helpers import normalize_phone
 
 
 async def node_verify_user(state):
+    print("Entering node_verify_user")
     try:
         sender_id = state.get("sender_id")
         if not sender_id:
@@ -36,6 +37,7 @@ async def node_verify_user(state):
         state["reply_sent"] = False
 
         return state
+        print("Exiting node_verify_user")
 
     except Exception:
 
