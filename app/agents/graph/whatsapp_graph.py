@@ -1,7 +1,5 @@
 from langgraph.graph import StateGraph, END
 from app.agents.nodes.requirments import (
-    node_debug_after,
-    node_debug_before,
     node_requirements,
 )
 from app.agents.nodes.create_campaign_node import node_create_campaign
@@ -12,16 +10,13 @@ from app.models.whatsappconversation_model import ConversationState
 
 graph = StateGraph(ConversationState)
 
-graph.add_node("debug_before", node_debug_before)
 graph.add_node("verify_user", node_verify_user)
 graph.add_node("requirements", node_requirements)
-graph.add_node("debug_after", node_debug_after)
 graph.add_node("create_campaign", node_create_campaign)
 graph.add_node("acknowledge_user", node_acknowledge_user)
 graph.add_node("send_reply", node_send_reply)
 
-graph.set_entry_point("debug_before")
-graph.add_edge("debug_before", "verify_user")
+graph.set_entry_point("verify_user")
 graph.add_conditional_edges(
     "verify_user",
     lambda state: "requirements" if state.get("is_existing_user") else "send_reply",

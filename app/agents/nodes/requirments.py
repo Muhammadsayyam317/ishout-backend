@@ -1,5 +1,3 @@
-import json
-import logging
 from app.models.whatsappconversation_model import ConversationState
 from app.utils.extract_feilds import (
     extract_followers,
@@ -11,22 +9,10 @@ from app.utils.extract_feilds import (
 import traceback
 
 
-async def node_debug_before(state):
-    logging.info("\n\n===== DEBUG BEFORE =====\n" + json.dumps(state, indent=2))
-    return state
-
-
-async def node_debug_after(state):
-    logging.info("\n\n===== DEBUG AFTER =====\n" + json.dumps(state, indent=2))
-    return state
-
-
 async def node_requirements(state):
     try:
         print("Entering node_requirements")
-
         msg = state.get("user_message", "")
-        print("Message:", msg)
 
         new_platforms = extract_platforms(msg)
         limit = extract_limit(msg)
@@ -35,17 +21,11 @@ async def node_requirements(state):
         new_followers = extract_followers(msg)
 
         info_updated = False
-
-        # ---------- PLATFORM ----------
         if new_platforms:
             state["platform"] = new_platforms
-            print("Platform:", state["platform"])
             info_updated = True
 
-        # ---------- LIMIT VALIDATION ----------
         if limit is not None:
-            print("Limit received:", limit)
-
             if limit > 50:
                 state["reply"] = (
                     "You can select **maximum 50 influencers only**.\n\n"
@@ -65,21 +45,16 @@ async def node_requirements(state):
                 state["reply_sent"] = False
                 return state
 
-            # ✅ valid limit
             state["limit"] = limit
             info_updated = True
 
-        # ---------- COUNTRY ----------
         if new_countries:
             state["country"] = new_countries
             info_updated = True
-
-        # ---------- CATEGORY ----------
         if new_categories:
             state["category"] = new_categories
             info_updated = True
 
-        # ---------- FOLLOWERS ----------
         if new_followers:
             state["followers"] = new_followers
             info_updated = True
@@ -87,7 +62,6 @@ async def node_requirements(state):
         if info_updated:
             state["reply_sent"] = False
 
-        # ---------- MISSING FIELDS ----------
         missing = missing_fields(state)
 
         if "platform" in missing:
@@ -134,19 +108,15 @@ async def node_requirements(state):
                 "• 1M+ (Mega influencers)"
             )
             return state
-
-        # ---------- READY ----------
         state["reply"] = None
         state["ready_for_campaign"] = True
         print("Exiting node_requirements successfully")
 
         return state
 
-    except Exception as e:
-        print(f"❌ Error in node_requirements: {e}")
+    except Exception:
         traceback.print_exc()
 
-        # fail-safe reply so webhook never returns 500
         state["reply"] = (
             "⚠️ Sorry, something went wrong while processing your message.\n"
             "Please try again."
