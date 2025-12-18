@@ -21,9 +21,7 @@ graph.add_node("acknowledge_user", node_acknowledge_user)
 graph.add_node("send_reply", node_send_reply)
 
 graph.set_entry_point("debug_before")
-
 graph.add_edge("debug_before", "verify_user")
-
 graph.add_conditional_edges(
     "verify_user",
     lambda state: "requirements" if state.get("is_existing_user") else "send_reply",
@@ -34,7 +32,6 @@ graph.add_conditional_edges(
 )
 
 graph.add_edge("requirements", "debug_after")
-
 graph.add_conditional_edges(
     "debug_after",
     lambda state: (

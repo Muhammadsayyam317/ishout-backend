@@ -7,7 +7,6 @@ from fastapi.security import HTTPBearer
 from fastapi.openapi.utils import get_openapi
 from app.api.api import api_router
 from contextlib import asynccontextmanager
-import os
 from app.core.errors import register_exception_handlers
 
 

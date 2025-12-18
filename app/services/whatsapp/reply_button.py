@@ -2,6 +2,7 @@ from bson import ObjectId
 from datetime import datetime, timezone
 from app.db.connection import get_db
 from app.models.campaign_influencers_model import CampaignInfluencerStatus
+from app.services.whatsapp.send_summary import check_and_send_campaign_summary
 from app.services.whatsapp.send_text import send_whatsapp_text_message
 
 
@@ -14,12 +15,9 @@ async def handle_button_reply(message: dict):
 
     if not reply_id or "_" not in reply_id:
         return
-
     action, influencer_doc_id = reply_id.split("_", 1)
-
     db = get_db()
     collection = db.get_collection("campaign_influencers")
-
     influencer = await collection.find_one({"_id": ObjectId(influencer_doc_id)})
 
     #  Prevent invalid / missing influencer
@@ -34,12 +32,12 @@ async def handle_button_reply(message: dict):
         )
         return
 
-    # ✅ Determine new status
+    # Determine new status
     if action == "approve":
         new_status = CampaignInfluencerStatus.APPROVED.value
         confirmation_text = (
             f"✅ You APPROVED @{influencer.get('username')}.\n"
-            "They have been added to your campaign."
+            "They have been added to your Onboarding Campaign."
         )
     elif action == "reject":
         new_status = CampaignInfluencerStatus.REJECTED.value
@@ -49,8 +47,6 @@ async def handle_button_reply(message: dict):
         )
     else:
         return
-
-    # 🧠 UPDATE DB (THIS DISABLES BUTTON LOGICALLY)
     await collection.update_one(
         {"_id": influencer["_id"]},
         {
@@ -62,5 +58,11 @@ async def handle_button_reply(message: dict):
         },
     )
 
-    # 📩 SEND CONFIRMATION MESSAGE
+    # CHECK IF ALL INFLUENCERS ARE DECIDED
+    await check_and_send_campaign_summary(
+        influencer["campaign_id"],
+        sender_id,
+    )
+
+    # SEND CONFIRMATION MESSAGE
     await send_whatsapp_text_message(sender_id, confirmation_text)

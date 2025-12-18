@@ -23,6 +23,7 @@ from app.api.controllers.admin.reject_regenerate_influencers import (
     reject_and_regenerate,
 )
 from app.api.controllers.company.company_data import company_data
+from app.core.redis import redis_info
 from app.models.campaign_model import (
     AdminGenerateInfluencersRequest,
     CampaignStatusUpdateRequest,
@@ -121,7 +122,6 @@ router.add_api_route(
 def get_generated_influencers_route(
     campaign_id: str, current_user: dict = Depends(require_admin_access)
 ):
-    """Get generated influencers for a campaign (admin only)"""
     try:
         return get_campaign_generated_influencers(campaign_id)
     except Exception as e:
@@ -197,12 +197,9 @@ router.add_api_route(
     tags=["Admin"],
 )
 
-
-# @router.post("/send-email", tags=["Admin"])
-# async def send_email_route(
-#     to: List[str],
-#     subject: str,
-#     html: str,
-#     current_user: dict = Depends(require_admin_access),
-# ):
-#     return await send_mail(to, subject, html)
+router.add_api_route(
+    path="/redis/info",
+    endpoint=redis_info,
+    methods=["GET"],
+    tags=["Admin"],
+)

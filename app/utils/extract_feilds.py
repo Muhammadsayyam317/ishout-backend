@@ -24,17 +24,19 @@ CATEGORIES = [
 COUNTRIES = [
     "uae",
     "kuwait",
-    "iran",
+    "iraq",
     "jordan",
     "qatar",
     "saudi arabia",
-    "bahrain",
+    "lebnanon",
     "oman",
+    "egypt",
 ]
 
 COUNTRY_MAP = {
     "saudi": "saudi arabia",
     "saudi arabia": "saudi arabia",
+    "KSA": "kuwait",
 }
 
 
@@ -57,7 +59,6 @@ def extract_platform(message: str) -> Optional[str]:
 
 
 def extract_platforms(message: str) -> List[str]:
-    """Extract all platforms from message, returning a list."""
     msg = (message or "").lower()
     platforms = []
     found_platforms = set()
@@ -67,7 +68,6 @@ def extract_platforms(message: str) -> List[str]:
             if _word_search(s, msg) and plat not in found_platforms:
                 platforms.append(plat)
                 found_platforms.add(plat)
-
     return platforms
 
 
@@ -79,7 +79,6 @@ def extract_limit(message: str) -> Optional[int]:
             return int(m.group(1))
         except ValueError:
             pass
-
     patterns = [
         r"number\s+of\s+influencers?\s*(?:is|:|=)\s*(\d+)",
         r"(\d+)\s+number\s+of\s+influencers?",
@@ -105,13 +104,11 @@ def extract_limit(message: str) -> Optional[int]:
                 return int(m.group(1))
             except Exception:
                 pass
-
     return None
 
 
 def extract_country(message: str) -> Optional[str]:
     msg = (message or "").lower()
-
     patterns = [
         r"country\s*(?:is|:|=)\s*([a-z\s]{2,30})",
         r"country\s+([a-z\s]{2,30})",
@@ -128,19 +125,16 @@ def extract_country(message: str) -> Optional[str]:
     for c in COUNTRIES:
         if _word_search(c, msg):
             return COUNTRY_MAP.get(c, c)
-
     m = re.search(r"\bin\s+([A-Za-z ]{2,30})\b", msg)
     if m:
         cand = m.group(1).strip().lower()
         for c in COUNTRIES:
             if c in cand or cand in c:
                 return COUNTRY_MAP.get(c, c)
-
     return None
 
 
 def extract_countries(message: str) -> List[str]:
-    """Extract all countries from message, returning a list."""
     msg = (message or "").lower()
     countries = []
     found_countries = set()
@@ -207,7 +201,6 @@ def extract_category(message: str) -> Optional[str]:
 
 
 def extract_categories(message: str) -> List[str]:
-    """Extract all categories from message, returning a list."""
     msg = (message or "").lower()
     categories = []
     found_categories = set()
@@ -241,7 +234,7 @@ def extract_categories(message: str) -> List[str]:
     return categories
 
 
-def _parse_follower_value(value: str) -> Optional[int]:
+def parse_follower_value(value: str) -> Optional[int]:
     value = value.strip().lower().replace(",", "")
     value = re.sub(r"[^\dkm]+$", "", value)
 
@@ -266,14 +259,13 @@ def _parse_follower_value(value: str) -> Optional[int]:
 
 def extract_followers(message: str) -> Optional[List[str]]:
     msg = (message or "").lower()
-
     range_pattern = r"(\d+(?:\.\d+)?[km])\s*[-–—]\s*(\d+(?:\.\d+)?[km])"
     m = re.search(range_pattern, msg)
     if m:
         val1 = m.group(1)
         val2 = m.group(2)
-        parsed1 = _parse_follower_value(val1)
-        parsed2 = _parse_follower_value(val2)
+        parsed1 = parse_follower_value(val1)
+        parsed2 = parse_follower_value(val2)
 
         if parsed1 is not None and parsed2 is not None and parsed1 < parsed2:
             return [val1, val2]
@@ -286,7 +278,7 @@ def extract_followers(message: str) -> Optional[List[str]]:
         m = re.search(pattern, msg)
         if m:
             val = m.group(1)
-            parsed = _parse_follower_value(val)
+            parsed = parse_follower_value(val)
             if parsed is not None and parsed >= 100:
                 return [val]
     standalone_pattern = r"\b(\d+(?:\.\d+)?[km])\b"
@@ -294,7 +286,7 @@ def extract_followers(message: str) -> Optional[List[str]]:
     if matches:
         valid_matches = []
         for match in matches:
-            parsed = _parse_follower_value(match)
+            parsed = parse_follower_value(match)
             if parsed is not None and parsed >= 1000:
                 valid_matches.append(match)
         if valid_matches:
