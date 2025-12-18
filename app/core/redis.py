@@ -9,7 +9,7 @@ async def init_redis_agent(app):
 
     contextmanager = AsyncRedisSaver.from_conn_string(
         config.REDIS_URL,
-        ttl={"default_ttl": 60},
+        ttl={"default_ttl": 1800},  # 30 minutes
     )
 
     checkpointer = await contextmanager.__aenter__()
