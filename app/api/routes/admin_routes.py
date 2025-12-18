@@ -23,6 +23,7 @@ from app.api.controllers.admin.reject_regenerate_influencers import (
     reject_and_regenerate,
 )
 from app.api.controllers.company.company_data import company_data
+from app.core.redis import redis_info
 from app.models.campaign_model import (
     AdminGenerateInfluencersRequest,
     CampaignStatusUpdateRequest,
@@ -192,6 +193,13 @@ router.add_api_route(
 router.add_api_route(
     path="/onboarding-campaigns",
     endpoint=onboarding_campaigns,
+    methods=["GET"],
+    tags=["Admin"],
+)
+
+router.add_api_route(
+    path="/redis/info",
+    endpoint=redis_info,
     methods=["GET"],
     tags=["Admin"],
 )

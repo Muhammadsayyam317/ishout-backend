@@ -42,9 +42,9 @@ async def node_requirements(state):
                 "Please enter a number between **1 and 50**.\n"
                 "🔢 Examples: 5, 10, 20, 50"
             )
-        state["limit"] = None
-        state["reply_sent"] = False
-        return state
+            state["limit"] = None
+            state["reply_sent"] = False
+            return state
 
     if limit <= 0:
         state["reply"] = (
@@ -55,6 +55,7 @@ async def node_requirements(state):
         state["reply_sent"] = False
         return state
 
+    # valid limit
     state["limit"] = limit
     info_updated = True
 

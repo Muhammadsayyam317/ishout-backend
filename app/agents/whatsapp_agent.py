@@ -1,5 +1,6 @@
 from fastapi import Request, HTTPException
 from app.agents.nodes.state import (
+    cleanup_old_checkpoints,
     get_conversation_round,
     increment_conversation_round,
 )
@@ -54,8 +55,14 @@ async def handle_whatsapp_events(request: Request):
         state = stored_state or {}
 
         conversation_round = await get_conversation_round(thread_id)
+        print(f"Conversation round: {conversation_round}")
         if state.get("done") and state.get("acknowledged"):
             conversation_round = await increment_conversation_round(thread_id)
+            print(f"Conversation round after increment: {conversation_round}")
+            if conversation_round > 1:
+                print(f"Cleaning up old checkpoints for thread {thread_id}")
+                await cleanup_old_checkpoints(thread_id, conversation_round)
+                print(f"Cleaned up old checkpoints for thread {thread_id}")
             state = await reset_user_state(thread_id)
         checkpoint_thread_id = f"{thread_id}-r{conversation_round}"
         state.update(

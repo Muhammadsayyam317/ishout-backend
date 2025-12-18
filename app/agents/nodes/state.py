@@ -1,4 +1,8 @@
 from app.db.mongo_session import get_session_collection
+import redis.asyncio as redis
+from app.config.credentials_config import config
+
+redis_client = redis.from_url(config.REDIS_URL, decode_responses=True)
 
 
 async def get_conversation_round(sender_id):
@@ -30,3 +34,15 @@ async def rate_limit(redis, sender_id, limit=10, window=60):
     if count == 1:
         await redis.expire(key, window)
     return count <= limit
+
+
+async def cleanup_old_checkpoints(thread_id: str, keep_round: int):
+    """
+    Deletes all LangGraph checkpoints except the current round
+    """
+    pattern = f"langgraph:checkpoint:{thread_id}-r*"
+    keys = await redis_client.keys(pattern)
+
+    for key in keys:
+        if not key.endswith(f"-r{keep_round}"):
+            await redis_client.delete(key)
