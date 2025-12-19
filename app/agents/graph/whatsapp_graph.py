@@ -26,22 +26,16 @@ graph.add_conditional_edges(
     },
 )
 
-graph.add_edge("requirements", "debug_after")
+graph.add_edge("requirements", "create_campaign")
 graph.add_conditional_edges(
-    "debug_after",
+    "create_campaign",
     lambda state: (
-        "create_campaign"
-        if state.get("ready_for_campaign")
-        else ("send_reply" if state.get("reply") else END)
+        "acknowledge_user" if state.get("ready_for_campaign") else "send_reply"
     ),
     {
+        "acknowledge_user": "acknowledge_user",
         "send_reply": "send_reply",
-        "create_campaign": "create_campaign",
-        END: END,
     },
 )
-
-graph.add_edge("create_campaign", "acknowledge_user")
 graph.add_edge("acknowledge_user", "send_reply")
-
 graph.add_edge("send_reply", END)

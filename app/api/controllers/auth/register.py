@@ -9,18 +9,17 @@ from app.models.user_model import (
     UserStatus,
 )
 
-from fastapi import HTTPException
+from fastapi import BackgroundTasks, HTTPException
 
-# from app.services.email_service import WELCOME_EMAIL_TEMPLATE_HTML, send_welcome_email
+from app.services.email.email_service import (
+    WELCOME_EMAIL_TEMPLATE_HTML,
+    send_welcome_email,
+)
 
 
-async def register_company(request_data: CompanyRegistrationRequest) -> Dict[str, Any]:
-    # backgroundtask.add_task(
-    #     send_welcome_email,
-    #     [request_data.email],
-    #     "Welcome to Ishout",
-    #     WELCOME_EMAIL_TEMPLATE_HTML,
-    # )
+async def register_company(
+    request_data: CompanyRegistrationRequest, background_tasks: BackgroundTasks
+) -> Dict[str, Any]:
     try:
         db = get_db()
         users_collection = db.get_collection("users")
@@ -57,7 +56,12 @@ async def register_company(request_data: CompanyRegistrationRequest) -> Dict[str
             created_at=now,
             updated_at=now,
         )
-
+        background_tasks.add_task(
+            send_welcome_email,
+            [request_data.email],
+            "Welcome to Ishout",
+            WELCOME_EMAIL_TEMPLATE_HTML,
+        )
         return {
             "message": "Company registered successfully",
             "access_token": access_token,
