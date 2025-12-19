@@ -99,7 +99,7 @@ router.add_api_route(
 router.add_api_route(
     path="/update-profile/{user_id}",
     endpoint=update_user_profile,
-    methods=["PUT"],
+    methods=["PATCH"],
     tags=["User"],
 )
 
