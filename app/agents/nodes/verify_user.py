@@ -35,9 +35,8 @@ async def node_verify_user(state):
             "Tell us what kind of influencers you’re looking for."
         )
         state["reply_sent"] = False
-
-        return state
         print("Exiting node_verify_user successfully")
+        return state
 
     except Exception:
         print("❌ Error in node_verify_user")
