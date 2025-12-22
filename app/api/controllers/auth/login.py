@@ -30,6 +30,8 @@ async def login_user(request_data: UserLoginRequest) -> Dict[str, Any]:
             phone=user.get("phone"),
             role=user["role"],
             status=user["status"],
+            created_at=user["created_at"],
+            updated_at=user["updated_at"],
         )
 
         return {
