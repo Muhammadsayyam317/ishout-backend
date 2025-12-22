@@ -34,6 +34,10 @@ class UserResponse(BaseModel):
     email: EmailStr
     contact_person: str
     phone: str
+    role: UserRole
+    status: UserStatus
+    created_at: datetime
+    updated_at: datetime
 
 
 class LoginResponse(BaseModel):
