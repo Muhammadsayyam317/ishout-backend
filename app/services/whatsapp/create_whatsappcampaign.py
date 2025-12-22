@@ -51,8 +51,6 @@ async def create_whatsapp_campaign(state: ConversationState) -> Dict[str, Any]:
         }
 
         result = await campaigns.insert_one(campaign_doc)
-
         return {"success": True, "campaign_id": str(result.inserted_id)}
-
     except Exception as e:
         return {"success": False, "error": str(e)}
