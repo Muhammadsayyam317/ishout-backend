@@ -31,28 +31,18 @@ class UserLoginRequest(BaseModel):
 class UserResponse(BaseModel):
     user_id: str
     company_name: str
-    email: str
+    email: EmailStr
     contact_person: str
-    phone: Optional[str] = None
-    industry: Optional[str] = None
-    company_size: Optional[str] = None
-    role: UserRole
-    status: UserStatus
-    created_at: datetime
-    updated_at: datetime
+    phone: str
 
 
 class LoginResponse(BaseModel):
-    """Response model for login"""
-
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
 
 
 class PasswordChangeRequest(BaseModel):
-    """Request model for password change"""
-
     current_password: str
     new_password: str
 
@@ -62,8 +52,6 @@ class UserUpdateRequest(BaseModel):
     company_name: Optional[str] = None
     contact_person: Optional[str] = None
     phone: Optional[str] = None
-    password: Optional[str] = None
-    confirm_password: Optional[str] = None
 
 
 class UserCampaignResponse(BaseModel):

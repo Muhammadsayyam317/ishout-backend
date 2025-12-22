@@ -37,10 +37,10 @@ async def node_verify_user(state):
         state["reply_sent"] = False
 
         return state
-        print("Exiting node_verify_user")
+        print("Exiting node_verify_user successfully")
 
     except Exception:
-
+        print("❌ Error in node_verify_user")
         state["is_existing_user"] = False
         state["reply"] = (
             "Sorry, we couldn't verify your account right now.\n\n"

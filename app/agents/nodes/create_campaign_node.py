@@ -3,6 +3,7 @@ from app.services.whatsapp.create_whatsappcampaign import create_whatsapp_campai
 
 
 async def node_create_campaign(state: ConversationState):
+    print("Entering node_create_campaign")
     try:
         result = await create_whatsapp_campaign(state)
         if not result.get("success"):
@@ -19,8 +20,10 @@ async def node_create_campaign(state: ConversationState):
         state["reply"] = None
 
         return state
+        print("Exiting node_create_campaign successfully")
 
     except Exception:
+        print("❌ Error in node_create_campaign")
         state["reply"] = (
             "Something went wrong while creating your campaign.\n\n"
             "Please try again later."
