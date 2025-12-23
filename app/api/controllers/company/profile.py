@@ -22,6 +22,8 @@ async def get_user_profile(user_id: str) -> Dict[str, Any]:
                 email=user.get("email"),
                 contact_person=user.get("contact_person"),
                 phone=user.get("phone"),
+                role=user.get("role"),
+                status=user.get("status"),
             ).model_dump(),
         }
     except Exception as e:

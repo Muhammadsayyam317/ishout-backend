@@ -81,8 +81,6 @@ async def update_user_status(user_id: str, status: str) -> Dict[str, Any]:
             phone=updated_user["phone"],
             role=UserRole(updated_user["role"]),
             status=UserStatus(updated_user["status"]),
-            created_at=updated_user["created_at"],
-            updated_at=updated_user["updated_at"],
         ).model_dump()
         return {
             "status_code": 200,

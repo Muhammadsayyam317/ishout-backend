@@ -36,8 +36,6 @@ class UserResponse(BaseModel):
     phone: str
     role: UserRole
     status: UserStatus
-    created_at: datetime
-    updated_at: datetime
 
 
 class LoginResponse(BaseModel):
