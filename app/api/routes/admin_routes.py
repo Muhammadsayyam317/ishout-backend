@@ -22,6 +22,7 @@ from app.api.controllers.admin.campaign_controller import (
 from app.api.controllers.admin.reject_regenerate_influencers import (
     reject_and_regenerate,
 )
+from app.api.controllers.admin.user_managment import get_all_users, update_user_status
 from app.api.controllers.company.company_data import company_data
 from app.core.redis import redis_info
 from app.models.campaign_model import (
@@ -201,5 +202,19 @@ router.add_api_route(
     path="/redis/info",
     endpoint=redis_info,
     methods=["GET"],
+    tags=["Admin"],
+)
+
+router.add_api_route(
+    path="/user-managment",
+    endpoint=get_all_users,
+    methods=["GET"],
+    tags=["Admin"],
+)
+
+router.add_api_route(
+    path="/user-managment/{user_id}",
+    endpoint=update_user_status,
+    methods=["PATCH"],
     tags=["Admin"],
 )
