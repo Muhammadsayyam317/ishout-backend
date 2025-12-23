@@ -52,7 +52,7 @@ async def get_all_users(page: int = 1, page_size: int = 10) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"Error retrieving users: {str(e)}")
 
 
-async def update_user_status(user_id: str, status: UserStatus) -> Dict[str, Any]:
+async def update_user_status(user_id: str, status: str) -> Dict[str, Any]:
     try:
         db = get_db()
         users_collection = db.get_collection("users")
