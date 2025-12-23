@@ -206,14 +206,14 @@ router.add_api_route(
 )
 
 router.add_api_route(
-    path="/user-managment",
+    path="/user-management",
     endpoint=get_all_users,
     methods=["GET"],
     tags=["Admin"],
 )
 
 router.add_api_route(
-    path="/user-managment/{user_id}",
+    path="/user-management/{user_id}",
     endpoint=update_user_status,
     methods=["PATCH"],
     tags=["Admin"],
