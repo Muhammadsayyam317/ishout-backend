@@ -1,42 +1,75 @@
-from bson import ObjectId
 from fastapi import HTTPException
+from app.api.controllers.admin.influencers_controller import (
+    find_influencers_by_campaign,
+)
+from app.models.reject_influencer_model import SearchRejectRegenerateInfluencersRequest
+from langfuse import observe
+from app.models.influencers_model import (
+    FindInfluencerRequest,
+    MoreInfluencerRequest,
+)
 from app.db.connection import get_db
-from app.models.campaign_model import RejectInfluencersRequest
-from app.tools.instagram_influencers import search_instagram_influencers
+from bson import ObjectId
+
+from app.tools.regenerate_instagram_influencers import (
+    regenerate_instagram_influencer,
+)
+from app.tools.regenerate_tiktok_influencers import (
+    regenerate_tiktok_influencer,
+)
+from app.tools.regenerate_youtube_influencers import (
+    regenerate_youtube_influencer,
+)
 
 
-async def reject_and_regenerate(request: RejectInfluencersRequest):
+@observe(name="reject_and_regenerate_influencers")
+async def reject_and_regenerate_influencers(
+    request_data: SearchRejectRegenerateInfluencersRequest,
+):
+    try:
+        platform = request_data.platform.lower()
 
+        if platform == "instagram":
+            influencer = await regenerate_instagram_influencer(request_data)
+
+        elif platform == "tiktok":
+            influencer = await regenerate_tiktok_influencer(request_data)
+
+        elif platform == "youtube":
+            influencer = await regenerate_youtube_influencer(request_data)
+
+        else:
+            raise HTTPException(status_code=400, detail="Unsupported platform")
+
+        return {
+            "status": True,
+            "new_influencer": influencer,
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+async def more_influencers(request_data: MoreInfluencerRequest):
+    """Simplified wrapper for fetching more influencers based on campaign"""
     try:
         db = get_db()
-        campaigns = db["campaigns"]
-        await campaigns.update_one(
-            {"_id": ObjectId(request.campaign_id)},
-            {"$addToSet": {"rejected_influencers": request.rejected_influencer_id}},
+        campaigns_collection = db.get_collection("campaigns")
+        campaign = await campaigns_collection.find_one(
+            {"_id": ObjectId(request_data.campaign_id)}
         )
-
-        campaign = await campaigns.find_one({"_id": ObjectId(request.campaign_id)})
-        skip_ids = set(
-            campaign["generated_influencers"] + campaign["rejected_influencers"]
-        )
-
-        new_results = await search_instagram_influencers(
-            category=request.category,
-            limit=1,
-            followers=request.followers,
-            country=request.country,
-            skip_ids=skip_ids,
-        )
-
-        if new_results:
-            new_id = new_results[0]["id"]
-            await campaigns.update_one(
-                {"_id": ObjectId(request.campaign_id)},
-                {"$addToSet": {"generated_influencers": new_id}},
+        if not campaign:
+            return {"error": "Campaign not found"}
+        find_request = await find_influencers_by_campaign(
+            request_data=FindInfluencerRequest(
+                campaign_id=request_data.campaign_id,
+                user_id=request_data.user_id,
+                limit=request_data.more,
             )
+        )
+        return find_request
 
-        return {"new_influencer": new_results[0] if new_results else None}
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error in reject_and_regenerate: {str(e)}"
+            status_code=500, detail=f"Error in more_influencers: {str(e)}"
         ) from e

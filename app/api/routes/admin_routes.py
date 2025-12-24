@@ -18,19 +18,15 @@ from app.api.controllers.admin.campaign_controller import (
     get_campaign_generated_influencers,
     update_campaignstatus_with_background_task,
 )
-
-from app.api.controllers.admin.reject_regenerate_influencers import (
-    reject_and_regenerate,
-)
 from app.api.controllers.admin.user_managment import get_all_users, update_user_status
 from app.api.controllers.company.company_data import company_data
 from app.core.redis import redis_info
 from app.models.campaign_model import (
     AdminGenerateInfluencersRequest,
     CampaignStatusUpdateRequest,
-    RejectInfluencersRequest,
 )
 from app.middleware.auth_middleware import require_admin_access
+from app.tools.regenerate_influencer import reject_and_regenerate
 
 router = APIRouter()
 
@@ -154,16 +150,12 @@ async def update_status_route(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/campaigns/reject-and-regenerate", tags=["Admin"])
-async def reject_and_regenerate_route(
-    request_data: RejectInfluencersRequest,
-    current_user: dict = Depends(require_admin_access),
-):
-    try:
-        return await reject_and_regenerate(request_data)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
+router.add_api_route(
+    path="/campaigns/reject-and-regenerate",
+    endpoint=reject_and_regenerate,
+    methods=["POST"],
+    tags=["Admin"],
+)
 
 router.add_api_route(
     path="/campaigns/{campaign_id}",
