@@ -57,8 +57,6 @@ class UserUpdateRequest(BaseModel):
 
 
 class UserCampaignResponse(BaseModel):
-    """Response model for user's campaigns with approved influencers"""
-
     campaign_id: str
     name: str
     description: Optional[str] = None

@@ -28,24 +28,16 @@ async def reject_and_regenerate_influencers(
 ):
     try:
         platform = request_data.platform.lower()
-
         if platform == "instagram":
             influencer = await regenerate_instagram_influencer(request_data)
-
         elif platform == "tiktok":
             influencer = await regenerate_tiktok_influencer(request_data)
-
         elif platform == "youtube":
             influencer = await regenerate_youtube_influencer(request_data)
-
         else:
             raise HTTPException(status_code=400, detail="Unsupported platform")
 
-        return {
-            "status": True,
-            "new_influencer": influencer,
-        }
-
+        return influencer
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

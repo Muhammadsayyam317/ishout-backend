@@ -9,8 +9,6 @@ class FindInfluencerRequest(BaseModel):
 
 
 class FindInfluencerLegacyRequest(BaseModel):
-    """Legacy request model for backward compatibility"""
-
     platform: List[str]
     category: List[str]
     followers: List[str]
@@ -30,8 +28,6 @@ class DeleteInfluencerRequest(BaseModel):
 
 
 class MoreInfluencerRequest(BaseModel):
-    """Simplified request model for fetching more influencers"""
-
     campaign_id: str
     user_id: str
     more: int
@@ -39,8 +35,6 @@ class MoreInfluencerRequest(BaseModel):
 
 
 class MoreInfluencerLegacyRequest(BaseModel):
-    """Legacy request model for fetching more (fresh) influencers"""
-
     platform: List[str]
     category: List[str]
     followers: List[str]

@@ -21,13 +21,6 @@ from app.utils.helpers import (
 async def regenerate_tiktok_influencer(
     request_data: SearchRejectRegenerateInfluencersRequest,
 ):
-    """
-    Regenerate exactly ONE TikTok influencer excluding:
-    - already generated influencers
-    - already rejected influencers
-    """
-
-    # 🔴 Exclusion set
     excluded_ids: Set[str] = set(request_data.generated_influencers_id or []) | set(
         request_data.rejected_influencers_id or []
     )
@@ -56,8 +49,6 @@ async def regenerate_tiktok_influencer(
     )
 
     seen_usernames: Set[str] = set()
-
-    # 🔁 Controlled search loop
     for category in categories:
         for country in countries:
             for follower_range in followers_list:
@@ -68,7 +59,6 @@ async def regenerate_tiktok_influencer(
                 )
 
                 docs = vectorstore.similarity_search(query, k=50)
-
                 for doc in docs:
                     influencer = extract_influencer_data(doc, "TikTok")
 
@@ -77,16 +67,10 @@ async def regenerate_tiktok_influencer(
 
                     if not influencer_id or not username:
                         continue
-
-                    # ❌ Skip excluded influencers
                     if influencer_id in excluded_ids:
                         continue
-
-                    # ❌ Skip duplicates in same regeneration
                     if username in seen_usernames:
                         continue
-
-                    # ❌ Apply filters (followers + country)
                     if not filter_influencer_data(
                         influencer,
                         parse_followers_list([follower_range]),
@@ -96,9 +80,5 @@ async def regenerate_tiktok_influencer(
                         continue
 
                     seen_usernames.add(username)
-
-                    # ✅ RETURN FIRST VALID MATCH
                     return influencer
-
-    # ⚠️ No influencer found
     return None

@@ -13,8 +13,6 @@ class CampaignStatus(str, Enum):
 
 
 class InfluencerReference(BaseModel):
-    """Model for storing influencer reference with platform info"""
-
     influencer_id: str
     platform: str
 
@@ -47,32 +45,24 @@ class CampaignResponse(BaseModel):
 
 
 class ApproveSingleInfluencerRequest(BaseModel):
-    """Request model to approve a single influencer into a campaign"""
-
     campaign_id: str
     influencer_id: str
-    platform: str  # Required to know which platform the influencer belongs to
+    platform: str
 
 
 class CampaignListResponse(BaseModel):
-    """Response model for campaign list"""
-
     campaigns: List[CampaignResponse]
     total: int
 
 
 class ApproveMultipleInfluencersRequest(BaseModel):
-    """Approve multiple influencers into a campaign at once"""
-
     campaign_id: str
     influencers: List[InfluencerReference]
 
 
 class AdminGenerateInfluencersRequest(BaseModel):
-    """Request model for admin to generate influencers for a campaign"""
-
     campaign_id: str
-    limit: Optional[int] = 10  # Number of influencers to generate
+    limit: Optional[int] = 10
 
 
 class CampaignStatusUpdateRequest(BaseModel):
@@ -81,17 +71,14 @@ class CampaignStatusUpdateRequest(BaseModel):
 
 
 class RejectInfluencersRequest(BaseModel):
-    """Request model to reject influencers and generate new ones"""
-
     campaign_id: str
-    influencer_ids: List[str]  # List of influencer IDs to reject
-    limit: Optional[int] = (
-        None  # Number of new influencers to generate (optional, uses campaign's limit by default)
-    )
+    rejected_influencer_id: str
+    platform: str
+    category: str
+    followers: int
+    country: str
 
 
 class UserRejectInfluencersRequest(BaseModel):
-    """Request model for user to reject approved influencers"""
-
     campaign_id: str
-    influencer_ids: List[str]  # List of influencer IDs to reject
+    influencer_ids: List[str]

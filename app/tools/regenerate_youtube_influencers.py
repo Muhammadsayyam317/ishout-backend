@@ -19,8 +19,6 @@ from app.utils.helpers import (
 async def regenerate_youtube_influencer(
     request_data: SearchRejectRegenerateInfluencersRequest,
 ):
-
-    # Excluded influencer IDs
     excluded_ids: Set[str] = set(request_data.generated_influencers_id or []) | set(
         request_data.rejected_influencers_id or []
     )
@@ -54,7 +52,6 @@ async def regenerate_youtube_influencer(
 
     seen_usernames: Set[str] = set()
 
-    # Controlled search loop
     for cat in categories:
         for cntry in countries:
             for follower_range_str in followers_list:
@@ -63,28 +60,18 @@ async def regenerate_youtube_influencer(
                     f"YouTube influencer {cat} from {cntry} "
                     f"with {follower_range_str} followers"
                 )
-
                 results = vectorstore.similarity_search(query_text, k=50)
-
                 for r in results:
                     influencer_data = extract_influencer_data(r, "YouTube")
-
                     influencer_id = influencer_data.get("id")
                     username = influencer_data.get("username")
 
-                    # Skip invalid
                     if not influencer_id or not username:
                         continue
-
-                    # Skip generated / rejected
                     if influencer_id in excluded_ids:
                         continue
-
-                    # Skip duplicates in this call
                     if username in seen_usernames:
                         continue
-
-                    # Apply filters
                     if not filter_influencer_data(
                         influencer_data,
                         parse_followers_list([follower_range_str]),
@@ -94,9 +81,5 @@ async def regenerate_youtube_influencer(
                         continue
 
                     seen_usernames.add(username)
-
-                    # RETURN FIRST VALID MATCH
                     return influencer_data
-
-    # ⚠️ Nothing found
     return None
