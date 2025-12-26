@@ -3,7 +3,7 @@ from typing import Any, Dict
 from bson import ObjectId
 from fastapi import HTTPException
 from app.db.connection import get_db
-from app.models.user_model import UserResponse, UserUpdateRequest
+from app.Schemas.user_model import UserResponse, UserUpdateRequest
 
 
 async def get_user_profile(user_id: str) -> Dict[str, Any]:

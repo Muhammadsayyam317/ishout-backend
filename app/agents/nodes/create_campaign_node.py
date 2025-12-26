@@ -1,5 +1,5 @@
-from app.models.whatsappconversation_model import ConversationState
-from app.services.whatsapp.create_whatsappcampaign import create_whatsapp_campaign
+from app.Schemas.whatsappconversation import ConversationState
+from app.services.whatsapp.create_campaign import create_whatsapp_campaign
 
 
 async def node_create_campaign(state: ConversationState):

@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from app.api.controllers.admin.reject_regenerate_influencers import (
     reject_and_regenerate_influencers,
 )
-from app.models.reject_influencer_model import SearchRejectRegenerateInfluencersRequest
+from app.Schemas.reject_influencer import SearchRejectRegenerateInfluencersRequest
 
 
 async def reject_and_regenerate(request_data: SearchRejectRegenerateInfluencersRequest):

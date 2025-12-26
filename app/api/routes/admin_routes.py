@@ -21,7 +21,7 @@ from app.api.controllers.admin.campaign_controller import (
 from app.api.controllers.admin.user_managment import get_all_users, update_user_status
 from app.api.controllers.company.company_data import company_data
 from app.core.redis import redis_info
-from app.models.campaign_model import (
+from app.Schemas.campaign import (
     AdminGenerateInfluencersRequest,
     CampaignStatusUpdateRequest,
 )
@@ -99,11 +99,14 @@ router.add_api_route(
 async def generate_influencers_route(
     campaign_id: str,
     request_data: AdminGenerateInfluencersRequest,
+    background_tasks: BackgroundTasks,
     current_user: dict = Depends(require_admin_access),
 ):
     """Generate influencers for a campaign (admin only)"""
     try:
-        return await admin_generate_influencers(campaign_id, request_data)
+        return await admin_generate_influencers(
+            campaign_id, request_data, background_tasks
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

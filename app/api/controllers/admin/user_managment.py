@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from app.db.connection import get_db
 from typing import Dict, Any
 
-from app.models.user_model import UserResponse, UserRole, UserStatus
+from app.Schemas.user_model import UserResponse, UserRole, UserStatus
 from app.utils.helpers import convert_objectid
 
 

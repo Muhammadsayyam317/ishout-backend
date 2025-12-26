@@ -4,7 +4,7 @@ from app.tools.instagram_influencers import search_instagram_influencers
 from app.tools.tiktok_influencers import search_tiktok_influencers
 from app.tools.youtube_influencers import search_youtube_influencers
 from langfuse import observe
-from app.models.influencers_model import (
+from app.Schemas.influencers import (
     FindInfluencerRequest,
     MoreInfluencerRequest,
 )

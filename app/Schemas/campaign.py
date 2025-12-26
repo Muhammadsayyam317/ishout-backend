@@ -62,7 +62,7 @@ class ApproveMultipleInfluencersRequest(BaseModel):
 
 class AdminGenerateInfluencersRequest(BaseModel):
     campaign_id: str
-    limit: Optional[int] = 10
+    limit: Optional[int] = None
 
 
 class CampaignStatusUpdateRequest(BaseModel):

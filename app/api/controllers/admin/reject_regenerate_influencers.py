@@ -2,9 +2,9 @@ from fastapi import HTTPException
 from app.api.controllers.admin.influencers_controller import (
     find_influencers_by_campaign,
 )
-from app.models.reject_influencer_model import SearchRejectRegenerateInfluencersRequest
+from app.Schemas.reject_influencer import SearchRejectRegenerateInfluencersRequest
 from langfuse import observe
-from app.models.influencers_model import (
+from app.Schemas.influencers import (
     FindInfluencerRequest,
     MoreInfluencerRequest,
 )

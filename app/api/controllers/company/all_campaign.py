@@ -1,7 +1,7 @@
 from typing import Dict, Any, Optional
 from fastapi import HTTPException
 from app.db.connection import get_db
-from app.models.campaign_model import CampaignStatus
+from app.Schemas.campaign import CampaignStatus
 from app.utils.helpers import convert_objectid
 
 

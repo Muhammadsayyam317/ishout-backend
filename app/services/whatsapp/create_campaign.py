@@ -1,8 +1,8 @@
 from typing import Dict, Any
 from datetime import datetime, timezone
-from app.models.campaign_model import CampaignStatus
+from app.Schemas.campaign import CampaignStatus
 from app.db.connection import get_db
-from app.models.whatsappconversation_model import ConversationState
+from app.Schemas.whatsappconversation import ConversationState
 from app.utils.helpers import normalize_phone
 
 

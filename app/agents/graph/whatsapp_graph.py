@@ -6,7 +6,7 @@ from app.agents.nodes.create_campaign_node import node_create_campaign
 from app.agents.nodes.acknowledge_user_node import node_acknowledge_user
 from app.agents.nodes.verify_user import node_verify_user
 from app.agents.nodes.send_reply import node_send_reply
-from app.models.whatsappconversation_model import ConversationState
+from app.Schemas.whatsappconversation import ConversationState
 from app.utils.custom_logging import node_debug_after, node_debug_before
 
 graph = StateGraph(ConversationState)

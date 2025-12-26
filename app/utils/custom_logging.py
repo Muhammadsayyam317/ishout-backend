@@ -1,4 +1,4 @@
-from app.models.whatsappconversation_model import ConversationState
+from app.Schemas.whatsappconversation import ConversationState
 import json
 import logging
 

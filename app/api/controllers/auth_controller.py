@@ -5,7 +5,7 @@ import jwt
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional
 from bson import ObjectId
-from app.models.user_model import (
+from app.Schemas.user_model import (
     PasswordChangeRequest,
 )
 from app.db.connection import get_db

@@ -1,4 +1,4 @@
-from app.services.whatsapp.onboarding_Whatsapp_message import send_whatsapp_message
+from app.services.whatsapp.onboarding_message import send_whatsapp_message
 
 
 async def node_send_reply(state):

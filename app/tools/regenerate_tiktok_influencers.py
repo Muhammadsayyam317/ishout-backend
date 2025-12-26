@@ -6,7 +6,7 @@ from langchain_openai.embeddings import OpenAIEmbeddings
 
 from app.config.credentials_config import config
 from app.db.connection import get_pymongo_db
-from app.models.reject_influencer_model import (
+from app.Schemas.reject_influencer import (
     SearchRejectRegenerateInfluencersRequest,
 )
 from app.utils.helpers import (
