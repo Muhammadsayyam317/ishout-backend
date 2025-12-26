@@ -465,6 +465,7 @@ async def AdminApprovedSingleInfluencer(
     try:
         db = get_db()
         collection = db.get_collection("campaign_influencers")
+        generated_collection = db.get_collection("generated_influencers")
         existing = await collection.find_one(
             {
                 "campaign_id": ObjectId(request_data.campaign_id),
@@ -503,6 +504,13 @@ async def AdminApprovedSingleInfluencer(
                 }
             )
             await collection.insert_one(update_fields)
+            await generated_collection.update_one(
+                {
+                    "campaign_id": ObjectId(request_data.campaign_id),
+                    "influencer_id": ObjectId(request_data.influencer_id),
+                },
+                {"$set": {"approved": True}},
+            )
 
         return {
             "message": "Influencer approved successfully",
