@@ -115,6 +115,7 @@ async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]
             "user_type": "Website",
             "status": CampaignStatus.PENDING,
             "limit": request_data.limit,
+            "generated": False,
             "created_at": datetime.now(timezone.utc),
             "updated_at": datetime.now(timezone.utc),
         }
@@ -662,6 +663,7 @@ async def store_generated_influencers(
     try:
         db = get_db()
         collection = db.get_collection("generated_influencers")
+        campaign_collection = db.get_collection("campaigns")
         documents = []
 
         for inf in influencers:
@@ -683,6 +685,10 @@ async def store_generated_influencers(
                     "created_at": datetime.now(timezone.utc),
                     "updated_at": datetime.now(timezone.utc),
                 }
+            )
+            await campaign_collection.update_one(
+                {"_id": ObjectId(campaign_id)},
+                {"$set": {"generated": True}},
             )
 
         if documents:

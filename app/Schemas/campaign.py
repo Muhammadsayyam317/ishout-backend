@@ -1,15 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
-from enum import Enum
-
-
-class CampaignStatus(str, Enum):
-    PENDING = "pending"
-    PROCESSING = "processing"
-    APPROVED = "approved"
-    COMPLETED = "completed"
-    REJECTED = "rejected"
+from app.utils.Enums.status_enum import CampaignStatus
 
 
 class InfluencerReference(BaseModel):
@@ -26,6 +18,7 @@ class CreateCampaignRequest(BaseModel):
     user_id: Optional[str] = None
     limit: Optional[int] = 10
     company_name: Optional[str] = None
+    generated: Optional[bool] = False
 
 
 class CampaignResponse(BaseModel):
