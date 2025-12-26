@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from app.api.controllers.admin.campaign_controller import update_status
+from app.api.controllers.admin.generated_influencers import get_generated_influencers
 from app.api.controllers.admin.onboarding_influencers import (
     onboarding_campaigns,
 )
@@ -211,5 +212,12 @@ router.add_api_route(
     path="/user-management/{user_id}",
     endpoint=update_user_status,
     methods=["PATCH"],
+    tags=["Admin"],
+)
+
+router.add_api_route(
+    path="/generated-influencers/{campaign_id}",
+    endpoint=get_generated_influencers,
+    methods=["GET"],
     tags=["Admin"],
 )
