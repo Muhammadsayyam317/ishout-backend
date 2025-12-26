@@ -464,8 +464,8 @@ async def AdminApprovedSingleInfluencer(
 ):
     try:
         db = get_db()
-        collection = db.get_collection("campaign_influencers")
-        generated_collection = db.get_collection("generated_influencers")
+        collection = db.get_collection("generated_influencers")
+        # generated_collection = db.get_collection("generated_influencers")
         existing = await collection.find_one(
             {
                 "campaign_id": ObjectId(request_data.campaign_id),
@@ -474,12 +474,12 @@ async def AdminApprovedSingleInfluencer(
             }
         )
         update_fields = {
-            "username": request_data.username,
-            "picture": request_data.picture,
-            "engagementRate": request_data.engagementRate,
-            "bio": request_data.bio,
-            "followers": request_data.followers,
-            "country": request_data.country,
+            # "username": request_data.username,
+            # "picture": request_data.picture,
+            # "engagementRate": request_data.engagementRate,
+            # "bio": request_data.bio,
+            # "followers": request_data.followers,
+            # "country": request_data.country,
             "status": request_data.status.value,
             "company_user_id": request_data.company_user_id,
             "pricing": request_data.pricing,
@@ -503,18 +503,9 @@ async def AdminApprovedSingleInfluencer(
                     "company_approved": False,
                 }
             )
-            await collection.insert_one(update_fields)
-            await generated_collection.update_one(
-                {
-                    "campaign_id": ObjectId(request_data.campaign_id),
-                    "influencer_id": ObjectId(request_data.influencer_id),
-                },
-                {"$set": {"approved": True}},
-            )
 
         return {
             "message": "Influencer approved successfully",
-            "pricing": request_data.pricing,
         }
 
     except Exception as e:
@@ -689,7 +680,7 @@ async def store_generated_influencers(
                     "country": inf.get("country"),
                     "bio": inf.get("bio"),
                     "picture": inf.get("picture"),
-                    "status": "GENERATED",
+                    "status": "True",
                     "created_at": datetime.now(timezone.utc),
                     "updated_at": datetime.now(timezone.utc),
                 }
