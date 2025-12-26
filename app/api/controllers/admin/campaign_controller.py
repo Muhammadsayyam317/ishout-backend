@@ -521,6 +521,8 @@ async def AdminApprovedSingleInfluencer(
             {
                 "$set": {
                     "admin_approved": True,
+                    "pricing": request_data.pricing,
+                    "updated_at": datetime.now(timezone.utc),
                 }
             },
         )
