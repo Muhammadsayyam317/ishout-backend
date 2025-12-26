@@ -2,7 +2,7 @@ from typing import Dict, Any
 from datetime import datetime, timezone
 from app.api.controllers.auth_controller import create_access_token, hash_password
 from app.db.connection import get_db
-from app.models.user_model import (
+from app.Schemas.user_model import (
     CompanyRegistrationRequest,
     UserResponse,
     UserRole,

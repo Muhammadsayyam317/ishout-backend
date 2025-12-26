@@ -5,10 +5,8 @@ import jwt
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, Optional
 from bson import ObjectId
-from app.models.user_model import (
-    UserResponse,
+from app.Schemas.user_model import (
     PasswordChangeRequest,
-    UserUpdateRequest,
 )
 from app.db.connection import get_db
 from app.config import config
@@ -40,6 +38,21 @@ def create_access_token(data: dict) -> str:
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(
         minutes=config.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+    )
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(
+        to_encode, config.JWT_SECRET_KEY, algorithm=config.JWT_ALGORITHM
+    )
+    return encoded_jwt
+
+
+def create_refresh_token(data: dict) -> str:
+    """Create JWT refresh token"""
+    if not config.JWT_SECRET_KEY:
+        raise ValueError("JWT Secret Key is not configured in environment variables")
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + timedelta(
+        minutes=config.JWT_REFRESH_TOKEN_EXPIRE_MINUTES
     )
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(

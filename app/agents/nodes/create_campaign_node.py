@@ -1,5 +1,5 @@
-from app.models.whatsappconversation_model import ConversationState
-from app.services.whatsapp.create_whatsappcampaign import create_whatsapp_campaign
+from app.Schemas.whatsappconversation import ConversationState
+from app.services.whatsapp.create_campaign import create_whatsapp_campaign
 
 
 async def node_create_campaign(state: ConversationState):
@@ -18,9 +18,8 @@ async def node_create_campaign(state: ConversationState):
         state["campaign_id"] = result["campaign_id"]
         state["campaign_created"] = True
         state["reply"] = None
-
-        return state
         print("Exiting node_create_campaign successfully")
+        return state
 
     except Exception:
         print("❌ Error in node_create_campaign")

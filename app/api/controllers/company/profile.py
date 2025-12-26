@@ -3,7 +3,7 @@ from typing import Any, Dict
 from bson import ObjectId
 from fastapi import HTTPException
 from app.db.connection import get_db
-from app.models.user_model import UserResponse, UserUpdateRequest
+from app.Schemas.user_model import UserResponse, UserUpdateRequest
 
 
 async def get_user_profile(user_id: str) -> Dict[str, Any]:
@@ -22,6 +22,8 @@ async def get_user_profile(user_id: str) -> Dict[str, Any]:
                 email=user.get("email"),
                 contact_person=user.get("contact_person"),
                 phone=user.get("phone"),
+                role=user.get("role"),
+                status=user.get("status"),
             ).model_dump(),
         }
     except Exception as e:

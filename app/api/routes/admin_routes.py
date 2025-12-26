@@ -18,18 +18,15 @@ from app.api.controllers.admin.campaign_controller import (
     get_campaign_generated_influencers,
     update_campaignstatus_with_background_task,
 )
-
-from app.api.controllers.admin.reject_regenerate_influencers import (
-    reject_and_regenerate,
-)
+from app.api.controllers.admin.user_managment import get_all_users, update_user_status
 from app.api.controllers.company.company_data import company_data
 from app.core.redis import redis_info
-from app.models.campaign_model import (
+from app.Schemas.campaign import (
     AdminGenerateInfluencersRequest,
     CampaignStatusUpdateRequest,
-    RejectInfluencersRequest,
 )
 from app.middleware.auth_middleware import require_admin_access
+from app.tools.regenerate_influencer import reject_and_regenerate
 
 router = APIRouter()
 
@@ -102,11 +99,14 @@ router.add_api_route(
 async def generate_influencers_route(
     campaign_id: str,
     request_data: AdminGenerateInfluencersRequest,
+    background_tasks: BackgroundTasks,
     current_user: dict = Depends(require_admin_access),
 ):
     """Generate influencers for a campaign (admin only)"""
     try:
-        return await admin_generate_influencers(campaign_id, request_data)
+        return await admin_generate_influencers(
+            campaign_id, request_data, background_tasks
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -153,16 +153,12 @@ async def update_status_route(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/campaigns/reject-and-regenerate", tags=["Admin"])
-async def reject_and_regenerate_route(
-    request_data: RejectInfluencersRequest,
-    current_user: dict = Depends(require_admin_access),
-):
-    try:
-        return await reject_and_regenerate(request_data)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
+router.add_api_route(
+    path="/campaigns/reject-and-regenerate",
+    endpoint=reject_and_regenerate,
+    methods=["POST"],
+    tags=["Admin"],
+)
 
 router.add_api_route(
     path="/campaigns/{campaign_id}",
@@ -201,5 +197,19 @@ router.add_api_route(
     path="/redis/info",
     endpoint=redis_info,
     methods=["GET"],
+    tags=["Admin"],
+)
+
+router.add_api_route(
+    path="/user-management",
+    endpoint=get_all_users,
+    methods=["GET"],
+    tags=["Admin"],
+)
+
+router.add_api_route(
+    path="/user-management/{user_id}",
+    endpoint=update_user_status,
+    methods=["PATCH"],
     tags=["Admin"],
 )

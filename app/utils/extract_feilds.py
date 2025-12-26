@@ -2,8 +2,8 @@ import re
 from typing import List, Optional
 
 PLATFORM_SYNS = {
-    "instagram": ["instagram", "insta", "instagtam", "instgram"],
-    "tiktok": ["tiktok", "tik tok", "tik-tok"],
+    "instagram": ["instagram", "insta", "instagtam", "instgram", "ig"],
+    "tiktok": ["tiktok", "tik tok", "tik-tok", "tt"],
     "youtube": ["youtube", "yt", "you tube"],
 }
 

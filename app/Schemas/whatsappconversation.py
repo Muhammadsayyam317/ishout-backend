@@ -1,36 +1,11 @@
 from typing import List, TypedDict, Optional, Annotated
 
-
-def take_first(a, b):
-    if a is not None:
-        return a
-    return b
-
-
-def take_second(a, b):
-    if b is not None:
-        return b
-    return a
-
-
-def take_second_allow_none(a, b):
-    return b
-
-
-def merge_arrays(a, b):
-    if a is None:
-        a = []
-    if b is None:
-        b = []
-    if not isinstance(a, list):
-        a = [a] if a else []
-    if not isinstance(b, list):
-        b = [b] if b else []
-    result = list(a)
-    for item in b:
-        if item not in result:
-            result.append(item)
-    return result
+from app.utils.helpers import (
+    merge_arrays,
+    take_first,
+    take_second,
+    take_second_allow_none,
+)
 
 
 class ConversationState(TypedDict, total=False):

@@ -1,7 +1,7 @@
 from bson import ObjectId
 from datetime import datetime, timezone
 from app.db.connection import get_db
-from app.models.campaign_influencers_model import CampaignInfluencerStatus
+from app.Schemas.campaign_influencers import CampaignInfluencerStatus
 from app.services.whatsapp.send_summary import check_and_send_campaign_summary
 from app.services.whatsapp.send_text import send_whatsapp_text_message
 

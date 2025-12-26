@@ -1,5 +1,5 @@
 from fastapi import APIRouter, BackgroundTasks
-from app.models.user_model import (
+from app.Schemas.user_model import (
     CompanyRegistrationRequest,
     UserLoginRequest,
 )

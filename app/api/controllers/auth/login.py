@@ -2,7 +2,7 @@ from typing import Any, Dict
 from fastapi import HTTPException
 from app.api.controllers.auth_controller import create_access_token, verify_password
 from app.db.connection import get_db
-from app.models.user_model import UserLoginRequest, UserResponse, UserStatus
+from app.Schemas.user_model import UserLoginRequest, UserResponse, UserStatus
 
 
 async def login_user(request_data: UserLoginRequest) -> Dict[str, Any]:
@@ -39,7 +39,6 @@ async def login_user(request_data: UserLoginRequest) -> Dict[str, Any]:
             "access_token": access_token,
             "token_type": "bearer",
             "user": user_response.model_dump(),
-            "company_name": user_response.company_name,
         }
 
     except Exception as e:

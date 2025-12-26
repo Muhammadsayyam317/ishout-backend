@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException
 from app.db.connection import get_db
 from app.middleware.auth_middleware import require_admin_access
-from app.models.campaign_influencers_model import CampaignInfluencerStatus
+from app.Schemas.campaign_influencers import CampaignInfluencerStatus
 from app.utils.helpers import convert_objectid
 
 

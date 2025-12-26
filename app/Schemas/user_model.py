@@ -34,6 +34,8 @@ class UserResponse(BaseModel):
     email: EmailStr
     contact_person: str
     phone: str
+    role: UserRole
+    status: UserStatus
 
 
 class LoginResponse(BaseModel):
@@ -55,8 +57,6 @@ class UserUpdateRequest(BaseModel):
 
 
 class UserCampaignResponse(BaseModel):
-    """Response model for user's campaigns with approved influencers"""
-
     campaign_id: str
     name: str
     description: Optional[str] = None

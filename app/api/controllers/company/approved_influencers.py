@@ -1,7 +1,7 @@
 from bson import ObjectId
 from fastapi import HTTPException
 from app.db.connection import get_db
-from app.models.campaign_influencers_model import (
+from app.Schemas.campaign_influencers import (
     CampaignInfluencerStatus,
     CampaignInfluencersRequest,
 )

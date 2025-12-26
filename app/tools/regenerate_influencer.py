@@ -1,43 +1,23 @@
-from app.tools.instagram_influencers import search_instagram_influencers
-from app.tools.tiktok_influencers import search_tiktok_influencers
-from app.tools.youtube_influencers import search_youtube_influencers
-from app.models.campaign_model import RegenerateInfluencerRequest
+from fastapi import HTTPException
+from app.api.controllers.admin.reject_regenerate_influencers import (
+    reject_and_regenerate_influencers,
+)
+from app.Schemas.reject_influencer import SearchRejectRegenerateInfluencersRequest
 
 
-async def regenerate_influencer(request_data: RegenerateInfluencerRequest):
+async def reject_and_regenerate(request_data: SearchRejectRegenerateInfluencersRequest):
     try:
-        skip_ids = set(
-            request_data.generated_influencers + request_data.rejected_influencers
+        return await reject_and_regenerate_influencers(
+            request_data=SearchRejectRegenerateInfluencersRequest(
+                campaign_id=request_data.campaign_id,
+                platform=request_data.platform,
+                category=request_data.category,
+                followers=request_data.followers,
+                country=request_data.country,
+                limit=1,
+                generated_influencers_id=request_data.generated_influencers_id,
+                rejected_influencers_id=request_data.rejected_influencers_id,
+            )
         )
-
-        if request_data.platform == "instagram":
-            influencers = await search_instagram_influencers(
-                category=[request_data.category],
-                limit=request_data.limit,
-                followers=[str(request_data.followers)],
-                country=[request_data.country],
-                skip_ids=skip_ids,
-            )
-
-        elif request_data.platform == "tiktok":
-            influencers = await search_tiktok_influencers(
-                category=[request_data.category],
-                limit=request_data.limit,
-                followers=[str(request_data.followers)],
-                country=[request_data.country],
-                skip_ids=skip_ids,
-            )
-
-        elif request_data.platform == "youtube":
-            influencers = await search_youtube_influencers(
-                category=[request_data.category],
-                limit=request_data.limit,
-                followers=[str(request_data.followers)],
-                country=[request_data.country],
-                skip_ids=skip_ids,
-            )
-
-        return {"status": True, "new_influencers": influencers}
-
     except Exception as e:
-        raise ValueError(f"Error searching influencers: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))

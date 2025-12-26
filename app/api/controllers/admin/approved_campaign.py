@@ -3,11 +3,11 @@ from fastapi import Depends, HTTPException
 
 from app.db.connection import get_db
 from app.middleware.auth_middleware import require_admin_access
-from app.models.campaign_influencers_model import (
+from app.Schemas.campaign_influencers import (
     CampaignInfluencerStatus,
     CampaignInfluencersRequest,
 )
-from app.models.campaign_model import CampaignStatus
+from app.Schemas.campaign import CampaignStatus
 from app.utils.helpers import convert_objectid
 
 
@@ -19,7 +19,6 @@ async def approved_campaign(
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
-
         status_value = CampaignStatus.APPROVED
         query = {"status": status_value}
 
@@ -29,13 +28,10 @@ async def approved_campaign(
             "category": 1,
             "followers": 1,
             "country": 1,
-            "influencer_ids": 1,
-            "rejected_ids": 1,
-            "rejectedByUser": 1,
-            "generated_influencers": 1,
             "user_id": 1,
             "status": 1,
             "limit": 1,
+            "pricing": 1,
             "created_at": 1,
             "updated_at": 1,
         }
@@ -51,11 +47,6 @@ async def approved_campaign(
 
         formatted = []
         for doc in docs:
-            influencer_ids = doc.get("influencer_ids", []) or []
-            rejected_ids = doc.get("rejected_ids", []) or []
-            rejected_by_user = doc.get("rejectedByUser", []) or []
-            generated = doc.get("generated_influencers", []) or []
-
             formatted.append(
                 {
                     "campaign_id": str(doc.get("_id")),
@@ -69,10 +60,6 @@ async def approved_campaign(
                     "limit": doc.get("limit"),
                     "created_at": doc.get("created_at"),
                     "updated_at": doc.get("updated_at"),
-                    "total_approved": len(influencer_ids),
-                    "total_rejected": len(rejected_ids),
-                    "total_rejected_by_user": len(rejected_by_user),
-                    "total_generated": len(generated),
                 }
             )
 

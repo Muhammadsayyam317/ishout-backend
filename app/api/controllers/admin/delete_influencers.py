@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 from app.config import config
 from app.db.connection import get_db
-from app.models.influencers_model import DeleteInfluencerRequest
+from app.Schemas.influencers import DeleteInfluencerRequest
 
 
 PLATFORM_COLLECTIONS = {

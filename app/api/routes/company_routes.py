@@ -15,7 +15,7 @@ from app.api.controllers.admin.campaign_controller import (
     create_campaign,
     user_reject_influencers,
 )
-from app.models.campaign_model import (
+from app.Schemas.campaign import (
     CreateCampaignRequest,
     UserRejectInfluencersRequest,
 )

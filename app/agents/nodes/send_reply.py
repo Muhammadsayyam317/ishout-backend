@@ -1,7 +1,8 @@
-from app.services.whatsapp.onboarding_Whatsapp_message import send_whatsapp_message
+from app.services.whatsapp.onboarding_message import send_whatsapp_message
 
 
 async def node_send_reply(state):
+    print("Entering node_send_reply")
     try:
         reply = state.get("reply")
         sender_id = state.get("sender_id")
@@ -17,5 +18,5 @@ async def node_send_reply(state):
         print(f"❌ Error in node_send_reply: {e}")
         state["reply_sent"] = True
         state["done"] = True
-
+        print("Exiting node_send_reply with error")
         return state

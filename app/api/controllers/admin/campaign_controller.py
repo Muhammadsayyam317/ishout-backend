@@ -5,20 +5,20 @@ from fastapi import HTTPException, BackgroundTasks
 from app.api.controllers.admin.influencers_controller import (
     find_influencers_by_campaign,
 )
-from app.models.campaign_influencers_model import (
+from app.Schemas.campaign_influencers import (
     CampaignInfluencerStatus,
     CampaignInfluencersRequest,
 )
-from app.models.campaign_model import (
+from app.Schemas.campaign import (
     CreateCampaignRequest,
     AdminGenerateInfluencersRequest,
     CampaignStatusUpdateRequest,
     CampaignStatus,
 )
-from app.models.influencers_model import FindInfluencerRequest
+from app.Schemas.influencers import FindInfluencerRequest
 from app.db.connection import get_db
 from app.config import config
-from app.services.whatsapp.whatsapp_interactive_message import (
+from app.services.whatsapp.interactive_message import (
     send_whatsapp_interactive_message,
 )
 from app.utils.helpers import convert_objectid
@@ -626,7 +626,9 @@ async def add_rejected_influencers(
 
 
 async def admin_generate_influencers(
-    campaign_id: str, request_data: AdminGenerateInfluencersRequest
+    campaign_id: str,
+    request_data: AdminGenerateInfluencersRequest,
+    background_tasks: BackgroundTasks,
 ):
     try:
         db = get_db()
@@ -640,13 +642,53 @@ async def admin_generate_influencers(
             user_id=campaign.get("user_id", ""),
             limit=campaign_limit,
         )
-
-        result = await find_influencers_by_campaign(influencer_request)
-        return result
+        influencers = await find_influencers_by_campaign(influencer_request)
+        background_tasks.add_task(
+            store_generated_influencers,
+            campaign_id,
+            influencers,
+        )
+        return influencers
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error in admin generate influencers: {str(e)}"
         ) from e
+
+
+async def store_generated_influencers(
+    campaign_id: str,
+    influencers: List[Dict[str, Any]],
+):
+    try:
+        db = get_db()
+        collection = db.get_collection("generated_influencers")
+        documents = []
+
+        for inf in influencers:
+            if not isinstance(inf, dict):
+                continue
+
+            documents.append(
+                {
+                    "campaign_id": ObjectId(campaign_id),
+                    "influencer_id": inf.get("id"),
+                    "username": inf.get("username"),
+                    "platform": inf.get("platform"),
+                    "followers": inf.get("followers"),
+                    "engagementRate": inf.get("engagementRate"),
+                    "country": inf.get("country"),
+                    "bio": inf.get("bio"),
+                    "picture": inf.get("picture"),
+                    "status": "GENERATED",
+                    "created_at": datetime.now(timezone.utc),
+                    "updated_at": datetime.now(timezone.utc),
+                }
+            )
+
+        if documents:
+            await collection.insert_many(documents)
+    except Exception as e:
+        print("Background insert failed:", str(e))
 
 
 async def update_campaignstatus_with_background_task(
