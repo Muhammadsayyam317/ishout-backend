@@ -1,4 +1,4 @@
-from typing import List, Set
+from typing import List, Optional, Set
 from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain_openai.embeddings import OpenAIEmbeddings
 from app.config.credentials_config import config
@@ -13,9 +13,14 @@ from app.utils.helpers import (
 
 
 async def search_instagram_influencers(
-    category: List[str], limit: int, followers: List[str], country: List[str]
+    category: List[str],
+    limit: int,
+    followers: List[str],
+    country: List[str],
+    exclude_ids: Optional[List[str]] = None,
 ):
     try:
+        excluded_ids = set(exclude_ids or [])
         categories = category if category else [""]
         countries = [normalize_country(c) for c in country] if country else [""]
         followers_list = normalize_followers(followers) if followers else [""]
@@ -54,6 +59,8 @@ async def search_instagram_influencers(
 
                         if not username or username in seen_usernames:
                             continue
+                        if influencer_data.get("id") in excluded_ids:
+                            continue
                         if not filter_influencer_data(
                             influencer_data,
                             parse_followers_list([follower_range_str]),
@@ -73,7 +80,16 @@ async def search_instagram_influencers(
                     break
             if len(all_results) >= target_limit:
                 break
-        return all_results[:target_limit]
+        if not all_results:
+            return {
+                "data": [],
+                "message": "No influencers found for the selected filters.",
+            }
+
+        return {
+            "data": all_results[:target_limit],
+            "message": f"Found {len(all_results[:target_limit])} influencers.",
+        }
 
     except Exception as e:
         raise ValueError(f"Error searching Instagram influencers: {str(e)}") from e

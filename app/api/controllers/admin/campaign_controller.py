@@ -520,8 +520,8 @@ async def AdminApprovedSingleInfluencer(
             },
             {
                 "$set": {
-                    "admin_approved": request_data.status.value,
-                    "status": request_data.status.value,
+                    "AdminApproved": request_data.status.value,
+                    "InfluencerStatus": request_data.status.value,
                     "pricing": request_data.pricing,
                     "updated_at": datetime.now(timezone.utc),
                 }

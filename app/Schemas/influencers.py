@@ -4,8 +4,8 @@ from typing import List, Optional
 
 class FindInfluencerRequest(BaseModel):
     campaign_id: str
-    user_id: str
     limit: int
+    exclude_ids: Optional[List[str]] = None
 
 
 class FindInfluencerLegacyRequest(BaseModel):
@@ -29,9 +29,7 @@ class DeleteInfluencerRequest(BaseModel):
 
 class MoreInfluencerRequest(BaseModel):
     campaign_id: str
-    user_id: str
-    more: int
-    exclude_ids: List[str]
+    limit: int = 10
 
 
 class MoreInfluencerLegacyRequest(BaseModel):
