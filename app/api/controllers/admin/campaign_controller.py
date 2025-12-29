@@ -468,7 +468,7 @@ async def AdminApprovedSingleInfluencer(
         generated_collection = db.get_collection("generated_influencers")
 
         campaign_id = ObjectId(request_data.campaign_id)
-        influencer_id_str = request_data.influencer_id  # STRING
+        influencer_id_str = request_data.influencer_id
         influencer_id_obj = ObjectId(request_data.influencer_id)
 
         update_fields = {
@@ -520,7 +520,8 @@ async def AdminApprovedSingleInfluencer(
             },
             {
                 "$set": {
-                    "admin_approved": True,
+                    "admin_approved": request_data.status.value,
+                    "status": request_data.status.value,
                     "pricing": request_data.pricing,
                     "updated_at": datetime.now(timezone.utc),
                 }

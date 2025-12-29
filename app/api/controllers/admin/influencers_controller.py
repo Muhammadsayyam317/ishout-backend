@@ -71,7 +71,6 @@ async def find_influencers_by_campaign(request_data: FindInfluencerRequest):
 
 
 async def more_influencers(request_data: MoreInfluencerRequest):
-    """Simplified wrapper for fetching more influencers based on campaign"""
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
