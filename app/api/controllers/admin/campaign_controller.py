@@ -115,6 +115,7 @@ async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]
             "user_type": "Website",
             "status": CampaignStatus.PENDING,
             "limit": request_data.limit,
+            "generated": False,
             "created_at": datetime.now(timezone.utc),
             "updated_at": datetime.now(timezone.utc),
         }
@@ -463,14 +464,13 @@ async def AdminApprovedSingleInfluencer(
 ):
     try:
         db = get_db()
-        collection = db.get_collection("campaign_influencers")
-        existing = await collection.find_one(
-            {
-                "campaign_id": ObjectId(request_data.campaign_id),
-                "influencer_id": ObjectId(request_data.influencer_id),
-                "platform": request_data.platform,
-            }
-        )
+        campaign_collection = db.get_collection("campaign_influencers")
+        generated_collection = db.get_collection("generated_influencers")
+
+        campaign_id = ObjectId(request_data.campaign_id)
+        influencer_id_str = request_data.influencer_id
+        influencer_id_obj = ObjectId(request_data.influencer_id)
+
         update_fields = {
             "username": request_data.username,
             "picture": request_data.picture,
@@ -482,35 +482,68 @@ async def AdminApprovedSingleInfluencer(
             "company_user_id": request_data.company_user_id,
             "pricing": request_data.pricing,
             "admin_approved": True,
+            "updated_at": datetime.now(timezone.utc),
         }
+
+        existing = await campaign_collection.find_one(
+            {
+                "campaign_id": campaign_id,
+                "influencer_id": influencer_id_obj,
+                "platform": request_data.platform,
+            }
+        )
+
         if existing:
-            await collection.update_one(
+            await campaign_collection.update_one(
                 {
-                    "campaign_id": ObjectId(request_data.campaign_id),
-                    "influencer_id": ObjectId(request_data.influencer_id),
+                    "campaign_id": campaign_id,
+                    "influencer_id": influencer_id_obj,
                     "platform": request_data.platform,
                 },
                 {"$set": update_fields},
             )
         else:
-            update_fields.update(
+            await campaign_collection.insert_one(
                 {
-                    "campaign_id": ObjectId(request_data.campaign_id),
-                    "influencer_id": ObjectId(request_data.influencer_id),
+                    **update_fields,
+                    "campaign_id": campaign_id,
+                    "influencer_id": influencer_id_obj,
                     "platform": request_data.platform,
                     "company_approved": False,
                 }
             )
-            await collection.insert_one(update_fields)
+
+        result = await generated_collection.update_one(
+            {
+                "campaign_id": campaign_id,
+                "influencer_id": influencer_id_str,
+            },
+            {
+                "$set": {
+                    "AdminApproved": request_data.status.value,
+                    "InfluencerStatus": request_data.status.value,
+                    "pricing": request_data.pricing,
+                    "updated_at": datetime.now(timezone.utc),
+                }
+            },
+        )
+
+        if result.matched_count == 0:
+            raise HTTPException(
+                status_code=404,
+                detail="Generated influencer not found",
+            )
 
         return {
-            "message": "Influencer approved successfully",
-            "pricing": request_data.pricing,
+            "message": "Influencer approved and synced successfully",
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error approving influencer: {str(e)}"
+            status_code=500,
+            detail=f"Error approving influencer: {str(e)}",
         )
 
 
@@ -662,6 +695,7 @@ async def store_generated_influencers(
     try:
         db = get_db()
         collection = db.get_collection("generated_influencers")
+        campaign_collection = db.get_collection("campaigns")
         documents = []
 
         for inf in influencers:
@@ -679,10 +713,13 @@ async def store_generated_influencers(
                     "country": inf.get("country"),
                     "bio": inf.get("bio"),
                     "picture": inf.get("picture"),
-                    "status": "GENERATED",
                     "created_at": datetime.now(timezone.utc),
                     "updated_at": datetime.now(timezone.utc),
                 }
+            )
+            await campaign_collection.update_one(
+                {"_id": ObjectId(campaign_id)},
+                {"$set": {"generated": True}},
             )
 
         if documents:

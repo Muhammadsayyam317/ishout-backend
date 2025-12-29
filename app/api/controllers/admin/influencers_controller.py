@@ -17,23 +17,28 @@ async def find_influencers_by_campaign(request_data: FindInfluencerRequest):
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
+
         campaign = await campaigns_collection.find_one(
             {"_id": ObjectId(request_data.campaign_id)}
         )
-
         if not campaign:
             raise HTTPException(status_code=404, detail="Campaign not found")
+
         platforms = campaign["platform"]
         categories = campaign["category"]
         followers_list = campaign["followers"]
         countries = campaign["country"]
         limit = request_data.limit
+        exclude_ids = request_data.exclude_ids or []
+
         if not platforms or not categories:
             raise HTTPException(
                 status_code=400,
                 detail="Campaign must have platform and category specified",
             )
+
         tasks = []
+
         for platform in platforms:
             platform_normalized = platform.strip().lower()
 
@@ -53,14 +58,17 @@ async def find_influencers_by_campaign(request_data: FindInfluencerRequest):
                     limit=limit,
                     followers=followers_list,
                     country=countries,
+                    exclude_ids=exclude_ids if exclude_ids else None,
                 )
             )
+
         results = await asyncio.gather(*tasks, return_exceptions=True)
+
         combined_results = []
         for result in results:
             if isinstance(result, Exception):
                 continue
-            combined_results.extend(result)
+            combined_results.extend(result.get("data", []))
 
         return combined_results
 
@@ -70,25 +78,31 @@ async def find_influencers_by_campaign(request_data: FindInfluencerRequest):
         ) from e
 
 
+@observe(name="more_influencers")
 async def more_influencers(request_data: MoreInfluencerRequest):
-    """Simplified wrapper for fetching more influencers based on campaign"""
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
+        generated_collection = db.get_collection("generated_influencers")
+
         campaign = await campaigns_collection.find_one(
             {"_id": ObjectId(request_data.campaign_id)}
         )
         if not campaign:
-            return {"error": "Campaign not found"}
-        find_request = await find_influencers_by_campaign(
-            request_data=FindInfluencerRequest(
-                campaign_id=request_data.campaign_id,
-                user_id=request_data.user_id,
-                limit=request_data.more,
-            )
+            raise HTTPException(status_code=404, detail="Campaign not found")
+        exclude_ids = await generated_collection.distinct(
+            "influencer_id",
+            {"campaign_id": ObjectId(request_data.campaign_id)},
         )
-        return find_request
 
+        request = FindInfluencerRequest(
+            campaign_id=request_data.campaign_id,
+            limit=request_data.limit,
+            exclude_ids=exclude_ids,
+        )
+
+        result = await find_influencers_by_campaign(request)
+        return result
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error in more_influencers: {str(e)}"
