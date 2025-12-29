@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from app.Schemas.influencers import MoreInfluencerRequest
 from app.api.controllers.admin.campaign_controller import update_status
 from app.api.controllers.admin.generated_influencers import get_generated_influencers
 from app.api.controllers.admin.influencers_controller import more_influencers
@@ -223,9 +224,13 @@ router.add_api_route(
     tags=["Admin"],
 )
 
-router.add_api_route(
-    path="/more-influencers",
-    endpoint=more_influencers,
-    methods=["POST"],
-    tags=["Admin"],
-)
+
+@router.post("/more-influencers", tags=["Admin"])
+async def more_influencers_route(
+    request_data: MoreInfluencerRequest,
+    background_tasks: BackgroundTasks,
+):
+    try:
+        return await more_influencers(request_data, background_tasks)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
