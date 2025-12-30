@@ -2,31 +2,10 @@ version: "3.9"
 
 services:
   api:
-    build:
-      context: .
     container_name: ishout-api
-    network_mode: host
+    build: .
+    ports:
+      - "8000:8000"
     env_file:
       - .env
-    environment:
-      # Allow overrides via local env or .env file
-      PORT: ${PORT:-8000}
-      # Use value from .env for Mongo settings
-      MONGODB_ATLAS_URI: ${MONGODB_ATLAS_URI}
-      MONGODB_ATLAS_DB_NAME: ${MONGODB_ATLAS_DB_NAME}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-please_set_a_strong_secret}
-      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
-      JWT_ACCESS_TOKEN_EXPIRE_MINUTES: ${JWT_ACCESS_TOKEN_EXPIRE_MINUTES:-720}
-      MONGODB_ATLAS_COLLECTION_INSTGRAM: ${MONGODB_ATLAS_COLLECTION_INSTGRAM:-instagram}
-      MONGODB_ATLAS_COLLECTION_TIKTOK: ${MONGODB_ATLAS_COLLECTION_TIKTOK:-tiktok}
-      MONGODB_ATLAS_COLLECTION_YOUTUBE: ${MONGODB_ATLAS_COLLECTION_YOUTUBE:-youtube}
-      MONGODB_VECTOR_INDEX_NAME: ${MONGODB_VECTOR_INDEX_NAME:-vector_index}
-      MONGODB_TEXT_KEY: ${MONGODB_TEXT_KEY:-text}
-      MONGODB_EMBEDDING_KEY: ${MONGODB_EMBEDDING_KEY:-embedding}
-      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
-      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
-      TWILLIO_NUMBER: ${TWILLIO_NUMBER:-}
-    # no extra_hosts needed with host networking
     restart: unless-stopped
-
