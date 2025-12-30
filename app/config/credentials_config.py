@@ -75,7 +75,9 @@ class Config(BaseModel):
     IG_GRAPH_API_VERSION: str = Field(default=os.getenv("IG_GRAPH_API_VERSION"))
 
     REDIS_URL: str = Field(default=os.getenv("REDIS_URL"))
+
     RESEND_FROM_EMAIL: str = Field(default=os.getenv("RESEND_FROM_EMAIL"))
+    RESEND_API_KEY: str = Field(default=os.getenv("RESEND_API_KEY"))
 
 
 # config singleton instance

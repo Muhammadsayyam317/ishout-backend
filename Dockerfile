@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1
-
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -15,19 +13,8 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-
-# Install dependencies first (better layer caching)
-COPY requirements.txt ./
-RUN python -m pip install --upgrade pip \
-    && pip install -r requirements.txt
-
-# Copy the rest of the app
+COPY requirements.txt ./requirements.txt
+RUN python -m pip install --no-cache-dir --upgrade pip && pip install -r requirements.txt
 COPY . .
-
-# Expose app port (default 8000)
 EXPOSE 8000
-
-# Use PORT env if provided, default to 8000
-# Main entrypoint runs uvicorn on main:app
-CMD ["/bin/sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
-
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
