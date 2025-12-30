@@ -41,7 +41,8 @@ jobs:
           script: |
             set -e
             IMAGE=${{ env.IMAGE_NAME }}
+            ENV_FILE=${ENV_FILE_PATH:-$HOME/.env}
             docker pull $IMAGE:latest
             docker stop ishout-api || true
             docker rm ishout-api || true
-            docker run -d --name ishout-api --env-file /home/ec2-user/.env -p 8000:8000 $IMAGE:latest
+            docker run -d --name ishout-api --env-file "$ENV_FILE" -p 8000:8000 $IMAGE:latest
