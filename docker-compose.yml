@@ -4,8 +4,20 @@ services:
   api:
     container_name: ishout-api
     build: .
-    ports:
-      - "8000:443"
+    expose:
+      - "8000"
     env_file:
       - .env
+    restart: unless-stopped
+
+  nginx:
+    container_name: ishout-nginx
+    image: nginx:1.25
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
     restart: unless-stopped
