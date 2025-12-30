@@ -1,5 +1,7 @@
 import asyncio
+from datetime import datetime, timezone
 from fastapi import HTTPException
+from fastapi.background import BackgroundTasks
 from app.tools.instagram_influencers import search_instagram_influencers
 from app.tools.tiktok_influencers import search_tiktok_influencers
 from app.tools.youtube_influencers import search_youtube_influencers
@@ -79,7 +81,9 @@ async def find_influencers_by_campaign(request_data: FindInfluencerRequest):
 
 
 @observe(name="more_influencers")
-async def more_influencers(request_data: MoreInfluencerRequest):
+async def more_influencers(
+    request_data: MoreInfluencerRequest, background_tasks: BackgroundTasks
+):
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
@@ -90,19 +94,43 @@ async def more_influencers(request_data: MoreInfluencerRequest):
         )
         if not campaign:
             raise HTTPException(status_code=404, detail="Campaign not found")
+
         exclude_ids = await generated_collection.distinct(
             "influencer_id",
             {"campaign_id": ObjectId(request_data.campaign_id)},
         )
-
         request = FindInfluencerRequest(
             campaign_id=request_data.campaign_id,
             limit=request_data.limit,
             exclude_ids=exclude_ids,
         )
-
         result = await find_influencers_by_campaign(request)
+
+        async def store_generated(campaign_id, influencers_list):
+            if not influencers_list:
+                return
+            await generated_collection.insert_many(
+                [
+                    {
+                        "campaign_id": ObjectId(campaign_id),
+                        "influencer_id": inf.get("id"),
+                        "username": inf.get("username"),
+                        "platform": inf.get("platform"),
+                        "followers": inf.get("followers"),
+                        "engagementRate": inf.get("engagementRate"),
+                        "country": inf.get("country"),
+                        "bio": inf.get("bio"),
+                        "picture": inf.get("picture"),
+                        "created_at": datetime.now(timezone.utc),
+                        "updated_at": datetime.now(timezone.utc),
+                    }
+                    for inf in influencers_list
+                ]
+            )
+
+        background_tasks.add_task(store_generated, request_data.campaign_id, result)
         return result
+
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error in more_influencers: {str(e)}"

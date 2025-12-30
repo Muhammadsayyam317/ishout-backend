@@ -22,28 +22,78 @@ from app.tools.regenerate_youtube_influencers import (
 )
 
 
-@observe(name="reject_and_regenerate_influencers")
-async def reject_and_regenerate_influencers(
+@observe(name="reject_and_regenerate_influencer")
+async def reject_and_regenerate_influencer(
     request_data: SearchRejectRegenerateInfluencersRequest,
 ):
     try:
-        platform = request_data.platform.lower()
+        db = get_db()
+        campaigns_collection = db.get_collection("campaigns")
+        generated_collection = db.get_collection("generated_influencers")
+
+        campaign = await campaigns_collection.find_one(
+            {"_id": ObjectId(request_data.campaign_id)}
+        )
+        if not campaign:
+            raise HTTPException(status_code=404, detail="Campaign not found")
+
+        platform = campaign["platform"][0].lower()
+        categories = campaign["category"]
+        followers_list = campaign["followers"]
+        countries = campaign["country"]
+
+        generated_ids = await generated_collection.distinct(
+            "influencer_id", {"campaign_id": ObjectId(request_data.campaign_id)}
+        )
+        excluded_ids = set(generated_ids + [request_data.rejected_influencer_id])
         if platform == "instagram":
-            influencer = await regenerate_instagram_influencer(request_data)
+            influencer = await regenerate_instagram_influencer(
+                categories=categories,
+                followers=followers_list,
+                countries=countries,
+                exclude_ids=excluded_ids,
+            )
         elif platform == "tiktok":
-            influencer = await regenerate_tiktok_influencer(request_data)
+            influencer = await regenerate_tiktok_influencer(
+                request_data=SearchRejectRegenerateInfluencersRequest(
+                    categories=categories,
+                    followers=followers_list,
+                    countries=countries,
+                    exclude_ids=excluded_ids,
+                )
+            )
         elif platform == "youtube":
-            influencer = await regenerate_youtube_influencer(request_data)
+            influencer = await regenerate_youtube_influencer(
+                request_data=SearchRejectRegenerateInfluencersRequest(
+                    categories=categories,
+                    followers=followers_list,
+                    countries=countries,
+                    exclude_ids=excluded_ids,
+                )
+            )
         else:
             raise HTTPException(status_code=400, detail="Unsupported platform")
 
+        if influencer and influencer.get("id"):
+            await generated_collection.insert_one(
+                {
+                    "campaign_id": ObjectId(request_data.campaign_id),
+                    "influencer_id": influencer["id"],
+                    "username": influencer["username"],
+                    "platform": influencer["platform"],
+                    "followers": influencer.get("followers"),
+                    "engagementRate": influencer.get("engagementRate"),
+                    "country": influencer.get("country"),
+                    "bio": influencer.get("bio"),
+                    "picture": influencer.get("picture"),
+                }
+            )
         return influencer
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 async def more_influencers(request_data: MoreInfluencerRequest):
-    """Simplified wrapper for fetching more influencers based on campaign"""
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")

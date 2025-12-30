@@ -1,9 +1,6 @@
-# app/tools/regenerate_instagram_influencers.py
-
 from typing import Set
 from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain_openai.embeddings import OpenAIEmbeddings
-
 from app.config.credentials_config import config
 from app.db.connection import get_pymongo_db
 from app.Schemas.reject_influencer import (
@@ -72,7 +69,9 @@ async def regenerate_instagram_influencer(
                         cntry,
                     ):
                         continue
-
+                    seen_usernames.add(username)
                     return influencer
-
-    return None
+    return {
+        "data": [],
+        "message": "No influencers found for the selected filters.",
+    }

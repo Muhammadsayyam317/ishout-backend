@@ -1,13 +1,13 @@
 from fastapi import HTTPException
-from app.api.controllers.admin.reject_regenerate_influencers import (
-    reject_and_regenerate_influencers,
-)
 from app.Schemas.reject_influencer import SearchRejectRegenerateInfluencersRequest
+from app.api.controllers.admin.reject_regenerate_influencers import (
+    reject_and_regenerate_influencer,
+)
 
 
 async def reject_and_regenerate(request_data: SearchRejectRegenerateInfluencersRequest):
     try:
-        return await reject_and_regenerate_influencers(
+        return await reject_and_regenerate_influencer(
             request_data=SearchRejectRegenerateInfluencersRequest(
                 campaign_id=request_data.campaign_id,
                 platform=request_data.platform,
@@ -15,8 +15,6 @@ async def reject_and_regenerate(request_data: SearchRejectRegenerateInfluencersR
                 followers=request_data.followers,
                 country=request_data.country,
                 limit=1,
-                generated_influencers_id=request_data.generated_influencers_id,
-                rejected_influencers_id=request_data.rejected_influencers_id,
             )
         )
     except Exception as e:

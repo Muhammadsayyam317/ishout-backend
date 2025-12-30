@@ -1,5 +1,3 @@
-# app/tools/regenerate_tiktok_influencers.py
-
 from typing import Set
 from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain_openai.embeddings import OpenAIEmbeddings
@@ -24,11 +22,9 @@ async def regenerate_tiktok_influencer(
     excluded_ids: Set[str] = set(request_data.generated_influencers_id or []) | set(
         request_data.rejected_influencers_id or []
     )
-
     categories = request_data.category or [""]
     countries = [normalize_country(c) for c in request_data.country] or [""]
     followers_list = normalize_followers(request_data.followers) or [""]
-
     follower_ranges = parse_followers_list(followers_list)
 
     embeddings = OpenAIEmbeddings(
@@ -61,10 +57,8 @@ async def regenerate_tiktok_influencer(
                 docs = vectorstore.similarity_search(query, k=50)
                 for doc in docs:
                     influencer = extract_influencer_data(doc, "TikTok")
-
                     influencer_id = influencer.get("id")
                     username = influencer.get("username")
-
                     if not influencer_id or not username:
                         continue
                     if influencer_id in excluded_ids:
@@ -81,4 +75,7 @@ async def regenerate_tiktok_influencer(
 
                     seen_usernames.add(username)
                     return influencer
-    return None
+    return {
+        "data": [],
+        "message": "No influencers found for the selected filters.",
+    }
