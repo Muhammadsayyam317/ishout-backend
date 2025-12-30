@@ -42,7 +42,13 @@ jobs:
             set -e
             IMAGE=${{ env.IMAGE_NAME }}
             ENV_FILE=${ENV_FILE_PATH:-$HOME/.env}
+            echo "Using env file: $ENV_FILE"
+            if [ ! -f "$ENV_FILE" ]; then
+              echo "Env file not found: $ENV_FILE" >&2
+              exit 1
+            fi
             docker pull $IMAGE:latest
-            docker stop ishout-api || true
-            docker rm ishout-api || true
+            docker rm -f ishout-api 2>/dev/null || true
             docker run -d --name ishout-api --env-file "$ENV_FILE" -p 8000:8000 $IMAGE:latest
+            docker ps --filter "name=ishout-api" --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}'
+            docker logs --tail 50 ishout-api || true
