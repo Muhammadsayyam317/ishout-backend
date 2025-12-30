@@ -48,3 +48,9 @@ class GenerateInfluencersRequest(BaseModel):
     followers: List[str]
     country: List[str]
     limit: int
+
+
+class AddInfluencerNumberRequest(BaseModel):
+    influencer_id: str
+    phone_number: str
+    platform: str

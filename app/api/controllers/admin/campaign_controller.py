@@ -15,7 +15,7 @@ from app.Schemas.campaign import (
     CampaignStatusUpdateRequest,
     CampaignStatus,
 )
-from app.Schemas.influencers import FindInfluencerRequest
+from app.Schemas.influencers import AddInfluencerNumberRequest, FindInfluencerRequest
 from app.db.connection import get_db
 from app.config import config
 from app.services.whatsapp.interactive_message import (
@@ -52,7 +52,6 @@ async def _populate_user_details(user_id: str) -> Dict[str, Any]:
 async def _populate_influencer_details(
     influencer_ids: List[str], platform: Optional[str] = None
 ) -> List[Dict[str, Any]]:
-    """Populate influencer details from influencer IDs"""
     try:
         if not influencer_ids:
             raise HTTPException(status_code=400, detail="No influencer IDs provided")
@@ -193,270 +192,270 @@ async def get_all_campaigns(
         )
 
 
-async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
-    """Get campaign details by ID with populated influencer data"""
-    try:
-        db = get_db()
-        campaigns_collection = db.get_collection("campaigns")
-        campaign = await campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
-        if not campaign:
-            return {"error": "Campaign not found"}
+# async def get_campaign_by_id(campaign_id: str) -> Dict[str, Any]:
+#     """Get campaign details by ID with populated influencer data"""
+#     try:
+#         db = get_db()
+#         campaigns_collection = db.get_collection("campaigns")
+#         campaign = await campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
+#         if not campaign:
+#             return {"error": "Campaign not found"}
 
-        campaign["_id"] = str(campaign["_id"])
-        influencer_details = []
-        missing_influencers = []
+#         campaign["_id"] = str(campaign["_id"])
+#         influencer_details = []
+#         missing_influencers = []
 
-        influencer_references = campaign.get("influencer_references", [])
+#         influencer_references = campaign.get("influencer_references", [])
 
-        if influencer_references:
-            for ref in influencer_references:
-                influencer_id = ref.get("influencer_id")
-                platform = ref.get("platform")
+#         if influencer_references:
+#             for ref in influencer_references:
+#                 influencer_id = ref.get("influencer_id")
+#                 platform = ref.get("platform")
 
-                if not influencer_id or not platform:
-                    missing_influencers.append(
-                        {"id": influencer_id, "reason": "Missing ID or platform"}
-                    )
-                    continue
+#                 if not influencer_id or not platform:
+#                     missing_influencers.append(
+#                         {"id": influencer_id, "reason": "Missing ID or platform"}
+#                     )
+#                     continue
 
-                if platform == "instagram":
-                    collection_name = config.MONGODB_ATLAS_COLLECTION_INSTAGRAM
-                elif platform == "tiktok":
-                    collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
-                elif platform == "youtube":
-                    collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
-                else:
-                    missing_influencers.append(
-                        {
-                            "id": influencer_id,
-                            "platform": platform,
-                            "reason": "Invalid platform",
-                        }
-                    )
-                    continue
+#                 if platform == "instagram":
+#                     collection_name = config.MONGODB_ATLAS_COLLECTION_INSTAGRAM
+#                 elif platform == "tiktok":
+#                     collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
+#                 elif platform == "youtube":
+#                     collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
+#                 else:
+#                     missing_influencers.append(
+#                         {
+#                             "id": influencer_id,
+#                             "platform": platform,
+#                             "reason": "Invalid platform",
+#                         }
+#                     )
+#                     continue
 
-                if not collection_name:
-                    missing_influencers.append(
-                        {
-                            "id": influencer_id,
-                            "platform": platform,
-                            "reason": f"Collection name not configured for platform {platform}",
-                        }
-                    )
-                    continue
+#                 if not collection_name:
+#                     missing_influencers.append(
+#                         {
+#                             "id": influencer_id,
+#                             "platform": platform,
+#                             "reason": f"Collection name not configured for platform {platform}",
+#                         }
+#                     )
+#                     continue
 
-                platform_collection = db.get_collection(collection_name)
-                try:
-                    influencer = await platform_collection.find_one(
-                        {"_id": ObjectId(influencer_id)}
-                    )
-                    if influencer:
-                        influencer["_id"] = str(influencer["_id"])
-                        influencer["platform"] = platform
-                        if "embedding" in influencer:
-                            del influencer["embedding"]
-                        influencer_details.append(influencer)
-                    else:
-                        missing_influencers.append(
-                            {
-                                "id": influencer_id,
-                                "platform": platform,
-                                "reason": "Influencer not found",
-                            }
-                        )
-                except Exception:
-                    missing_influencers.append(
-                        {
-                            "id": influencer_id,
-                            "platform": platform,
-                            "reason": "Invalid ID format",
-                        }
-                    )
-        else:
-            for influencer_id in campaign.get("influencer_ids", []):
-                found = False
-                for platform in ["instagram", "tiktok", "youtube"]:
-                    if platform == "instagram":
-                        collection_name = config.MONGODB_ATLAS_COLLECTION_INSTAGRAM
-                    elif platform == "tiktok":
-                        collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
-                    elif platform == "youtube":
-                        collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
-                    else:
-                        continue
+#                 platform_collection = db.get_collection(collection_name)
+#                 try:
+#                     influencer = await platform_collection.find_one(
+#                         {"_id": ObjectId(influencer_id)}
+#                     )
+#                     if influencer:
+#                         influencer["_id"] = str(influencer["_id"])
+#                         influencer["platform"] = platform
+#                         if "embedding" in influencer:
+#                             del influencer["embedding"]
+#                         influencer_details.append(influencer)
+#                     else:
+#                         missing_influencers.append(
+#                             {
+#                                 "id": influencer_id,
+#                                 "platform": platform,
+#                                 "reason": "Influencer not found",
+#                             }
+#                         )
+#                 except Exception:
+#                     missing_influencers.append(
+#                         {
+#                             "id": influencer_id,
+#                             "platform": platform,
+#                             "reason": "Invalid ID format",
+#                         }
+#                     )
+#         else:
+#             for influencer_id in campaign.get("influencer_ids", []):
+#                 found = False
+#                 for platform in ["instagram", "tiktok", "youtube"]:
+#                     if platform == "instagram":
+#                         collection_name = config.MONGODB_ATLAS_COLLECTION_INSTAGRAM
+#                     elif platform == "tiktok":
+#                         collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
+#                     elif platform == "youtube":
+#                         collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
+#                     else:
+#                         continue
 
-                    if not collection_name:
-                        continue
+#                     if not collection_name:
+#                         continue
 
-                    platform_collection = db.get_collection(collection_name)
+#                     platform_collection = db.get_collection(collection_name)
 
-                    try:
-                        influencer = await platform_collection.find_one(
-                            {"_id": ObjectId(influencer_id)}
-                        )
-                        if influencer:
-                            influencer["_id"] = str(influencer["_id"])
-                            influencer["platform"] = platform
-                            if "embedding" in influencer:
-                                del influencer["embedding"]
-                            influencer_details.append(influencer)
-                            found = True
-                            break
-                    except Exception:
-                        continue
+#                     try:
+#                         influencer = await platform_collection.find_one(
+#                             {"_id": ObjectId(influencer_id)}
+#                         )
+#                         if influencer:
+#                             influencer["_id"] = str(influencer["_id"])
+#                             influencer["platform"] = platform
+#                             if "embedding" in influencer:
+#                                 del influencer["embedding"]
+#                             influencer_details.append(influencer)
+#                             found = True
+#                             break
+#                     except Exception:
+#                         continue
 
-                if not found:
-                    missing_influencers.append(
-                        {
-                            "id": influencer_id,
-                            "reason": "Influencer not found in any platform",
-                        }
-                    )
-        rejected_influencer_details = []
-        missing_rejected_influencers = []
-        rejected_ids = campaign.get("rejected_ids", [])
+#                 if not found:
+#                     missing_influencers.append(
+#                         {
+#                             "id": influencer_id,
+#                             "reason": "Influencer not found in any platform",
+#                         }
+#                     )
+#         rejected_influencer_details = []
+#         missing_rejected_influencers = []
+#         rejected_ids = campaign.get("rejected_ids", [])
 
-        for rejected_id in rejected_ids:
-            found = False
-            for platform in ["instagram", "tiktok", "youtube"]:
-                db = get_db()
+#         for rejected_id in rejected_ids:
+#             found = False
+#             for platform in ["instagram", "tiktok", "youtube"]:
+#                 db = get_db()
 
-                if platform == "instagram":
-                    collection_name = config.MONGODB_ATLAS_COLLECTION_INSTAGRAM
-                elif platform == "tiktok":
-                    collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
-                elif platform == "youtube":
-                    collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
-                else:
-                    continue
+#                 if platform == "instagram":
+#                     collection_name = config.MONGODB_ATLAS_COLLECTION_INSTAGRAM
+#                 elif platform == "tiktok":
+#                     collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
+#                 elif platform == "youtube":
+#                     collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
+#                 else:
+#                     continue
 
-                if not collection_name:
-                    continue
+#                 if not collection_name:
+#                     continue
 
-                platform_collection = db.get_collection(collection_name)
+#                 platform_collection = db.get_collection(collection_name)
 
-                try:
-                    influencer = await platform_collection.find_one(
-                        {"_id": ObjectId(rejected_id)}
-                    )
-                    if influencer:
-                        influencer["_id"] = str(influencer["_id"])
-                        influencer["platform"] = platform
-                        if "embedding" in influencer:
-                            del influencer["embedding"]
-                        rejected_influencer_details.append(influencer)
-                        found = True
-                        break
-                except Exception:
-                    continue
+#                 try:
+#                     influencer = await platform_collection.find_one(
+#                         {"_id": ObjectId(rejected_id)}
+#                     )
+#                     if influencer:
+#                         influencer["_id"] = str(influencer["_id"])
+#                         influencer["platform"] = platform
+#                         if "embedding" in influencer:
+#                             del influencer["embedding"]
+#                         rejected_influencer_details.append(influencer)
+#                         found = True
+#                         break
+#                 except Exception:
+#                     continue
 
-            if not found:
-                missing_rejected_influencers.append(
-                    {
-                        "id": rejected_id,
-                        "reason": "Rejected influencer not found in any platform",
-                    }
-                )
+#             if not found:
+#                 missing_rejected_influencers.append(
+#                     {
+#                         "id": rejected_id,
+#                         "reason": "Rejected influencer not found in any platform",
+#                     }
+#                 )
 
-        rejected_by_user_details = []
-        missing_rejected_by_user_influencers = []
-        rejected_by_user_ids = campaign.get("rejectedByUser", [])
+#         rejected_by_user_details = []
+#         missing_rejected_by_user_influencers = []
+#         rejected_by_user_ids = campaign.get("rejectedByUser", [])
 
-        for rejected_id in rejected_by_user_ids:
-            found = False
-            for platform in ["instagram", "tiktok", "youtube"]:
-                if platform == "instagram":
-                    collection_name = config.MONGODB_ATLAS_COLLECTION_INSTAGRAM
-                elif platform == "tiktok":
-                    collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
-                elif platform == "youtube":
-                    collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
-                else:
-                    continue
+#         for rejected_id in rejected_by_user_ids:
+#             found = False
+#             for platform in ["instagram", "tiktok", "youtube"]:
+#                 if platform == "instagram":
+#                     collection_name = config.MONGODB_ATLAS_COLLECTION_INSTAGRAM
+#                 elif platform == "tiktok":
+#                     collection_name = config.MONGODB_ATLAS_COLLECTION_TIKTOK
+#                 elif platform == "youtube":
+#                     collection_name = config.MONGODB_ATLAS_COLLECTION_YOUTUBE
+#                 else:
+#                     continue
 
-                if not collection_name:
-                    continue
+#                 if not collection_name:
+#                     continue
 
-                platform_collection = db.get_collection(collection_name)
+#                 platform_collection = db.get_collection(collection_name)
 
-                try:
-                    influencer = await platform_collection.find_one(
-                        {"_id": ObjectId(rejected_id)}
-                    )
-                    if influencer:
-                        influencer["_id"] = str(influencer["_id"])
-                        influencer["platform"] = platform
-                        if "embedding" in influencer:
-                            del influencer["embedding"]
-                        rejected_by_user_details.append(influencer)
-                        found = True
-                        break
-                except Exception:
-                    continue
+#                 try:
+#                     influencer = await platform_collection.find_one(
+#                         {"_id": ObjectId(rejected_id)}
+#                     )
+#                     if influencer:
+#                         influencer["_id"] = str(influencer["_id"])
+#                         influencer["platform"] = platform
+#                         if "embedding" in influencer:
+#                             del influencer["embedding"]
+#                         rejected_by_user_details.append(influencer)
+#                         found = True
+#                         break
+#                 except Exception:
+#                     continue
 
-            if not found:
-                missing_rejected_by_user_influencers.append(
-                    {
-                        "id": rejected_id,
-                        "reason": "Rejected by user influencer not found in any platform",
-                    }
-                )
+#             if not found:
+#                 missing_rejected_by_user_influencers.append(
+#                     {
+#                         "id": rejected_id,
+#                         "reason": "Rejected by user influencer not found in any platform",
+#                     }
+#                 )
 
-        user_id = campaign.get("user_id")
-        user_details = None
-        if user_id:
-            user_details = await _populate_user_details(user_id)
+#         user_id = campaign.get("user_id")
+#         user_details = None
+#         if user_id:
+#             user_details = await _populate_user_details(user_id)
 
-        approved_ids = campaign.get("influencer_ids", [])
-        approved_influencers_full = []
-        if approved_ids:
-            if influencer_references:
-                for ref in influencer_references:
-                    inf_id = ref.get("influencer_id")
-                    platform = ref.get("platform")
-                    if inf_id in approved_ids:
-                        details = await _populate_influencer_details([inf_id], platform)
-                        if details:
-                            approved_influencers_full.extend(details)
-            else:
-                approved_influencers_full = await _populate_influencer_details(
-                    approved_ids
-                )
+#         approved_ids = campaign.get("influencer_ids", [])
+#         approved_influencers_full = []
+#         if approved_ids:
+#             if influencer_references:
+#                 for ref in influencer_references:
+#                     inf_id = ref.get("influencer_id")
+#                     platform = ref.get("platform")
+#                     if inf_id in approved_ids:
+#                         details = await _populate_influencer_details([inf_id], platform)
+#                         if details:
+#                             approved_influencers_full.extend(details)
+#             else:
+#                 approved_influencers_full = await _populate_influencer_details(
+#                     approved_ids
+#                 )
 
-        generated_ids = campaign.get("generated_influencers", [])
-        generated_influencers_full = []
-        if generated_ids and len(generated_ids) > 0:
-            if isinstance(generated_ids[0], str):
-                generated_influencers_full = await _populate_influencer_details(
-                    generated_ids
-                )
-            else:
-                for inf in generated_ids:
-                    if isinstance(inf, dict):
-                        if "embedding" in inf:
-                            inf_copy = inf.copy()
-                            del inf_copy["embedding"]
-                            generated_influencers_full.append(inf_copy)
-                        else:
-                            generated_influencers_full.append(inf)
+#         generated_ids = campaign.get("generated_influencers", [])
+#         generated_influencers_full = []
+#         if generated_ids and len(generated_ids) > 0:
+#             if isinstance(generated_ids[0], str):
+#                 generated_influencers_full = await _populate_influencer_details(
+#                     generated_ids
+#                 )
+#             else:
+#                 for inf in generated_ids:
+#                     if isinstance(inf, dict):
+#                         if "embedding" in inf:
+#                             inf_copy = inf.copy()
+#                             del inf_copy["embedding"]
+#                             generated_influencers_full.append(inf_copy)
+#                         else:
+#                             generated_influencers_full.append(inf)
 
-        return {
-            "campaign": campaign,
-            "user_details": user_details,
-            "approved_influencers": approved_influencers_full,
-            "rejected_influencers": rejected_influencer_details,
-            "rejected_by_user_influencers": rejected_by_user_details,
-            "generated_influencers": generated_influencers_full,
-            "total_approved": len(approved_influencers_full),
-            "total_rejected": len(rejected_influencer_details),
-            "total_rejected_by_user": len(rejected_by_user_details),
-            "total_generated": len(generated_influencers_full),
-        }
+#         return {
+#             "campaign": campaign,
+#             "user_details": user_details,
+#             "approved_influencers": approved_influencers_full,
+#             "rejected_influencers": rejected_influencer_details,
+#             "rejected_by_user_influencers": rejected_by_user_details,
+#             "generated_influencers": generated_influencers_full,
+#             "total_approved": len(approved_influencers_full),
+#             "total_rejected": len(rejected_influencer_details),
+#             "total_rejected_by_user": len(rejected_by_user_details),
+#             "total_generated": len(generated_influencers_full),
+#         }
 
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error in get_campaign_by_id: {str(e)}"
-        ) from e
+#     except Exception as e:
+#         raise HTTPException(
+#             status_code=500, detail=f"Error in get_campaign_by_id: {str(e)}"
+#         ) from e
 
 
 async def AdminApprovedSingleInfluencer(
@@ -547,6 +546,83 @@ async def AdminApprovedSingleInfluencer(
         )
 
 
+async def storeInfluencerNumber(
+    request_data: AddInfluencerNumberRequest,
+):
+    try:
+        db = get_db()
+        instagram_collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_INSTAGRAM
+        )
+        tiktok_collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_TIKTOK)
+        youtube_collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_YOUTUBE)
+        if request_data.platform == "instagram":
+            result = await instagram_collection.insert_one(
+                {
+                    "influencer_id": ObjectId(request_data.influencer_id),
+                    "phone_number": request_data.phone_number,
+                }
+            )
+        elif request_data.platform == "tiktok":
+            result = await tiktok_collection.insert_one(
+                {
+                    "influencer_id": ObjectId(request_data.influencer_id),
+                    "phone_number": request_data.phone_number,
+                }
+            )
+        elif request_data.platform == "youtube":
+            result = await youtube_collection.insert_one(
+                {
+                    "influencer_id": ObjectId(request_data.influencer_id),
+                    "phone_number": request_data.phone_number,
+                }
+            )
+        if result.inserted_id:
+            return {"message": "Influencer number stored successfully"}
+        else:
+            raise HTTPException(
+                status_code=404, detail="Failed to store influencer number"
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error in store influencer number: {str(e)}"
+        ) from e
+
+
+async def add_influencer_Number(
+    request_data: AddInfluencerNumberRequest,
+    background_tasks: BackgroundTasks,
+):
+    try:
+        db = get_db()
+        campaigns_collection = db.get_collection("campaign_influencers")
+        campaign = await campaigns_collection.find_one(
+            {"influencer_id": ObjectId(request_data.influencer_id)}
+        )
+        if not campaign:
+            raise HTTPException(status_code=404, detail="Influencer not found")
+        campaign["phone_number"] = request_data.phone_number
+        result = await campaigns_collection.update_one(
+            {"influencer_id": ObjectId(request_data.influencer_id)},
+            {"$set": {"phone_number": request_data.phone_number}},
+        )
+        if result.modified_count == 0:
+            raise HTTPException(status_code=404, detail="Failed to update influencer")
+        background_tasks.add_task(
+            storeInfluencerNumber,
+            request_data,
+        )
+        return {"message": "Influencer number added successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Error in add influencer number: {str(e)}"
+        ) from e
+
+
 async def user_reject_influencers(
     campaign_id: str, influencer_ids: List[str], user_id: str
 ) -> Dict[str, Any]:
@@ -565,12 +641,10 @@ async def user_reject_influencers(
                 detail="You don't have permission to modify this campaign",
             )
 
-        # Get current approved influencer IDs and references
         current_influencer_ids = campaign.get("influencer_ids", [])
         current_references = campaign.get("influencer_references", [])
         current_rejected_by_user = campaign.get("rejectedByUser", [])
 
-        # Validate that all influencer_ids are actually approved
         rejected_influencers = []
         remaining_approved_ids = []
         remaining_references = []
@@ -584,7 +658,6 @@ async def user_reject_influencers(
                     "error": f"Influencer {inf_id} is not approved for this campaign"
                 }
 
-        # Remove rejected influencers from approved lists
         for inf_id in current_influencer_ids:
             if inf_id not in influencer_ids:
                 remaining_approved_ids.append(inf_id)
@@ -593,7 +666,6 @@ async def user_reject_influencers(
             if ref.get("influencer_id") not in influencer_ids:
                 remaining_references.append(ref)
 
-        # Update campaign
         result = await campaigns_collection.update_one(
             {"_id": ObjectId(campaign_id)},
             {
@@ -601,7 +673,7 @@ async def user_reject_influencers(
                     "influencer_ids": remaining_approved_ids,
                     "influencer_references": remaining_references,
                     "rejectedByUser": current_rejected_by_user,
-                    "updated_at": datetime.utcnow(),
+                    "updated_at": datetime.now(timezone.utc),
                 }
             },
         )
@@ -623,19 +695,16 @@ async def user_reject_influencers(
 async def add_rejected_influencers(
     campaign_id: str, rejected_ids: List[str]
 ) -> Dict[str, Any]:
-    """Append rejected influencer IDs to the campaign and update timestamp"""
     try:
         if not rejected_ids:
             return {"message": "No rejected ids provided"}
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
-        # Ensure campaign exists
         campaign = await campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
         if not campaign:
             raise HTTPException(status_code=404, detail="Campaign not found")
 
         existing_rejected: List[str] = campaign.get("rejected_ids", []) or []
-        # Deduplicate while preserving order (new first then existing)
         combined = list(dict.fromkeys(existing_rejected + rejected_ids))
 
         result = await campaigns_collection.update_one(
