@@ -1,6 +1,6 @@
 from typing import List, Dict, Any
 from bson import ObjectId
-from fastapi import HTTPException
+from app.core.exception import InternalServerErrorException
 from app.db.connection import get_db
 from datetime import datetime
 
@@ -34,6 +34,6 @@ async def get_generated_influencers(campaign_id: str) -> List[Dict[str, Any]]:
         return [serialize_influencer(inf) for inf in influencers]
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error in get generated influencers: {str(e)}"
+        raise InternalServerErrorException(
+            message=f"Error in get generated influencers: {str(e)}"
         ) from e

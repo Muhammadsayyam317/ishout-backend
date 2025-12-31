@@ -1,6 +1,10 @@
 from bson import ObjectId
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 
+from app.core.exception import (
+    InternalServerErrorException,
+    UnauthorizedException,
+)
 from app.db.connection import get_db
 from app.middleware.auth_middleware import require_admin_access
 from app.Schemas.campaign_influencers import (
@@ -75,8 +79,8 @@ async def approved_campaign(
             "has_prev": page > 1,
         }
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error in approved campaign: {str(e)}"
+        raise InternalServerErrorException(
+            message=f"Error in approved campaign: {str(e)}"
         ) from e
 
 
@@ -85,7 +89,7 @@ async def approvedAdminCampaignById(
     current_user: dict = Depends(require_admin_access),
 ):
     if not current_user:
-        raise HTTPException(status_code=401, detail="Unauthorized")
+        raise UnauthorizedException(message="Unauthorized")
 
     try:
         db = get_db()
@@ -108,7 +112,7 @@ async def approvedAdminCampaignById(
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise InternalServerErrorException(message=str(e)) from e
 
 
 async def companyApprovedSingleInfluencer(
@@ -157,6 +161,6 @@ async def companyApprovedSingleInfluencer(
         return {"message": "Influencer approved successfully"}
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error approving influencer: {str(e)}"
+        raise InternalServerErrorException(
+            message=f"Error approving influencer: {str(e)}"
         )

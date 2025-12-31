@@ -1,4 +1,3 @@
-from fastapi import HTTPException
 from app.api.controllers.admin.influencers_controller import (
     find_influencers_by_campaign,
 )
@@ -7,6 +6,11 @@ from langfuse import observe
 from app.Schemas.influencers import (
     FindInfluencerRequest,
     MoreInfluencerRequest,
+)
+from app.core.exception import (
+    BadRequestException,
+    InternalServerErrorException,
+    NotFoundException,
 )
 from app.db.connection import get_db
 from bson import ObjectId
@@ -35,7 +39,7 @@ async def reject_and_regenerate_influencer(
             {"_id": ObjectId(request_data.campaign_id)}
         )
         if not campaign:
-            raise HTTPException(status_code=404, detail="Campaign not found")
+            raise NotFoundException(message="Campaign not found")
 
         platform = campaign["platform"][0].lower()
         categories = campaign["category"]
@@ -72,7 +76,7 @@ async def reject_and_regenerate_influencer(
                 )
             )
         else:
-            raise HTTPException(status_code=400, detail="Unsupported platform")
+            raise BadRequestException(message="Unsupported platform")
 
         if influencer and influencer.get("id"):
             await generated_collection.insert_one(
@@ -90,7 +94,7 @@ async def reject_and_regenerate_influencer(
             )
         return influencer
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise InternalServerErrorException(message=str(e)) from e
 
 
 async def more_influencers(request_data: MoreInfluencerRequest):
@@ -101,7 +105,7 @@ async def more_influencers(request_data: MoreInfluencerRequest):
             {"_id": ObjectId(request_data.campaign_id)}
         )
         if not campaign:
-            return {"error": "Campaign not found"}
+            raise NotFoundException(message="Campaign not found")
         find_request = await find_influencers_by_campaign(
             request_data=FindInfluencerRequest(
                 campaign_id=request_data.campaign_id,
@@ -112,6 +116,6 @@ async def more_influencers(request_data: MoreInfluencerRequest):
         return find_request
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error in more_influencers: {str(e)}"
+        raise InternalServerErrorException(
+            message=f"Error in more_influencers: {str(e)}"
         ) from e

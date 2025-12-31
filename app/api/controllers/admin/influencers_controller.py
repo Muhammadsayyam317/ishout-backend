@@ -1,7 +1,11 @@
 import asyncio
 from datetime import datetime, timezone
-from fastapi import HTTPException
 from fastapi.background import BackgroundTasks
+from app.core.exception import (
+    BadRequestException,
+    InternalServerErrorException,
+    NotFoundException,
+)
 from app.tools.instagram_influencers import search_instagram_influencers
 from app.tools.tiktok_influencers import search_tiktok_influencers
 from app.tools.youtube_influencers import search_youtube_influencers
@@ -19,12 +23,11 @@ async def find_influencers_by_campaign(request_data: FindInfluencerRequest):
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
-
         campaign = await campaigns_collection.find_one(
             {"_id": ObjectId(request_data.campaign_id)}
         )
         if not campaign:
-            raise HTTPException(status_code=404, detail="Campaign not found")
+            raise NotFoundException(message="Campaign not found")
 
         platforms = campaign["platform"]
         categories = campaign["category"]
@@ -34,9 +37,8 @@ async def find_influencers_by_campaign(request_data: FindInfluencerRequest):
         exclude_ids = request_data.exclude_ids or []
 
         if not platforms or not categories:
-            raise HTTPException(
-                status_code=400,
-                detail="Campaign must have platform and category specified",
+            raise BadRequestException(
+                message="Campaign must have platform and category specified",
             )
 
         tasks = []
@@ -51,9 +53,7 @@ async def find_influencers_by_campaign(request_data: FindInfluencerRequest):
             elif platform_normalized == "youtube":
                 tool = search_youtube_influencers
             else:
-                raise HTTPException(
-                    status_code=400, detail=f"Unsupported platform: {platform}"
-                )
+                raise BadRequestException(message=f"Unsupported platform: {platform}")
             tasks.append(
                 tool(
                     category=categories,
@@ -75,8 +75,8 @@ async def find_influencers_by_campaign(request_data: FindInfluencerRequest):
         return combined_results
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error in find_influencers_by_campaign: {str(e)}"
+        raise InternalServerErrorException(
+            message=f"Error in find_influencers_by_campaign: {str(e)}"
         ) from e
 
 
@@ -93,7 +93,7 @@ async def more_influencers(
             {"_id": ObjectId(request_data.campaign_id)}
         )
         if not campaign:
-            raise HTTPException(status_code=404, detail="Campaign not found")
+            raise NotFoundException(message="Campaign not found")
 
         exclude_ids = await generated_collection.distinct(
             "influencer_id",
@@ -132,6 +132,6 @@ async def more_influencers(
         return result
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error in more_influencers: {str(e)}"
+        raise InternalServerErrorException(
+            message=f"Error in more_influencers: {str(e)}"
         ) from e

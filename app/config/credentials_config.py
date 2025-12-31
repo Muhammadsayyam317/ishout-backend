@@ -33,6 +33,9 @@ class Config(BaseModel):
     MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS: str = Field(
         default=os.getenv("MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS")
     )
+    MONGODB_ATLAS_COLLECTION_WHATSAPP_SESSIONS: str = Field(
+        default=os.getenv("MONGODB_ATLAS_COLLECTION_WHATSAPP_SESSIONS")
+    )
 
     OPENAI_API_KEY: str = Field(default=os.getenv("OPENAI_API_KEY"))
     OPENAI_MODEL_NAME: str = Field(default=os.getenv("OPENAI_MODEL_NAME"))

@@ -1,7 +1,8 @@
 from typing import Any, Dict
 from bson import ObjectId
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 
+from app.core.exception import InternalServerErrorException, NotFoundException
 from app.db.connection import get_db
 from app.middleware.auth_middleware import require_admin_access
 
@@ -23,17 +24,13 @@ async def delete_campaign_ById(
             {"campaign_id": ObjectId(campaign_id)}
         )
         if result.deleted_count == 0:
-            raise HTTPException(status_code=404, detail="Campaign not found")
+            raise NotFoundException(message="Campaign not found")
         if generated_result.deleted_count == 0:
-            raise HTTPException(
-                status_code=404, detail="Generated influencers not found"
-            )
+            raise NotFoundException(message="Generated influencers not found")
         if campaign_influencers_result.deleted_count == 0:
-            raise HTTPException(
-                status_code=404, detail="Campaign influencers not found"
-            )
+            raise NotFoundException(message="Campaign influencers not found")
         return {"message": "Campaign deleted successfully"}
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error in delete campaign: {str(e)}"
+        raise InternalServerErrorException(
+            message=f"Error in delete campaign: {str(e)}"
         ) from e
