@@ -1,7 +1,8 @@
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional, Dict, Any
-from app.core.token import get_current_user_from_token
+from app.core.exception import UnauthorizedException
+from app.core.security.token import get_current_user_from_token
 import inspect
 
 # Security scheme for Swagger UI (exported for use in routes)
@@ -18,11 +19,13 @@ class AuthMiddleware:
         credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
     ) -> Dict[str, Any]:
         if not credentials:
-            raise HTTPException(status_code=401, detail="Authentication required")
+            raise UnauthorizedException(
+                message="Authentication required"
+            )  # pyright: ignore[reportUndefinedVariable]
         token = credentials.credentials
         current_user = get_current_user_from_token(token)
         if not current_user:
-            raise HTTPException(status_code=401, detail="Invalid or expired token")
+            raise UnauthorizedException(message="Invalid or expired token")
         return current_user
 
     @staticmethod

@@ -3,6 +3,8 @@ from typing import Dict, Any
 from app.config import config
 from fastapi import HTTPException
 
+from app.core.exception import UnauthorizedException
+
 
 def verify_token(token: str) -> Dict[str, Any]:
     if not token:
@@ -15,9 +17,9 @@ def verify_token(token: str) -> Dict[str, Any]:
         )
         return payload or {}
     except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token has expired")
+        raise UnauthorizedException(message="Token has expired")
     except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        raise UnauthorizedException(message="Invalid token")
 
 
 def get_current_user_from_token(token: str) -> Dict[str, Any]:

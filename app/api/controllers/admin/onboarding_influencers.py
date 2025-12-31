@@ -1,4 +1,5 @@
 from fastapi import Depends, HTTPException
+from app.core.exception import BadRequestException, InternalServerErrorException
 from app.db.connection import get_db
 from app.middleware.auth_middleware import require_admin_access
 from app.Schemas.campaign_influencers import CampaignInfluencerStatus
@@ -11,7 +12,7 @@ async def onboarding_campaigns(
     page: int = 1,
 ):
     if page < 1 or page_size < 1:
-        raise HTTPException(status_code=400, detail="Invalid pagination parameters")
+        raise BadRequestException(message="Invalid pagination parameters")
 
     try:
         db = get_db()
@@ -78,4 +79,4 @@ async def onboarding_campaigns(
             "has_prev": page > 1,
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise InternalServerErrorException(message=str(e)) from e

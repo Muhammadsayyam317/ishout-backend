@@ -4,12 +4,18 @@ from fastapi.exceptions import RequestValidationError
 
 
 def register_exception_handlers(app: FastAPI) -> None:
+
     @app.exception_handler(HTTPException)
     async def http_exception_handler(request: Request, exc: HTTPException):
+        detail = exc.detail
+
         payload = {
             "error": {
                 "status_code": exc.status_code,
-                "message": exc.detail,
+                "message": (
+                    detail.get("message") if isinstance(detail, dict) else detail
+                ),
+                "details": detail.get("details") if isinstance(detail, dict) else None,
             }
         }
         return JSONResponse(status_code=exc.status_code, content=payload)

@@ -1,5 +1,10 @@
 from fastapi import HTTPException
 from app.config import config
+from app.core.exception import (
+    BadRequestException,
+    InternalServerErrorException,
+    NotFoundException,
+)
 from app.db.connection import get_db
 from app.Schemas.influencers import DeleteInfluencerRequest
 
@@ -14,15 +19,14 @@ PLATFORM_COLLECTIONS = {
 async def deleteInfluencerEmbedding(request: DeleteInfluencerRequest):
     try:
         if not request.platform or not request.influencer_id:
-            raise HTTPException(
+            raise BadRequestException(
                 status_code=400, detail="platform and influencer_id are required"
             )
 
         collection_name = PLATFORM_COLLECTIONS.get(request.platform.lower())
         if not collection_name:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid platform '{request.platform}'. Use instagram, tiktok, or youtube.",
+            raise BadRequestException(
+                message=f"Invalid platform '{request.platform}'. Use instagram, tiktok, or youtube.",
             )
 
         db = get_db()
@@ -31,7 +35,7 @@ async def deleteInfluencerEmbedding(request: DeleteInfluencerRequest):
             {"id": request.influencer_id}
         )
         if delete_result.deleted_count == 0:
-            raise HTTPException(
+            raise NotFoundException(
                 status_code=404, detail="Influencer not found in the specified platform"
             )
         metadata_collection = db.get_collection("campaign_influencers")
@@ -49,6 +53,6 @@ async def deleteInfluencerEmbedding(request: DeleteInfluencerRequest):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error in delete influencer embedding: {str(e)}"
+        raise InternalServerErrorException(
+            message=f"Error in delete influencer embedding: {str(e)}"
         )

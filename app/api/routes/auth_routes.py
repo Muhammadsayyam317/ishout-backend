@@ -3,9 +3,9 @@ from app.Schemas.user_model import (
     CompanyRegistrationRequest,
     UserLoginRequest,
 )
-from app.api.controllers.auth.login import login_user
-from app.api.controllers.auth.register import register_company
-from fastapi import HTTPException
+
+from app.api.controllers.auth.auth_controller import login_user, register_company
+from app.core.exception import InternalServerErrorException
 
 router = APIRouter()
 
@@ -18,7 +18,7 @@ async def register_route(
     try:
         return await register_company(request_data, background_tasks)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise InternalServerErrorException(message=str(e)) from e
 
 
 @router.post("/login", tags=["Auth"])
@@ -26,4 +26,4 @@ async def login_route(request_data: UserLoginRequest):
     try:
         return await login_user(request_data)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise InternalServerErrorException(message=str(e)) from e

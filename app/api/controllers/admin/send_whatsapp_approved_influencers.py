@@ -1,7 +1,7 @@
+from app.core.exception import InternalServerErrorException, NotFoundException
 from app.db.connection import get_db
 from bson import ObjectId
-from fastapi import HTTPException
-from app.models.campaign_influencers_model import CampaignInfluencerStatus
+from app.utils.Enums.status_enum import CampaignInfluencerStatus
 from app.services.whatsapp.onboarding_Whatsapp_message import send_whatsapp_message
 
 
@@ -13,9 +13,7 @@ async def send_whatsapp_approved_influencers(campaign_id: str):
 
         campaign = await campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
         if not campaign:
-            raise HTTPException(
-                status_code=404, detail=f"Campaign not found: {campaign_id}"
-            )
+            raise NotFoundException(message=f"Campaign not found: {campaign_id}")
 
         user_phone = campaign.get("user_id")
         influencers = await influencer_collection.find(
@@ -33,9 +31,9 @@ async def send_whatsapp_approved_influencers(campaign_id: str):
             )
 
             if not success:
-                raise HTTPException(
+                raise InternalServerErrorException(
                     status_code=500, detail="WhatsApp message failed to send."
                 )
         return {"message": "WhatsApp message sent successfully!"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise InternalServerErrorException(message=str(e)) from e

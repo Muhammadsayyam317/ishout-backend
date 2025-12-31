@@ -1,5 +1,9 @@
 from bson.objectid import ObjectId
-from fastapi import HTTPException
+from app.core.exception import (
+    BadRequestException,
+    InternalServerErrorException,
+    NotFoundException,
+)
 from app.db.connection import get_db
 from typing import Dict, Any
 
@@ -49,7 +53,9 @@ async def get_all_users(page: int = 1, page_size: int = 10) -> Dict[str, Any]:
             "has_prev": has_prev,
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving users: {str(e)}")
+        raise InternalServerErrorException(
+            message=f"Error retrieving users: {str(e)}"
+        ) from e
 
 
 async def update_user_status(user_id: str, status: str) -> Dict[str, Any]:
@@ -62,14 +68,14 @@ async def update_user_status(user_id: str, status: str) -> Dict[str, Any]:
             UserStatus.INACTIVE.value,
             UserStatus.SUSPENDED.value,
         ]:
-            raise HTTPException(status_code=400, detail="Invalid status")
+            raise BadRequestException(message="Invalid status")
 
         result = await users_collection.update_one(
             {"_id": ObjectId(user_id)}, {"$set": {"status": status}}
         )
 
         if result.matched_count == 0:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise NotFoundException(message="User not found")
 
         updated_user = await users_collection.find_one({"_id": ObjectId(user_id)})
         updated_user = convert_objectid(updated_user)
@@ -89,6 +95,6 @@ async def update_user_status(user_id: str, status: str) -> Dict[str, Any]:
         }
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Error updating user status: {str(e)}"
+        raise InternalServerErrorException(
+            message=f"Error updating user status: {str(e)}"
         )

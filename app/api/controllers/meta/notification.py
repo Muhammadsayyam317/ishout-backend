@@ -14,7 +14,7 @@ from fastapi import (
 from fastapi.responses import JSONResponse
 from app.services.websocket_manager import ws_manager
 from app.config import config
-from app.core.token import verify_token
+from app.core.security.jwt import verify_token
 
 
 PROFILE_CACHE: Dict[str, Dict] = {}

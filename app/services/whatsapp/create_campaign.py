@@ -1,5 +1,6 @@
 from typing import Dict, Any
 from datetime import datetime, timezone
+from app import config
 from app.Schemas.campaign import CampaignStatus
 from app.db.connection import get_db
 from app.Schemas.whatsappconversation import ConversationState
@@ -9,8 +10,8 @@ from app.utils.helpers import normalize_phone
 async def create_whatsapp_campaign(state: ConversationState) -> Dict[str, Any]:
     try:
         db = get_db()
-        campaigns = db.get_collection("campaigns")
-        users = db.get_collection("users")
+        campaigns = db.get_collection(config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS)
+        users = db.get_collection(config.MONGODB_ATLAS_COLLECTION_USERS)
 
         sender_id = state.get("sender_id")
         if not sender_id:
