@@ -99,6 +99,7 @@ async def more_influencers(
             "influencer_id",
             {"campaign_id": ObjectId(request_data.campaign_id)},
         )
+        exclude_ids = [str(_id) for _id in exclude_ids]
         request = FindInfluencerRequest(
             campaign_id=request_data.campaign_id,
             limit=request_data.limit,
@@ -109,6 +110,7 @@ async def more_influencers(
         async def store_generated(campaign_id, influencers_list):
             if not influencers_list:
                 return
+            print("influencers_list: ", influencers_list)
             await generated_collection.insert_many(
                 [
                     {
@@ -133,5 +135,5 @@ async def more_influencers(
 
     except Exception as e:
         raise InternalServerErrorException(
-            message=f"Error in more_influencers: {str(e)}"
+            message=f"Error in more influencers: {str(e)}"
         ) from e

@@ -36,6 +36,9 @@ class Config(BaseModel):
     MONGODB_ATLAS_COLLECTION_WHATSAPP_SESSIONS: str = Field(
         default=os.getenv("MONGODB_ATLAS_COLLECTION_WHATSAPP_SESSIONS")
     )
+    MONGODB_ATLAS_COLLECTION_GENERATED_INFLUENCERS: str = Field(
+        default=os.getenv("MONGODB_ATLAS_COLLECTION_GENERATED_INFLUENCERS")
+    )
 
     OPENAI_API_KEY: str = Field(default=os.getenv("OPENAI_API_KEY"))
     OPENAI_MODEL_NAME: str = Field(default=os.getenv("OPENAI_MODEL_NAME"))
@@ -81,6 +84,8 @@ class Config(BaseModel):
 
     RESEND_FROM_EMAIL: str = Field(default=os.getenv("RESEND_FROM_EMAIL"))
     RESEND_API_KEY: str = Field(default=os.getenv("RESEND_API_KEY"))
+
+    REGISTER_URL: str = Field(default=os.getenv("REGISTER_URL"))
 
 
 # config singleton instance
