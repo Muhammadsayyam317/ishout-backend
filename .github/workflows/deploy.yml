@@ -45,8 +45,8 @@ jobs:
             # Update the Docker image reference in compose
             sed -i "s|build: .|image: $IMAGE:latest|" docker-compose.yml
             # Pull and start services
-            docker compose pull
-            docker compose up -d
+            docker-compose pull
+            docker-compose up -d
             # Show status
-            docker compose ps
-            docker compose logs --tail 50
+            docker-compose ps
+            docker-compose logs --tail 50
