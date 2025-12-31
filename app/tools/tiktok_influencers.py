@@ -20,7 +20,7 @@ async def search_tiktok_influencers(
     exclude_ids: Optional[List[str]] = None,
 ):
     try:
-        excluded_ids = set(exclude_ids or [])
+        excluded_ids = {str(x) for x in (exclude_ids or [])}
         categories = category if category else [""]
         countries = [normalize_country(c) for c in country] if country else [""]
         followers_list = normalize_followers(followers) if followers else [""]
@@ -57,7 +57,7 @@ async def search_tiktok_influencers(
                         username = influencer_data.get("username")
                         if not username or username in seen_usernames:
                             continue
-                        if influencer_data.get("id") in excluded_ids:
+                        if str(influencer_data.get("id")) in excluded_ids:
                             continue
                         if not filter_influencer_data(
                             influencer_data,

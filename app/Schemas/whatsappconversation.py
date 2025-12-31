@@ -26,6 +26,5 @@ class ConversationState(TypedDict, total=False):
     done: Annotated[Optional[bool], take_second]
     name: Annotated[Optional[str], take_first]
     last_active: Annotated[Optional[float], take_first]
-    event_data: Annotated[dict, take_first]
     thread_id: Annotated[Optional[str], take_first]
     debug_log: Annotated[Optional[list], take_first]

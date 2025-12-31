@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 from app.core.exception import BadRequestException, InternalServerErrorException
 from app.db.connection import get_db
 from app.middleware.auth_middleware import require_admin_access
