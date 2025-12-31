@@ -1,4 +1,6 @@
+from datetime import datetime
 from typing import List, TypedDict, Optional, Annotated
+from bson import ObjectId
 
 from app.utils.helpers import (
     merge_arrays,
@@ -28,3 +30,14 @@ class ConversationState(TypedDict, total=False):
     last_active: Annotated[Optional[float], take_first]
     thread_id: Annotated[Optional[str], take_first]
     debug_log: Annotated[Optional[list], take_first]
+
+
+class WhatsappConversationMessage(TypedDict, total=False):
+    _id: ObjectId
+    thread_id: str  # WhatsApp number
+    campaign_id: str | None
+    sender: str  # USER | AI | HUMAN | SYSTEM
+    message: str
+    node: str | None
+    timestamp: datetime
+    meta: dict
