@@ -40,15 +40,13 @@ jobs:
           port: ${{ secrets.EC2_PORT || 22 }}
           script: |
             set -e
+            cd ~/ishout-backend || cd /home/${{ secrets.EC2_USER }}/ishout-backend
             IMAGE=${{ env.IMAGE_NAME }}
-            ENV_FILE=${ENV_FILE_PATH:-$HOME/.env}
-            echo "Using env file: $ENV_FILE"
-            if [ ! -f "$ENV_FILE" ]; then
-              echo "Env file not found: $ENV_FILE" >&2
-              exit 1
-            fi
-            docker pull $IMAGE:latest
-            docker rm -f ishout-api 2>/dev/null || true
-            docker run -d --name ishout-api --env-file "$ENV_FILE" -p 8000:8000 $IMAGE:latest
-            docker ps --filter "name=ishout-api" --format 'table {{.Names}}\t{{.Status}}\t{{.Image}}'
-            docker logs --tail 50 ishout-api || true
+            # Update the Docker image reference in compose
+            sed -i "s|build: .|image: $IMAGE:latest|" docker-compose.yml
+            # Pull and start services
+            docker compose pull
+            docker compose up -d
+            # Show status
+            docker compose ps
+            docker compose logs --tail 50
