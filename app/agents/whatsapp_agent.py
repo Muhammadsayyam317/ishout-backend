@@ -8,6 +8,8 @@ from app.agents.state.get_user_state import get_user_state
 from app.agents.state.update_user_state import update_user_state
 from app.agents.state.reset_state import reset_user_state
 from app.services.whatsapp.reply_button import handle_button_reply
+from app.services.whatsapp.save_message import save_conversation_message
+from app.utils.Enums.user_enum import SenderType
 
 
 async def handle_whatsapp_events(request: Request):
@@ -74,6 +76,13 @@ async def handle_whatsapp_events(request: Request):
                 "name": profile_name or state.get("name"),
             }
         )
+        await save_conversation_message(
+            thread_id=thread_id,
+            sender=SenderType.USER.value,
+            message=msg_text,
+            node="incoming_webhook",
+            campaign_id=state.get("campaign_id"),
+        )
         final_state = await whatsapp_agent.ainvoke(
             state,
             config={"configurable": {"thread_id": checkpoint_thread_id}},
@@ -81,7 +90,6 @@ async def handle_whatsapp_events(request: Request):
         if final_state:
             await update_user_state(thread_id, final_state)
         return {"status": "ok"}
-        print("Exiting handle_whatsapp_events successfully")
     except HTTPException:
         raise
 
