@@ -12,6 +12,7 @@ async def node_send_reply(state):
             raise ValueError("sender_id missing in state")
         if reply and not state.get("reply_sent"):
             await send_whatsapp_message(sender_id, reply)
+            print(f"Sending reply to {sender_id}: {reply}")
             await save_conversation_message(
                 thread_id=sender_id,
                 sender=SenderType.AI.value,
@@ -20,9 +21,7 @@ async def node_send_reply(state):
                 campaign_id=state.get("campaign_id"),
             )
             state["reply_sent"] = True
-
         return state
-
     except Exception as e:
         print(f"❌ Error in node_send_reply: {e}")
         state["reply_sent"] = True

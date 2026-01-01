@@ -37,9 +37,7 @@ async def rate_limit(redis, sender_id, limit=10, window=60):
 
 
 async def cleanup_old_checkpoints(thread_id: str, keep_round: int):
-    """
-    Deletes all LangGraph checkpoints except the current round
-    """
+    print(f"Cleaning up old checkpoints for {thread_id} with keep_round {keep_round}")
     pattern = f"langgraph:checkpoint:{thread_id}-r*"
     keys = await redis_client.keys(pattern)
 
