@@ -8,8 +8,6 @@ from app.agents.state.get_user_state import get_user_state
 from app.agents.state.update_user_state import update_user_state
 from app.agents.state.reset_state import reset_user_state
 from app.services.whatsapp.reply_button import handle_button_reply
-from app.services.whatsapp.save_message import save_conversation_message
-from app.utils.Enums.user_enum import SenderType
 
 
 async def handle_whatsapp_events(request: Request):
@@ -17,60 +15,55 @@ async def handle_whatsapp_events(request: Request):
     try:
         event = await request.json()
         entry = event.get("entry")
+        print(f"Entry: {entry}")
         if not entry:
             return {"status": "ok"}
 
         changes = entry[0].get("changes")
         if not changes:
             return {"status": "ok"}
+        print(f"Changes: {changes}")
 
         value = changes[0].get("value", {})
         messages = value.get("messages")
         if not messages:
             return {"status": "ok"}
-
-        for first_message in messages:
-            if (
-                first_message.get("type") == "interactive"
-                and first_message.get("interactive", {}).get("type") == "button_reply"
-            ):
-                await handle_button_reply(first_message)
-                return {"status": "ok"}
-        # first_message = messages[0]
-        # if (
-        #     first_message.get("type") == "interactive"
-        #     and first_message.get("interactive", {}).get("type") == "button_reply"
-        # ):
-        #     try:
-        #         await handle_button_reply(first_message)
-        #         return {"status": "ok"}
-        #     except Exception as e:
-        #         print(f"❌ Button reply failed: {e}")
-        #         return {"status": "ok"}
+        print(f"Value: {value}")
+        print(f"Messages: {messages}")
+        first_message = messages[0]
+        print(f"First message: {first_message}")
+        if (
+            first_message.get("type") == "interactive"
+            and first_message.get("interactive", {}).get("type") == "button_reply"
+        ):
+            print("Handling button reply")
+            await handle_button_reply(first_message)
+            return {"status": "ok"}
 
         thread_id = first_message.get("from")
         if not thread_id:
             return {"status": "ok"}
-
+        print(f"Thread ID: {thread_id}")
         msg_text = (
             first_message.get("text", {}).get("body")
             if isinstance(first_message.get("text"), dict)
             else first_message.get("text")
         ) or ""
-
+        print(f"Message text: {msg_text}")
         profile_name = value.get("contacts", [{}])[0].get("profile", {}).get("name")
-
+        print(f"Profile name: {profile_name}")
         app = request.app
+        print(f"App: {app}")
         whatsapp_agent = getattr(app.state, "whatsapp_agent", None)
         if not whatsapp_agent:
             raise HTTPException(
                 status_code=503,
                 detail="WhatsApp agent not initialized",
             )
-
+        print("Getting user state")
         stored_state = await get_user_state(thread_id)
         state = stored_state or {}
-
+        print(f"State: {state}")
         conversation_round = await get_conversation_round(thread_id)
         if not conversation_round:
             conversation_round = 1
@@ -89,14 +82,6 @@ async def handle_whatsapp_events(request: Request):
                 "name": profile_name or state.get("name"),
             }
         )
-        # print(f"Saving conversation message: {msg_text}")
-        # await save_conversation_message(
-        #     thread_id=thread_id,
-        #     sender=SenderType.USER.value,
-        #     message=msg_text,
-        #     node="incoming_webhook",
-        #     campaign_id=state.get("campaign_id"),
-        # )
         final_state = await whatsapp_agent.ainvoke(
             state,
             config={"configurable": {"thread_id": checkpoint_thread_id}},
