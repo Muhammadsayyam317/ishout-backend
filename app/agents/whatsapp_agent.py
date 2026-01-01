@@ -29,24 +29,24 @@ async def handle_whatsapp_events(request: Request):
         if not messages:
             return {"status": "ok"}
 
-        # for first_message in messages:
-        #     if (
-        #         first_message.get("type") == "interactive"
-        #         and first_message.get("interactive", {}).get("type") == "button_reply"
-        #     ):
-        #         await handle_button_reply(first_message)
-        #         return {"status": "ok"}
-        first_message = messages[0]
-        if (
-            first_message.get("type") == "interactive"
-            and first_message.get("interactive", {}).get("type") == "button_reply"
-        ):
-            try:
+        for first_message in messages:
+            if (
+                first_message.get("type") == "interactive"
+                and first_message.get("interactive", {}).get("type") == "button_reply"
+            ):
                 await handle_button_reply(first_message)
                 return {"status": "ok"}
-            except Exception as e:
-                print(f"❌ Button reply failed: {e}")
-                return {"status": "ok"}
+        # first_message = messages[0]
+        # if (
+        #     first_message.get("type") == "interactive"
+        #     and first_message.get("interactive", {}).get("type") == "button_reply"
+        # ):
+        #     try:
+        #         await handle_button_reply(first_message)
+        #         return {"status": "ok"}
+        #     except Exception as e:
+        #         print(f"❌ Button reply failed: {e}")
+        #         return {"status": "ok"}
 
         thread_id = first_message.get("from")
         if not thread_id:
@@ -97,16 +97,6 @@ async def handle_whatsapp_events(request: Request):
         #     node="incoming_webhook",
         #     campaign_id=state.get("campaign_id"),
         # )
-        try:
-            await save_conversation_message(
-                thread_id=thread_id,
-                sender=SenderType.USER.value,
-                message=msg_text,
-                node="incoming_webhook",
-                campaign_id=state.get("campaign_id"),
-            )
-        except Exception as e:
-            print(f"❌ Message save failed: {e}")
         final_state = await whatsapp_agent.ainvoke(
             state,
             config={"configurable": {"thread_id": checkpoint_thread_id}},
