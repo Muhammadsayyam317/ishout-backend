@@ -35,9 +35,9 @@ class ConversationState(TypedDict, total=False):
 class WhatsappConversationMessage(TypedDict, total=False):
     _id: ObjectId
     thread_id: str  # WhatsApp number
+    username: str | None
     campaign_id: str | None
     sender: str  # USER | AI | HUMAN | SYSTEM
     message: str
     node: str | None
     timestamp: datetime
-    meta: dict

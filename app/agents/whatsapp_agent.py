@@ -49,6 +49,7 @@ async def handle_whatsapp_events(request: Request):
         ) or ""
 
         profile_name = value.get("contacts", [{}])[0].get("profile", {}).get("name")
+        print("Profile name: {profile_name}")
         app = request.app
         whatsapp_agent = getattr(app.state, "whatsapp_agent", None)
         if not whatsapp_agent:
@@ -85,6 +86,7 @@ async def handle_whatsapp_events(request: Request):
         print("Entering into Save conversation message")
         await save_conversation_message(
             thread_id=thread_id,
+            username=profile_name,
             sender=SenderType.USER.value,
             message=state.get("user_message"),
             node="incoming_webhook",

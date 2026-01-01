@@ -9,7 +9,7 @@ async def save_conversation_message(
     message: str,
     node: str = None,
     campaign_id: str = None,
-    meta: dict = None,
+    username: str = None,
 ):
     try:
         db = get_db()
@@ -17,11 +17,11 @@ async def save_conversation_message(
         await collection.insert_one(
             {
                 "thread_id": thread_id,
+                "username": username or None,
                 "sender": sender,
                 "message": message,
                 "node": node,
                 "campaign_id": campaign_id,
-                "meta": meta or {},
                 "timestamp": datetime.now(timezone.utc),
             }
         )
