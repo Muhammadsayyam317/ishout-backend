@@ -53,8 +53,8 @@ async def handle_whatsapp_events(request: Request):
         profile_name = value.get("contacts", [{}])[0].get("profile", {}).get("name")
         print(f"Profile name: {profile_name}")
         app = request.app
-        print(f"App: {app}")
         whatsapp_agent = getattr(app.state, "whatsapp_agent", None)
+        print(f"Whatsapp agent: {whatsapp_agent}")
         if not whatsapp_agent:
             raise HTTPException(
                 status_code=503,
