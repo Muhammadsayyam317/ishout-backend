@@ -65,14 +65,21 @@ async def handle_whatsapp_events(request: Request):
         state = stored_state or {}
         print(f"State: {state}")
         conversation_round = await get_conversation_round(thread_id)
+        print(f"Conversation round: {conversation_round}")
         if not conversation_round:
             conversation_round = 1
+        print(f"State done: {state.get('done')}")
+        print(f"State acknowledged: {state.get('acknowledged')}")
         if state.get("done") and state.get("acknowledged"):
+            print("Incrementing conversation round")
             conversation_round = await increment_conversation_round(thread_id)
+            print(f"Conversation round after increment: {conversation_round}")
             if conversation_round > 1:
                 await cleanup_old_checkpoints(thread_id, conversation_round)
             state = await reset_user_state(thread_id)
+            print(f"State after reset: {state}")
         checkpoint_thread_id = f"{thread_id}-r{conversation_round}"
+        print(f"Checkpoint thread ID: {checkpoint_thread_id}")
         state.update(
             {
                 "user_message": msg_text,
@@ -82,12 +89,16 @@ async def handle_whatsapp_events(request: Request):
                 "name": profile_name or state.get("name"),
             }
         )
+        print(f"State after update: {state}")
         final_state = await whatsapp_agent.ainvoke(
             state,
             config={"configurable": {"thread_id": checkpoint_thread_id}},
         )
+        print(f"Final state: {final_state}")
         if final_state:
             await update_user_state(thread_id, final_state)
+            print("User state updated")
+        print("Exiting handle_whatsapp_events successfully")
         return {"status": "ok"}
     except Exception as e:
         raise HTTPException(
