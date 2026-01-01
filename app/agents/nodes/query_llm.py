@@ -23,7 +23,6 @@ async def Query_to_llm(state: ConversationState):
 
     if missing:
         return "iShout need these details before searching: " + ", ".join(missing)
-
     influencers = find_influencers_for_whatsapp(
         category=category,
         platform=platform,

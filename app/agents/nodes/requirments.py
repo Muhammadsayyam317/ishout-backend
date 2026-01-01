@@ -13,7 +13,6 @@ async def node_requirements(state):
     try:
         print("Entering node_requirements")
         msg = state.get("user_message", "")
-
         new_platforms = extract_platforms(msg)
         limit = extract_limit(msg)
         new_countries = extract_countries(msg)

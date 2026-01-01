@@ -23,7 +23,6 @@ graph.add_node("send_reply", node_send_reply)
 graph.set_entry_point("debug_before")
 # Flow
 graph.add_edge("debug_before", "verify_user")
-
 graph.add_conditional_edges(
     "verify_user",
     lambda state: "requirements" if state.get("is_existing_user") else "send_reply",

@@ -76,6 +76,7 @@ async def handle_whatsapp_events(request: Request):
                 "name": profile_name or state.get("name"),
             }
         )
+        print(f"Saving conversation message: {msg_text}")
         await save_conversation_message(
             thread_id=thread_id,
             sender=SenderType.USER.value,
@@ -90,8 +91,7 @@ async def handle_whatsapp_events(request: Request):
         if final_state:
             await update_user_state(thread_id, final_state)
         return {"status": "ok"}
-    except HTTPException:
-        raise
-
-    except Exception:
-        raise HTTPException(status_code=500, detail="Webhook processing failed")
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Webhook processing failed: {str(e)}"
+        ) from e
