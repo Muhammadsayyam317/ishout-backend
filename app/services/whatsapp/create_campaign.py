@@ -12,7 +12,9 @@ async def create_whatsapp_campaign(state: ConversationState) -> Dict[str, Any]:
     try:
         db = get_db()
         campaigns = db.get_collection(config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS)
+        print(f"Campaigns collection: {campaigns}")
         users = db.get_collection(config.MONGODB_ATLAS_COLLECTION_USERS)
+        print(f"Users collection: {users}")
 
         sender_id = state.get("sender_id")
         if not sender_id:

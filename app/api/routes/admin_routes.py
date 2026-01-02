@@ -260,7 +260,6 @@ router.add_api_route(
     methods=["GET"],
     tags=["Admin"],
 )
-
 router.add_api_route(
     path="/whatsapp-messages/{thread_id}",
     endpoint=Whatsapp_messages_management,
