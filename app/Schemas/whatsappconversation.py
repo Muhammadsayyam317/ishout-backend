@@ -35,8 +35,7 @@ class ConversationState(TypedDict, total=False):
 class WhatsappConversationMessage(TypedDict, total=False):
     _id: ObjectId
     thread_id: str
-    username: str | None
-    campaign_id: str | None
+    username: str
     sender: str
     message: str
     timestamp: datetime

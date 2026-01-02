@@ -1,4 +1,6 @@
 from bson.objectid import ObjectId
+from app.Schemas.whatsappconversation import WhatsappConversationMessage
+from app.config.credentials_config import config
 from app.core.exception import (
     BadRequestException,
     InternalServerErrorException,
@@ -98,3 +100,111 @@ async def update_user_status(user_id: str, status: str) -> Dict[str, Any]:
         raise InternalServerErrorException(
             message=f"Error updating user status: {str(e)}"
         )
+
+
+async def Whatsapp_Users_Sessions_management(
+    page: int = 1,
+    page_size: int = 20,
+) -> Dict[str, Any]:
+    try:
+        db = get_db()
+        collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_WHATSAPP_SESSIONS
+        )
+        skip = (page - 1) * page_size
+        cursor = collection.find().sort("last_active", -1).skip(skip).limit(page_size)
+        users = await cursor.to_list(length=page_size)
+        users = [convert_objectid(user) for user in users]
+
+        user_response = []
+        for user in users:
+            user_response.append(
+                {
+                    "id": user.get("_id"),
+                    "thread_id": user.get("thread_id"),
+                    "name": user.get("name"),
+                    "last_message": user.get("user_message") or user.get("reply"),
+                    "last_active": user.get("last_active"),
+                    "platform": user.get("platform", []),
+                    "ready_for_campaign": user.get("ready_for_campaign", False),
+                    "campaign_created": user.get("campaign_created", False),
+                    "acknowledged": user.get("acknowledged", False),
+                    "conversation_round": user.get("conversation_round", 0),
+                    "status": (
+                        "COMPLETED"
+                        if user.get("done")
+                        else "WAITING" if user.get("reply_sent") else "ACTIVE"
+                    ),
+                }
+            )
+
+        total = await collection.count_documents({})
+        total_pages = (total + page_size - 1) // page_size
+        has_next = page < total_pages
+        has_prev = page > 1
+        return {
+            "status_code": 200,
+            "message": "WhatsApp users retrieved successfully",
+            "page": page,
+            "page_size": page_size,
+            "total": total,
+            "total_pages": total_pages,
+            "has_next": has_next,
+            "has_prev": has_prev,
+            "users": user_response,
+        }
+
+    except Exception as e:
+        raise InternalServerErrorException(
+            message=f"Error retrieving whatsapp users: {str(e)}"
+        ) from e
+
+
+async def Whatsapp_messages_management(
+    thread_id: str,
+    page: int = 1,
+    page_size: int = 20,
+) -> Dict[str, Any]:
+    try:
+        db = get_db()
+        collection = db.get_collection(config.MONGODB_COLLECTION_WHATSAPP_MESSAGES)
+        skip = (page - 1) * page_size
+        cursor = (
+            collection.find({"thread_id": thread_id})
+            .sort("timestamp", 1)
+            .skip(skip)
+            .limit(page_size)
+        )
+        messages = await cursor.to_list(length=page_size)
+        messages = [convert_objectid(m) for m in messages]
+        total = await collection.count_documents({"thread_id": thread_id})
+        total_pages = (total + page_size - 1) // page_size
+        has_next = page < total_pages
+        has_prev = page > 1
+        messages_response = [
+            WhatsappConversationMessage(
+                _id=message["_id"],
+                thread_id=message["thread_id"],
+                username=message["username"],
+                sender=message["sender"],
+                message=message["message"],
+                timestamp=message["timestamp"],
+            )
+            for message in messages
+        ]
+        return {
+            "status_code": 200,
+            "message": "Whatsapp messages retrieved successfully",
+            "messages": messages_response,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages,
+            "has_next": has_next,
+            "has_prev": has_prev,
+        }
+
+    except Exception as e:
+        raise InternalServerErrorException(
+            message=f"Error retrieving whatsapp messages: {str(e)}"
+        ) from e
