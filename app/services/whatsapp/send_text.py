@@ -3,6 +3,7 @@ from app.config.credentials_config import config
 
 
 async def send_whatsapp_text_message(to: str, text: str):
+    print("Entering into send_whatsapp_text_message")
     headers = {
         "Authorization": f"Bearer {config.META_WHATSAPP_ACCESSSTOKEN}",
         "Content-Type": "application/json",

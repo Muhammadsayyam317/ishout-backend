@@ -6,6 +6,7 @@ from app.services.whatsapp.send_text import send_whatsapp_text_message
 
 async def check_and_send_campaign_summary(campaign_id: str, sender_id: str):
     try:
+        print("Entering into check_and_send_campaign_summary")
         db = get_db()
         influencers_col = db.get_collection("campaign_influencers")
         campaigns_col = db.get_collection("campaigns")
@@ -65,6 +66,8 @@ async def check_and_send_campaign_summary(campaign_id: str, sender_id: str):
         await campaigns_col.update_one(
             {"_id": ObjectId(campaign_id)}, {"$set": {"summary_sent": True}}
         )
+        print("Exiting from check_and_send_campaign_summary")
         return True
     except Exception:
+        print("❌ Error in check_and_send_campaign_summary")
         return False

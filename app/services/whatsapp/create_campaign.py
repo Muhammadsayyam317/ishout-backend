@@ -12,13 +12,7 @@ async def create_whatsapp_campaign(state: ConversationState) -> Dict[str, Any]:
     try:
         db = get_db()
         campaigns = db.get_collection(config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS)
-        print(
-            f"Campaigns collection: collection name: {config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS}"
-        )
         users = db.get_collection(config.MONGODB_ATLAS_COLLECTION_USERS)
-        print(
-            f"Users collection: collection name: {config.MONGODB_ATLAS_COLLECTION_USERS}"
-        )
 
         sender_id = state.get("sender_id")
         if not sender_id:
@@ -41,6 +35,7 @@ async def create_whatsapp_campaign(state: ConversationState) -> Dict[str, Any]:
             f"Campaign - {', '.join(categories or ['General'])} - "
             f"{', '.join(platforms or ['General'])}"
         )
+        print("Campaign name: ", campaign_name)
 
         campaign_doc = {
             "name": campaign_name,
@@ -58,8 +53,10 @@ async def create_whatsapp_campaign(state: ConversationState) -> Dict[str, Any]:
             "created_at": datetime.now(timezone.utc),
             "updated_at": datetime.now(timezone.utc),
         }
-
+        print("Campaign document: ", campaign_doc)
         result = await campaigns.insert_one(campaign_doc)
+        print("Exiting from create_whatsapp_campaign")
         return {"success": True, "campaign_id": str(result.inserted_id)}
     except Exception as e:
+        print("❌ Error in create_whatsapp_campaign")
         return {"success": False, "error": str(e)}

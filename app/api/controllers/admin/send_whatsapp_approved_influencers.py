@@ -2,7 +2,7 @@ from app.core.exception import InternalServerErrorException, NotFoundException
 from app.db.connection import get_db
 from bson import ObjectId
 from app.utils.Enums.status_enum import CampaignInfluencerStatus
-from app.services.whatsapp.onboarding_Whatsapp_message import send_whatsapp_message
+from app.services.whatsapp.onboarding_message import send_whatsapp_message
 
 
 async def send_whatsapp_approved_influencers(campaign_id: str):
