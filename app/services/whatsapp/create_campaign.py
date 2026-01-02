@@ -1,13 +1,14 @@
 from typing import Dict, Any
 from datetime import datetime, timezone
-from app import config
 from app.Schemas.campaign import CampaignStatus
+from app.config.credentials_config import config
 from app.db.connection import get_db
 from app.Schemas.whatsappconversation import ConversationState
 from app.utils.helpers import normalize_phone
 
 
 async def create_whatsapp_campaign(state: ConversationState) -> Dict[str, Any]:
+    print("Entering create_whatsapp_campaign")
     try:
         db = get_db()
         campaigns = db.get_collection(config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS)
