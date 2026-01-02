@@ -26,6 +26,8 @@ async def send_whatsapp_message(recipient_id: str, message_text: str) -> bool:
                 headers=headers,
                 json=message_payload,
             )
+            print("Graph API Version: ", config.WHATSAPP_GRAPH_API_VERSION)
+            print("Phone Number: ", config.WHATSAPP_PHONE_NUMBER)
             print(f"Response: {response}")
         if response.status_code != 200:
             raise HTTPException(
