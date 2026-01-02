@@ -7,7 +7,6 @@ async def save_conversation_message(
     thread_id: str,
     sender: str,
     message: str,
-    node: str = None,
     campaign_id: str = None,
     username: str = None,
 ):
@@ -17,10 +16,9 @@ async def save_conversation_message(
         await collection.insert_one(
             {
                 "thread_id": thread_id,
-                "username": username or None,
+                "username": username,
                 "sender": sender,
                 "message": message,
-                "node": node,
                 "campaign_id": campaign_id,
                 "timestamp": datetime.now(timezone.utc),
             }

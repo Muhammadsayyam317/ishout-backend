@@ -9,7 +9,7 @@ from app.agents.state.update_user_state import update_user_state
 from app.agents.state.reset_state import reset_user_state
 from app.services.whatsapp.reply_button import handle_button_reply
 from app.services.whatsapp.save_message import save_conversation_message
-from app.utils.Enums.user_enum import SenderType
+from app.utils.Enums.user_enum import AccountType, SenderType
 
 
 async def handle_whatsapp_events(request: Request):
@@ -48,8 +48,10 @@ async def handle_whatsapp_events(request: Request):
             else first_message.get("text")
         ) or ""
 
-        profile_name = value.get("contacts", [{}])[0].get("profile", {}).get("name")
-        print("Profile name: {profile_name}")
+        profile_name = (
+            value.get("contacts", [{}])[0].get("profile", {}).get("name") or "iShout"
+        )
+
         app = request.app
         whatsapp_agent = getattr(app.state, "whatsapp_agent", None)
         if not whatsapp_agent:
@@ -89,7 +91,6 @@ async def handle_whatsapp_events(request: Request):
             username=profile_name,
             sender=SenderType.USER.value,
             message=state.get("user_message"),
-            node="incoming_webhook",
             campaign_id=state.get("campaign_id"),
         )
         final_state = await whatsapp_agent.ainvoke(
