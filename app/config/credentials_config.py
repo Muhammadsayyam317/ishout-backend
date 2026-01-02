@@ -89,6 +89,7 @@ class Config(BaseModel):
     RESEND_API_KEY: str = Field(default=os.getenv("RESEND_API_KEY"))
 
     REGISTER_URL: str = Field(default=os.getenv("REGISTER_URL"))
+    ADMIN_PHONE: str = Field(default=os.getenv("ADMIN_PHONE"))
 
 
 # config singleton instance

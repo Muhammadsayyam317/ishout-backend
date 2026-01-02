@@ -1,6 +1,7 @@
 from typing import Dict, Any
 from datetime import datetime, timezone
 from app.Schemas.campaign import CampaignStatus
+from app.agents.nodes.notify_admin import node_notify_admin_campaign_created
 from app.config.credentials_config import config
 from app.db.connection import get_db
 from app.Schemas.whatsappconversation import ConversationState
@@ -55,6 +56,8 @@ async def create_whatsapp_campaign(state: ConversationState) -> Dict[str, Any]:
         }
         print("Campaign document: ", campaign_doc)
         result = await campaigns.insert_one(campaign_doc)
+        print("Campaign inserted: ", result)
+        await node_notify_admin_campaign_created(campaign_doc, user)
         print("Exiting from create_whatsapp_campaign")
         return {"success": True, "campaign_id": str(result.inserted_id)}
     except Exception as e:
