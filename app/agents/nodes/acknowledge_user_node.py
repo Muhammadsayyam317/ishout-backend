@@ -12,6 +12,7 @@ async def node_acknowledge_user(state):
                 f"🔢 Influencers: {state['limit']}\n\n"
                 "We'll notify you once influencers are shortlisted!"
             )
+            print(f"Reply to user is: {state['reply']}")
             state["reply_sent"] = False
             state["acknowledged"] = True
             state["done"] = True

@@ -8,9 +8,11 @@ async def node_send_reply(state):
     try:
         reply = state.get("reply")
         sender_id = state.get("sender_id")
+        print(f"Reply in node_send_reply: {reply}")
         if not sender_id:
             raise ValueError("sender_id missing in state")
         if reply and not state.get("reply_sent"):
+            print(f"Sending reply to {sender_id}: {reply}")
             await send_whatsapp_message(sender_id, reply)
             print(f"Sending reply to {sender_id}: {reply}")
             await save_conversation_message(
