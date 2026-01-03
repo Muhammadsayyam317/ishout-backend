@@ -61,7 +61,11 @@ def custom_openapi():
 app.openapi = custom_openapi
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://ishout.vercel.app", "http://localhost:3000"],
+    allow_origins=[
+        "https://ishout.vercel.app",
+        "http://localhost:3000",
+        "https://backend.ishout.ae",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

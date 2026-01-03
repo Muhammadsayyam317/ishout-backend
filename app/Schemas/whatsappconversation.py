@@ -38,4 +38,14 @@ class WhatsappConversationMessage(TypedDict, total=False):
     username: str
     sender: str
     message: str
-    timestamp: datetime
+    agent_paused: bool
+    human_takeover: bool
+    timestamp: str
+
+
+class AgentControl(TypedDict, total=False):
+    _id: ObjectId
+    thread_id: str
+    agent_paused: bool
+    human_takeover: bool
+    updated_at: datetime
