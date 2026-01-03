@@ -7,8 +7,9 @@ async def save_conversation_message(
     thread_id: str,
     sender: str,
     message: str,
-    campaign_id: str = None,
     username: str = None,
+    agent_paused: bool = False,
+    human_takeover: bool = False,
 ):
     try:
         db = get_db()
@@ -19,7 +20,8 @@ async def save_conversation_message(
                 "username": username,
                 "sender": sender,
                 "message": message,
-                "campaign_id": campaign_id,
+                "agent_paused": agent_paused,
+                "human_takeover": human_takeover,
                 "timestamp": datetime.now(timezone.utc),
             }
         )

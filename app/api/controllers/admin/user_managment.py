@@ -10,6 +10,7 @@ from app.db.connection import get_db
 from typing import Dict, Any
 
 from app.Schemas.user_model import UserResponse, UserRole, UserStatus
+from app.model.Whatsapp_Users_Sessions import Whatsapp_Users_Sessions
 from app.utils.helpers import convert_objectid
 
 
@@ -44,8 +45,6 @@ async def get_all_users(page: int = 1, page_size: int = 10) -> Dict[str, Any]:
         has_next = page < total_pages
         has_prev = page > 1
         return {
-            "status_code": 200,
-            "message": "Users retrieved successfully",
             "users": user_response,
             "total": total,
             "page": page,
@@ -91,8 +90,6 @@ async def update_user_status(user_id: str, status: str) -> Dict[str, Any]:
             status=UserStatus(updated_user["status"]),
         ).model_dump()
         return {
-            "status_code": 200,
-            "message": "User status updated successfully",
             "user": updated_user_response,
         }
 
@@ -119,23 +116,22 @@ async def Whatsapp_Users_Sessions_management(
         user_response = []
         for user in users:
             user_response.append(
-                {
-                    "id": user.get("_id"),
-                    "thread_id": user.get("thread_id"),
-                    "name": user.get("name"),
-                    "last_message": user.get("user_message") or user.get("reply"),
-                    "last_active": user.get("last_active"),
-                    "platform": user.get("platform", []),
-                    "ready_for_campaign": user.get("ready_for_campaign", False),
-                    "campaign_created": user.get("campaign_created", False),
-                    "acknowledged": user.get("acknowledged", False),
-                    "conversation_round": user.get("conversation_round", 0),
-                    "status": (
+                Whatsapp_Users_Sessions(
+                    sender_id=str(user.get("_id")),
+                    name=user.get("name"),
+                    last_message=user.get("user_message") or user.get("reply"),
+                    last_active=user.get("last_active"),
+                    platform=user.get("platform", []) or [],
+                    ready_for_campaign=user.get("ready_for_campaign", False),
+                    campaign_created=user.get("campaign_created", False),
+                    acknowledged=user.get("acknowledged", False) or False,
+                    conversation_round=user.get("conversation_round", 0) or 0,
+                    status=(
                         "COMPLETED"
                         if user.get("done")
                         else "WAITING" if user.get("reply_sent") else "ACTIVE"
                     ),
-                }
+                ).model_dump()
             )
 
         total = await collection.count_documents({})
@@ -143,8 +139,6 @@ async def Whatsapp_Users_Sessions_management(
         has_next = page < total_pages
         has_prev = page > 1
         return {
-            "status_code": 200,
-            "message": "WhatsApp users retrieved successfully",
             "page": page,
             "page_size": page_size,
             "total": total,
@@ -193,8 +187,6 @@ async def Whatsapp_messages_management(
             for message in messages
         ]
         return {
-            "status_code": 200,
-            "message": "Whatsapp messages retrieved successfully",
             "messages": messages_response,
             "total": total,
             "page": page,

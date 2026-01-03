@@ -20,7 +20,6 @@ async def node_send_reply(state):
                 username=AI_IDENTITY["username"],
                 sender=SenderType.AI.value,
                 message=reply,
-                campaign_id=state.get("campaign_id"),
             )
             state["reply_sent"] = True
         return state
