@@ -17,6 +17,7 @@ async def handle_whatsapp_events(request: Request):
     try:
         event = await request.json()
         entry = event.get("entry")
+
         if not entry:
             return {"status": "ok"}
 
@@ -28,14 +29,14 @@ async def handle_whatsapp_events(request: Request):
         messages = value.get("messages")
         if not messages:
             return {"status": "ok"}
+        first_message = messages[0]
+        if (
+            first_message.get("type") == "interactive"
+            and first_message.get("interactive", {}).get("type") == "button_reply"
+        ):
 
-        for first_message in messages:
-            if (
-                first_message.get("type") == "interactive"
-                and first_message.get("interactive", {}).get("type") == "button_reply"
-            ):
-                await handle_button_reply(first_message)
-                return {"status": "ok"}
+            await handle_button_reply(first_message)
+            return {"status": "ok"}
 
         thread_id = first_message.get("from")
         if not thread_id:
@@ -47,7 +48,9 @@ async def handle_whatsapp_events(request: Request):
             else first_message.get("text")
         ) or ""
 
-        profile_name = value.get("contacts", [{}])[0].get("profile", {}).get("name")
+        profile_name = (
+            value.get("contacts", [{}])[0].get("profile", {}).get("name") or "iShout"
+        )
 
         app = request.app
         whatsapp_agent = getattr(app.state, "whatsapp_agent", None)
@@ -61,6 +64,10 @@ async def handle_whatsapp_events(request: Request):
         state = stored_state or {}
 
         conversation_round = await get_conversation_round(thread_id)
+
+        if not conversation_round:
+            conversation_round = 1
+
         if state.get("done") and state.get("acknowledged"):
             conversation_round = await increment_conversation_round(thread_id)
             if conversation_round > 1:
@@ -76,18 +83,18 @@ async def handle_whatsapp_events(request: Request):
                 "name": profile_name or state.get("name"),
             }
         )
-        print(f"Saving conversation message: {msg_text}")
         await save_conversation_message(
             thread_id=thread_id,
+            username=profile_name,
             sender=SenderType.USER.value,
-            message=msg_text,
-            node="incoming_webhook",
+            message=state.get("user_message"),
             campaign_id=state.get("campaign_id"),
         )
         final_state = await whatsapp_agent.ainvoke(
             state,
             config={"configurable": {"thread_id": checkpoint_thread_id}},
         )
+
         if final_state:
             await update_user_state(thread_id, final_state)
         return {"status": "ok"}

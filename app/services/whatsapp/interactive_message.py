@@ -64,7 +64,7 @@ async def send_whatsapp_interactive_message(
 
     async with httpx.AsyncClient(timeout=15.0) as client:
         response = await client.post(
-            "https://graph.facebook.com/v24.0/912195958636325/messages",
+            f"https://graph.facebook.com/{config.WHATSAPP_GRAPH_API_VERSION}/{config.WHATSAPP_PHONE_NUMBER}/messages",
             headers=headers,
             json=payload,
         )

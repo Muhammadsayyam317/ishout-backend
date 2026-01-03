@@ -36,6 +36,9 @@ class Config(BaseModel):
     MONGODB_ATLAS_COLLECTION_WHATSAPP_SESSIONS: str = Field(
         default=os.getenv("MONGODB_ATLAS_COLLECTION_WHATSAPP_SESSIONS")
     )
+    MONGODB_COLLECTION_WHATSAPP_MESSAGES: str = Field(
+        default=os.getenv("MONGODB_COLLECTION_WHATSAPP_MESSAGES")
+    )
     MONGODB_ATLAS_COLLECTION_GENERATED_INFLUENCERS: str = Field(
         default=os.getenv("MONGODB_ATLAS_COLLECTION_GENERATED_INFLUENCERS")
     )
@@ -86,6 +89,7 @@ class Config(BaseModel):
     RESEND_API_KEY: str = Field(default=os.getenv("RESEND_API_KEY"))
 
     REGISTER_URL: str = Field(default=os.getenv("REGISTER_URL"))
+    ADMIN_PHONE: str = Field(default=os.getenv("ADMIN_PHONE"))
 
 
 # config singleton instance

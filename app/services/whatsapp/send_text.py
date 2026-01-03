@@ -3,6 +3,7 @@ from app.config.credentials_config import config
 
 
 async def send_whatsapp_text_message(to: str, text: str):
+    print("Entering into send_whatsapp_text_message")
     headers = {
         "Authorization": f"Bearer {config.META_WHATSAPP_ACCESSSTOKEN}",
         "Content-Type": "application/json",
@@ -17,7 +18,7 @@ async def send_whatsapp_text_message(to: str, text: str):
 
     async with httpx.AsyncClient(timeout=10.0) as client:
         await client.post(
-            "https://graph.facebook.com/v24.0/912195958636325/messages",
+            f"https://graph.facebook.com/{config.WHATSAPP_GRAPH_API_VERSION}/{config.WHATSAPP_PHONE_NUMBER}/messages",
             headers=headers,
             json=payload,
         )

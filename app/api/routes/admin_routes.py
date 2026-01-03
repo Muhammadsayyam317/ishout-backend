@@ -27,7 +27,12 @@ from app.api.controllers.admin.campaign_controller import (
 from app.api.controllers.admin.reject_regenerate_influencers import (
     reject_and_regenerate_influencer,
 )
-from app.api.controllers.admin.user_managment import get_all_users, update_user_status
+from app.api.controllers.admin.user_managment import (
+    Whatsapp_Users_Sessions_management,
+    Whatsapp_messages_management,
+    get_all_users,
+    update_user_status,
+)
 from app.api.controllers.company.company_data import company_data
 from app.core.redis import redis_info
 from app.Schemas.campaign import (
@@ -246,5 +251,18 @@ router.add_api_route(
     path="/add-influencer-number",
     endpoint=add_influencer_Number,
     methods=["POST"],
+    tags=["Admin"],
+)
+
+router.add_api_route(
+    path="/whatsapp-users-sessions",
+    endpoint=Whatsapp_Users_Sessions_management,
+    methods=["GET"],
+    tags=["Admin"],
+)
+router.add_api_route(
+    path="/whatsapp-messages/{thread_id}",
+    endpoint=Whatsapp_messages_management,
+    methods=["GET"],
     tags=["Admin"],
 )

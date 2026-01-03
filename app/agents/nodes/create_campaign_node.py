@@ -6,6 +6,7 @@ async def node_create_campaign(state: ConversationState):
     print("Entering node_create_campaign")
     try:
         result = await create_whatsapp_campaign(state)
+        print("Result: ", result)
         if not result.get("success"):
             state["reply"] = (
                 "Sorry, your campaign could not be created.\n\n"
