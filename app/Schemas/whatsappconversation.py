@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import List, TypedDict, Optional, Annotated
 from bson import ObjectId
 
