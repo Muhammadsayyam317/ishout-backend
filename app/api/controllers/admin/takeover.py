@@ -8,52 +8,76 @@ from app.core.exception import InternalServerErrorException
 router = APIRouter()
 
 
-async def human_takeover(thread_id: str):
-    db = get_db()
-    await db.get_collection("agent_controls").update_one(
-        {"thread_id": thread_id},
-        {
-            "$set": {
-                "human_takeover": True,
-                "agent_paused": True,
-                "updated_at": datetime.now(timezone.utc),
+async def toggle_human_takeover(thread_id: str, enabled: bool, admin_name: str):
+    try:
+        db = get_db()
+        controls = db.get_collection("agent_controls")
+        if enabled:
+            # 🔴 SWITCH ON → Human takeover
+            await controls.update_one(
+                {"thread_id": thread_id},
+                {
+                    "$set": {
+                        "human_takeover": True,
+                        "agent_paused": True,
+                        "updated_at": datetime.now(timezone.utc),
+                    }
+                },
+                upsert=True,
+            )
+            system_message = (
+                "👤 *Human takeover enabled*\n\n"
+                "A human agent has joined the conversation."
+            )
+            await send_whatsapp_text_message(to=thread_id, text=system_message)
+            await save_conversation_message(
+                thread_id=thread_id,
+                sender="SYSTEM",
+                username=admin_name,
+                message=system_message,
+                agent_paused=True,
+                human_takeover=True,
+            )
+            return {
+                "success": True,
+                "mode": "HUMAN_TAKEOVER",
+                "message": "Human takeover enabled",
             }
-        },
-        upsert=True,
-    )
-    return {"success": True, "mode": "HUMAN_TAKEOVER"}
+        else:
+            # 🟢 SWITCH OFF → Resume AI
+            await controls.update_one(
+                {"thread_id": thread_id},
+                {
+                    "$set": {
+                        "human_takeover": False,
+                        "agent_paused": False,
+                        "updated_at": datetime.now(timezone.utc),
+                    }
+                },
+                upsert=True,
+            )
+            system_message = (
+                "🤖 *AI agent resumed*\n\n"
+                "The assistant is now handling the conversation again."
+            )
+            await send_whatsapp_text_message(to=thread_id, text=system_message)
+            await save_conversation_message(
+                thread_id=thread_id,
+                sender="SYSTEM",
+                username=admin_name,
+                message=system_message,
+                agent_paused=False,
+                human_takeover=False,
+            )
 
-
-async def pause_agent(thread_id: str):
-    db = get_db()
-    await db.get_collection("agent_controls").update_one(
-        {"thread_id": thread_id},
-        {
-            "$set": {
-                "agent_paused": True,
-                "human_takeover": False,
-                "updated_at": datetime.now(timezone.utc),
+            return {
+                "success": True,
+                "mode": "AI_ACTIVE",
+                "message": "AI agent resumed",
             }
-        },
-        upsert=True,
-    )
-    return {"success": True, "mode": "AGENT_PAUSED"}
 
-
-async def resume_agent(thread_id: str):
-    db = get_db()
-    await db.get_collection("agent_controls").update_one(
-        {"thread_id": thread_id},
-        {
-            "$set": {
-                "agent_paused": False,
-                "human_takeover": False,
-                "updated_at": datetime.now(timezone.utc),
-            }
-        },
-        upsert=True,
-    )
-    return {"success": True, "mode": "AI_ACTIVE"}
+    except Exception as e:
+        raise InternalServerErrorException(message=str(e)) from e
 
 
 async def send_human_message(
