@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from fastapi import APIRouter
 from app.db.connection import get_db
+from app.model.takeover import HumanTakeoverRequest
 from app.services.whatsapp.save_message import save_conversation_message
 from app.services.whatsapp.send_text import send_whatsapp_text_message
 from app.core.exception import InternalServerErrorException
@@ -8,12 +9,12 @@ from app.core.exception import InternalServerErrorException
 router = APIRouter()
 
 
-async def toggle_human_takeover(thread_id: str, enabled: bool):
+async def toggle_human_takeover(thread_id: str, payload: HumanTakeoverRequest):
+    enabled: bool = payload.enabled
     try:
         db = get_db()
         controls = db.get_collection("agent_controls")
         if enabled:
-            # 🔴 SWITCH ON → Human takeover
             await controls.update_one(
                 {"thread_id": thread_id},
                 {
