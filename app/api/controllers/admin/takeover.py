@@ -8,7 +8,7 @@ from app.core.exception import InternalServerErrorException
 router = APIRouter()
 
 
-async def toggle_human_takeover(thread_id: str, enabled: bool, admin_name: str):
+async def toggle_human_takeover(thread_id: str, enabled: bool):
     try:
         db = get_db()
         controls = db.get_collection("agent_controls")
@@ -25,6 +25,7 @@ async def toggle_human_takeover(thread_id: str, enabled: bool, admin_name: str):
                 },
                 upsert=True,
             )
+
             system_message = (
                 "👤 *Human takeover enabled*\n\n"
                 "A human agent has joined the conversation."
@@ -33,7 +34,6 @@ async def toggle_human_takeover(thread_id: str, enabled: bool, admin_name: str):
             await save_conversation_message(
                 thread_id=thread_id,
                 sender="SYSTEM",
-                username=admin_name,
                 message=system_message,
                 agent_paused=True,
                 human_takeover=True,
@@ -64,7 +64,6 @@ async def toggle_human_takeover(thread_id: str, enabled: bool, admin_name: str):
             await save_conversation_message(
                 thread_id=thread_id,
                 sender="SYSTEM",
-                username=admin_name,
                 message=system_message,
                 agent_paused=False,
                 human_takeover=False,
