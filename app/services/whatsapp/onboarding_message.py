@@ -1,6 +1,7 @@
 import httpx
 from fastapi import HTTPException
 from app.config.credentials_config import config
+from app.core.exception import InternalServerErrorException
 
 
 async def send_whatsapp_message(recipient_id: str, message_text: str) -> bool:
@@ -25,9 +26,6 @@ async def send_whatsapp_message(recipient_id: str, message_text: str) -> bool:
                 headers=headers,
                 json=message_payload,
             )
-            print("Graph API Version: ", config.WHATSAPP_GRAPH_API_VERSION)
-            print("Phone Number: ", config.WHATSAPP_PHONE_NUMBER)
-            print(f"Response: {response}")
         if response.status_code != 200:
             raise HTTPException(
                 status_code=500,
@@ -35,7 +33,9 @@ async def send_whatsapp_message(recipient_id: str, message_text: str) -> bool:
             )
         print("Exiting from send_whatsapp_message")
         return True
-    except httpx.RequestError:
-        return HTTPException(status_code=500, detail="HTTP request error")
-    except Exception:
-        return HTTPException(status_code=500, detail="Unexpected error")
+    except httpx.RequestError as e:
+        raise InternalServerErrorException(
+            message=f"HTTP request error: {str(e)}"
+        ) from e
+    except Exception as e:
+        raise InternalServerErrorException(message=f"Unexpected error: {str(e)}") from e
