@@ -14,6 +14,14 @@ async def toggle_human_takeover(thread_id: str, payload: HumanTakeoverRequest):
     try:
         db = get_db()
         controls = db.get_collection("agent_controls")
+        existing = await controls.find_one({"thread_id": thread_id})
+        current_state = existing.get("human_takeover") if existing else False
+        if enabled == current_state:
+            return {
+                "success": True,
+                "message": "No state change",
+                "mode": "HUMAN_TAKEOVER" if enabled else "AI_ACTIVE",
+            }
         if enabled:
             await controls.update_one(
                 {"thread_id": thread_id},
@@ -26,10 +34,9 @@ async def toggle_human_takeover(thread_id: str, payload: HumanTakeoverRequest):
                 },
                 upsert=True,
             )
-
             system_message = (
                 "👤 *Human takeover enabled*\n\n"
-                "A human agent has joined the conversation."
+                "A human from ishout is now handling this conversation."
             )
             await send_whatsapp_text_message(to=thread_id, text=system_message)
             await save_conversation_message(
@@ -45,7 +52,6 @@ async def toggle_human_takeover(thread_id: str, payload: HumanTakeoverRequest):
                 "message": "Human takeover enabled",
             }
         else:
-            # 🟢 SWITCH OFF → Resume AI
             await controls.update_one(
                 {"thread_id": thread_id},
                 {
@@ -59,8 +65,9 @@ async def toggle_human_takeover(thread_id: str, payload: HumanTakeoverRequest):
             )
             system_message = (
                 "🤖 *AI agent resumed*\n\n"
-                "The assistant is now handling the conversation again."
+                "The ishout agent is now handling this conversation again."
             )
+
             await send_whatsapp_text_message(to=thread_id, text=system_message)
             await save_conversation_message(
                 thread_id=thread_id,
@@ -75,6 +82,7 @@ async def toggle_human_takeover(thread_id: str, payload: HumanTakeoverRequest):
                 "mode": "AI_ACTIVE",
                 "message": "AI agent resumed",
             }
+
     except Exception as e:
         raise InternalServerErrorException(message=str(e)) from e
 
@@ -82,14 +90,12 @@ async def toggle_human_takeover(thread_id: str, payload: HumanTakeoverRequest):
 async def send_human_message(
     thread_id: str,
     message: str,
-    admin_name: str = "Admin",
 ):
     try:
         db = get_db()
         control = await db.get_collection("agent_controls").find_one(
             {"thread_id": thread_id}
         )
-
         if not control or not control.get("human_takeover"):
             raise InternalServerErrorException(
                 message="Human takeover is not active for this chat"
@@ -98,7 +104,6 @@ async def send_human_message(
         await save_conversation_message(
             thread_id=thread_id,
             sender="HUMAN",
-            username=admin_name,
             message=message,
             agent_paused=True,
             human_takeover=True,

@@ -12,19 +12,22 @@ async def save_conversation_message(
     human_takeover: bool = False,
 ):
     try:
+        print(
+            f"Saving conversation message: {thread_id}, {sender}, {message}, {username}, {agent_paused}, {human_takeover}"
+        )
+        payload = {
+            "thread_id": thread_id,
+            "username": username,
+            "sender": sender,
+            "message": message,
+            "agent_paused": agent_paused,
+            "human_takeover": human_takeover,
+            "timestamp": datetime.now(timezone.utc),
+        }
+        print(f"Payload: {payload}")
         db = get_db()
         collection = db.get_collection("whatsapp_messages")
-        await collection.insert_one(
-            {
-                "thread_id": thread_id,
-                "username": username,
-                "sender": sender,
-                "message": message,
-                "agent_paused": agent_paused,
-                "human_takeover": human_takeover,
-                "timestamp": datetime.now(timezone.utc),
-            }
-        )
+        await collection.insert_one(payload)
     except Exception as e:
         raise InternalServerErrorException(
             message=f"Error in saving conversation message: {str(e)}"

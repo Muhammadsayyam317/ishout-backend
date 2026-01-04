@@ -15,6 +15,7 @@ async def send_whatsapp_text_message(to: str, text: str):
         "type": "text",
         "text": {"body": text},
     }
+    print(f"Payload: {payload}")
 
     async with httpx.AsyncClient(timeout=10.0) as client:
         await client.post(
