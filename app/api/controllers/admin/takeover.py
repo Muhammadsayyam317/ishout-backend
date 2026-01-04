@@ -74,7 +74,6 @@ async def toggle_human_takeover(thread_id: str, enabled: bool):
                 "mode": "AI_ACTIVE",
                 "message": "AI agent resumed",
             }
-
     except Exception as e:
         raise InternalServerErrorException(message=str(e)) from e
 

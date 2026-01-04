@@ -277,7 +277,7 @@ router.add_api_route(
     tags=["Admin"],
 )
 router.add_api_route(
-    path="/whatsapp/toggle-takeover",
+    path="/whatsapp/toggle-takeover/{thread_id}",
     endpoint=toggle_human_takeover,
     methods=["POST"],
     tags=["Admin"],
