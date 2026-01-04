@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, constr
 
 
 class Whatsapp_Users_Sessions(BaseModel):
@@ -12,3 +12,7 @@ class Whatsapp_Users_Sessions(BaseModel):
     acknowledged: bool
     conversation_round: int
     status: str
+
+
+class HumanMessageRequest(BaseModel):
+    message: constr(min_length=1)

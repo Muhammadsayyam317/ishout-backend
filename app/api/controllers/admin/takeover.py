@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from fastapi import APIRouter
 from app.db.connection import get_db
+from app.model.Whatsapp_Users_Sessions import HumanMessageRequest
 from app.model.takeover import HumanTakeoverRequest
 from app.services.whatsapp.save_message import save_conversation_message
 from app.services.whatsapp.send_text import send_whatsapp_text_message
@@ -86,10 +87,7 @@ async def toggle_human_takeover(thread_id: str, payload: HumanTakeoverRequest):
         raise InternalServerErrorException(message=str(e)) from e
 
 
-async def send_human_message(
-    thread_id: str,
-    message: str,
-):
+async def send_human_message(thread_id: str, payload: HumanMessageRequest):
     try:
         db = get_db()
         control = await db.get_collection("agent_controls").find_one(
@@ -99,11 +97,11 @@ async def send_human_message(
             raise InternalServerErrorException(
                 message="Human takeover is not active for this chat"
             )
-        await send_whatsapp_text_message(to=thread_id, text=message)
+        await send_whatsapp_text_message(to=thread_id, text=payload.message)
         await save_conversation_message(
             thread_id=thread_id,
             sender="HUMAN",
-            message=message,
+            message=payload.message,
             agent_paused=True,
             human_takeover=True,
         )
