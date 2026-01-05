@@ -1,5 +1,6 @@
 import httpx
 from app.config.credentials_config import config
+from app.core.exception import InternalServerErrorException
 
 
 async def send_whatsapp_text_message(to: str, text: str):
@@ -8,17 +9,29 @@ async def send_whatsapp_text_message(to: str, text: str):
         "Authorization": f"Bearer {config.META_WHATSAPP_ACCESSSTOKEN}",
         "Content-Type": "application/json",
     }
-
     payload = {
         "messaging_product": "whatsapp",
         "to": to,
         "type": "text",
         "text": {"body": text},
     }
-
+    print(f"Payload: {payload}")
     async with httpx.AsyncClient(timeout=10.0) as client:
-        await client.post(
-            f"https://graph.facebook.com/{config.WHATSAPP_GRAPH_API_VERSION}/{config.WHATSAPP_PHONE_NUMBER}/messages",
-            headers=headers,
-            json=payload,
-        )
+        try:
+            print(f"Sending message to {to}: {text}")
+            response = await client.post(
+                f"https://graph.facebook.com/{config.WHATSAPP_GRAPH_API_VERSION}/{config.WHATSAPP_PHONE_NUMBER}/messages",
+                headers=headers,
+                json=payload,
+            )
+            if response.status_code != 200:
+                raise InternalServerErrorException(
+                    message=f"Error: {response.status_code}, {response.text}"
+                )
+            print(f"Message sent to {to}: {text}")
+            print("Exiting from send_whatsapp_text_message")
+        except Exception as e:
+            print(f"Error sending message: {e}")
+            raise InternalServerErrorException(
+                message=f"Error sending message: {str(e)}"
+            ) from e

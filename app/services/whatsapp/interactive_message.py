@@ -68,8 +68,6 @@ async def send_whatsapp_interactive_message(
             headers=headers,
             json=payload,
         )
-
         if response.status_code != 200:
             return False
-
         return True

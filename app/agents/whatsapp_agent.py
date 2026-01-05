@@ -88,7 +88,6 @@ async def handle_whatsapp_events(request: Request):
             username=profile_name,
             sender=SenderType.USER.value,
             message=state.get("user_message"),
-            campaign_id=state.get("campaign_id"),
         )
         final_state = await whatsapp_agent.ainvoke(
             state,

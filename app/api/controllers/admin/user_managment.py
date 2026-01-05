@@ -143,8 +143,6 @@ async def Whatsapp_Users_Sessions_management(
         has_next = page < total_pages
         has_prev = page > 1
         return {
-            "status_code": 200,
-            "message": "WhatsApp users retrieved successfully",
             "page": page,
             "page_size": page_size,
             "total": total,
@@ -193,8 +191,6 @@ async def Whatsapp_messages_management(
             for message in messages
         ]
         return {
-            "status_code": 200,
-            "message": "Whatsapp messages retrieved successfully",
             "messages": messages_response,
             "total": total,
             "page": page,

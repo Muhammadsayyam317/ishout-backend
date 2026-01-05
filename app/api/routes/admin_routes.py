@@ -27,6 +27,10 @@ from app.api.controllers.admin.campaign_controller import (
 from app.api.controllers.admin.reject_regenerate_influencers import (
     reject_and_regenerate_influencer,
 )
+from app.api.controllers.admin.takeover import (
+    send_human_message,
+    toggle_human_takeover,
+)
 from app.api.controllers.admin.user_managment import (
     Whatsapp_Users_Sessions_management,
     Whatsapp_messages_management,
@@ -264,5 +268,17 @@ router.add_api_route(
     path="/whatsapp-messages/{thread_id}",
     endpoint=Whatsapp_messages_management,
     methods=["GET"],
+    tags=["Admin"],
+)
+router.add_api_route(
+    path="/whatsapp/send-human-message/{thread_id}",
+    endpoint=send_human_message,
+    methods=["POST"],
+    tags=["Admin"],
+)
+router.add_api_route(
+    path="/whatsapp/toggle-takeover/{thread_id}",
+    endpoint=toggle_human_takeover,
+    methods=["POST"],
     tags=["Admin"],
 )
