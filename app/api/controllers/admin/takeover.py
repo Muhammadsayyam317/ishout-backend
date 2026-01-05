@@ -149,12 +149,12 @@ async def send_human_message(thread_id: str, payload: HumanMessageRequest):
         )
         if not control or not control.get("human_takeover"):
             raise InternalServerErrorException(
-                message="Human takeover is not active for this chat"
+                message="ADMIN takeover is not active for this chat"
             )
         await send_whatsapp_text_message(to=thread_id, text=payload.message)
         await save_conversation_message(
             thread_id=thread_id,
-            sender="HUMAN",
+            sender="ADMIN",
             message=payload.message,
             agent_paused=True,
             human_takeover=True,
@@ -163,7 +163,7 @@ async def send_human_message(thread_id: str, payload: HumanMessageRequest):
             event_type="whatsapp.message",
             payload={
                 "thread_id": thread_id,
-                "sender": "HUMAN",
+                "sender": "ADMIN",
                 "message": payload.message,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             },
