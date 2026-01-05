@@ -2,7 +2,6 @@ from fastapi import APIRouter
 from app.api.controllers.meta.notification import (
     handle_webhook,
     verify_webhook,
-    websocket_notifications,
 )
 from app.api.controllers.meta.privacy_policy import get_privacy_policy
 from app.api.controllers.meta.whatsapp_webhook import verify_whatsapp_webhook
@@ -30,13 +29,6 @@ router.add_api_route(
     methods=["POST"],
     tags=["Meta"],
 ),
-
-router.add_api_websocket_route(
-    path="/notifications",
-    endpoint=websocket_notifications,
-    name="meta_notifications",
-)
-
 
 router.add_api_route(
     path="/whatsapp-webhook",

@@ -62,6 +62,10 @@ class WebSocketManager:
                 pass
         return delivered
 
+
+async def broadcast_event(self, event_type: str, payload: dict) -> int:
+    return await self.broadcast({"type": event_type, "payload": payload})
+
     async def broadcast_role(self, role: str, message: Any) -> int:
         async with self._lock:
             sockets = list(self._role_connections.get(role, []))

@@ -6,15 +6,10 @@ from fastapi import (
     BackgroundTasks,
     Request,
     Response,
-    WebSocket,
-    WebSocketDisconnect,
-    HTTPException,
-    status,
 )
 from fastapi.responses import JSONResponse
 from app.services.websocket_manager import ws_manager
 from app.config import config
-from app.core.security.jwt import verify_token
 
 
 PROFILE_CACHE: Dict[str, Dict] = {}
@@ -220,8 +215,9 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                         broadcast_data["attachments"] = attachment_list
 
                     background_tasks.add_task(
-                        ws_manager.broadcast,
-                        broadcast_data,
+                        ws_manager.broadcast_event,
+                        "instagram.message",
+                        payload=broadcast_data,
                     )
 
         for messaging_event in entry.get("messaging", []):
@@ -269,60 +265,9 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                     broadcast_data["attachments"] = attachment_list
 
                 background_tasks.add_task(
-                    ws_manager.broadcast,
-                    broadcast_data,
+                    ws_manager.broadcast_event,
+                    "instagram.message",
+                    payload=broadcast_data,
                 )
 
     return JSONResponse({"status": "received"})
-
-
-async def websocket_notifications(websocket: WebSocket):
-    token = websocket.query_params.get("token")
-
-    if not token:
-        await websocket.accept()
-        await websocket.close(
-            code=status.WS_1008_POLICY_VIOLATION, reason="Missing token"
-        )
-        return
-    user_id = None
-    role = None
-    try:
-        payload = verify_token(token)
-        user_id = payload.get("user_id")
-        role = payload.get("role")
-        if role != "admin":
-            await websocket.accept()
-            await websocket.close(
-                code=status.WS_1008_POLICY_VIOLATION, reason="Admin access required"
-            )
-            return
-    except HTTPException as e:
-        await websocket.accept()
-        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason=e.detail)
-        return
-    except Exception:
-        await websocket.accept()
-        await websocket.close(
-            code=status.WS_1008_POLICY_VIOLATION, reason="Invalid token"
-        )
-        return
-
-    await ws_manager.connect(websocket, user_id=user_id, role=role)
-    try:
-        while True:
-            data = await websocket.receive_json()
-            if isinstance(data, dict) and data.get("action") == "stats":
-                await websocket.send_json(
-                    {"type": "stats", **(await ws_manager.stats())}
-                )
-            else:
-                await websocket.send_json({"type": "noop"})
-    except WebSocketDisconnect:
-        await ws_manager.disconnect(websocket, user_id=user_id, role=role)
-    except Exception:
-        await ws_manager.disconnect(websocket, user_id=user_id, role=role)
-        try:
-            await websocket.close(code=1011)
-        except Exception:
-            pass
