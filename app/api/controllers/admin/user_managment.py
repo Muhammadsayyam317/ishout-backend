@@ -137,7 +137,6 @@ async def Whatsapp_Users_Sessions_management(
                     ),
                 }
             )
-
         total = await collection.count_documents({})
         total_pages = (total + page_size - 1) // page_size
         has_next = page < total_pages
