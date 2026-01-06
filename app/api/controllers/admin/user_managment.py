@@ -1,3 +1,4 @@
+from datetime import datetime
 from bson.objectid import ObjectId
 from app.Schemas.whatsappconversation import WhatsappConversationMessage
 from app.config.credentials_config import config
@@ -7,7 +8,7 @@ from app.core.exception import (
     NotFoundException,
 )
 from app.db.connection import get_db
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from app.Schemas.user_model import UserResponse, UserRole, UserStatus
 from app.utils.helpers import convert_objectid
@@ -168,35 +169,79 @@ async def Whatsapp_messages_management(
         skip = (page - 1) * page_size
         cursor = (
             collection.find({"thread_id": thread_id})
-            .sort("timestamp", 1)
+            .sort("timestamp", -1)
             .skip(skip)
             .limit(page_size)
         )
         messages = await cursor.to_list(length=page_size)
         messages = [convert_objectid(m) for m in messages]
+        messages.reverse()
+
         total = await collection.count_documents({"thread_id": thread_id})
         total_pages = (total + page_size - 1) // page_size
-        has_next = page < total_pages
-        has_prev = page > 1
-        messages_response = [
-            WhatsappConversationMessage(
-                _id=message["_id"],
-                thread_id=message["thread_id"],
-                username=message["username"],
-                sender=message["sender"],
-                message=message["message"],
-                timestamp=message["timestamp"],
-            )
-            for message in messages
-        ]
+
         return {
-            "messages": messages_response,
+            "messages": [
+                WhatsappConversationMessage(
+                    _id=message["_id"],
+                    thread_id=message["thread_id"],
+                    username=message["username"],
+                    sender=message["sender"],
+                    message=message["message"],
+                    timestamp=message["timestamp"].isoformat(),
+                )
+                for message in messages
+            ],
             "total": total,
             "page": page,
             "page_size": page_size,
             "total_pages": total_pages,
-            "has_next": has_next,
-            "has_prev": has_prev,
+            "has_next": page < total_pages,
+            "has_prev": page > 1,
+        }
+
+    except Exception as e:
+        raise InternalServerErrorException(
+            message=f"Error retrieving whatsapp messages: {str(e)}"
+        ) from e
+
+
+async def whatsapp_messages_cursor(
+    thread_id: str,
+    before: Optional[str] = None,
+    limit: int = 20,
+) -> Dict[str, Any]:
+    try:
+        db = get_db()
+        collection = db.get_collection("whatsapp_messages")
+        query = {"thread_id": thread_id}
+
+        if before:
+            cursor_time = datetime.fromisoformat(before)
+            query["timestamp"] = {"$lt": cursor_time}
+        cursor = collection.find(query).sort("timestamp", -1).limit(limit + 1)
+
+        docs = await cursor.to_list(length=limit + 1)
+        has_more = len(docs) > limit
+        docs = docs[:limit]
+        docs.reverse()
+
+        messages = [
+            {
+                "_id": str(d["_id"]),
+                "thread_id": d["thread_id"],
+                "username": d.get("username"),
+                "sender": d["sender"],
+                "message": d["message"],
+                "timestamp": d["timestamp"].isoformat(),
+            }
+            for d in docs
+        ]
+        next_cursor = messages[0]["timestamp"] if has_more else None
+        return {
+            "messages": messages,
+            "next_cursor": next_cursor,
+            "has_more": has_more,
         }
 
     except Exception as e:
