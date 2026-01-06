@@ -40,13 +40,53 @@ jobs:
           port: ${{ secrets.EC2_PORT || 22 }}
           script: |
             set -e
-            cd ~/ishout-backend || cd /home/${{ secrets.EC2_USER }}/ishout-backend
+            echo "=== Starting deployment ==="
+            echo "Navigating to project directory..."
+            cd ~/ishout-backend || cd /home/${{ secrets.EC2_USER }}/ishout-backend || { echo "Failed to find project directory"; exit 1; }
+            echo "Current directory: $(pwd)"
+
             IMAGE=${{ env.IMAGE_NAME }}
-            # Update the Docker image reference in compose
-            sed -i "s|build: .|image: $IMAGE:latest|" docker-compose.yml
-            # Pull and start services
-            docker-compose pull
-            docker-compose up -d
-            # Show status
+            echo "Docker image: $IMAGE"
+
+            echo "=== Stopping existing containers ==="
+            docker-compose down 2>&1 || echo "No existing containers to stop"
+
+            echo "=== Backup current docker-compose.yml ==="
+            cp docker-compose.yml docker-compose.yml.backup || echo "No backup needed"
+
+            echo "=== Updating docker-compose.yml ==="
+            sed -i.bak "s|build: .|image: $IMAGE:latest|" docker-compose.yml
+            echo "Updated compose file:"
+            cat docker-compose.yml
+
+            echo "=== Pulling latest images ==="
+            docker-compose pull || { echo "Failed to pull images"; docker-compose down; exit 1; }
+
+            echo "=== Starting services ==="
+            docker-compose up -d || {
+              echo "Failed to start services, attempting rollback...";
+              mv docker-compose.yml.backup docker-compose.yml 2>/dev/null || true
+              docker-compose up -d || echo "Rollback also failed"
+              exit 1
+            }
+
+            echo "=== Waiting for services to stabilize ==="
+            sleep 5
+
+            echo "=== Deployment complete - Container status ==="
             docker-compose ps
+
+            echo "=== Health check ==="
+            if docker-compose ps | grep -q "Up"; then
+              echo "✓ Services are running"
+            else
+              echo "✗ Warning: Some services may not be running properly"
+              docker-compose logs --tail 100
+              exit 1
+            fi
+
+            echo "=== Recent logs ==="
             docker-compose logs --tail 50
+
+            echo "=== Cleanup old images ==="
+            docker image prune -f || echo "No old images to clean"
