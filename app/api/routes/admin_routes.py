@@ -29,6 +29,7 @@ from app.api.controllers.admin.reject_regenerate_influencers import (
 )
 from app.api.controllers.admin.takeover import (
     send_human_message,
+    takeover_value,
     toggle_human_takeover,
 )
 from app.api.controllers.admin.user_managment import (
@@ -120,7 +121,6 @@ async def generate_influencers_route(
     background_tasks: BackgroundTasks,
     current_user: dict = Depends(require_admin_access),
 ):
-    """Generate influencers for a campaign (admin only)"""
     try:
         return await admin_generate_influencers(
             campaign_id, request_data, background_tasks
@@ -280,5 +280,11 @@ router.add_api_route(
     path="/whatsapp/toggle-takeover/{thread_id}",
     endpoint=toggle_human_takeover,
     methods=["POST"],
+    tags=["Admin"],
+)
+router.add_api_route(
+    path="/whatsapp/takeover-value/{thread_id}",
+    endpoint=takeover_value,
+    methods=["GET"],
     tags=["Admin"],
 )

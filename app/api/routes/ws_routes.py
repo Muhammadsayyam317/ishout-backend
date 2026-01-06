@@ -1,10 +1,10 @@
 from fastapi import APIRouter
-from app.api.controllers.meta.notification import websocket_notifications
+from app.services.notification_service import admin_ws
 
 router = APIRouter()
 
 router.add_api_websocket_route(
-    path="/notifications",
-    endpoint=websocket_notifications,
-    name="ws_notifications",
+    path="/admin",
+    endpoint=admin_ws,
+    name="ws_admin",
 )

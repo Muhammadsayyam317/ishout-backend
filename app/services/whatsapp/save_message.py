@@ -22,7 +22,7 @@ async def save_conversation_message(
             "message": message,
             "agent_paused": agent_paused,
             "human_takeover": human_takeover,
-            "timestamp": datetime.now(timezone.utc),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         print(f"Payload: {payload}")
         db = get_db()
