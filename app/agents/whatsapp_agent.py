@@ -66,7 +66,6 @@ async def handle_whatsapp_events(request: Request):
         state = stored_state or {}
 
         conversation_round = await get_conversation_round(thread_id)
-
         if not conversation_round:
             conversation_round = 1
 

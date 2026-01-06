@@ -121,7 +121,6 @@ async def generate_influencers_route(
     background_tasks: BackgroundTasks,
     current_user: dict = Depends(require_admin_access),
 ):
-    """Generate influencers for a campaign (admin only)"""
     try:
         return await admin_generate_influencers(
             campaign_id, request_data, background_tasks
