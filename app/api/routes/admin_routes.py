@@ -46,7 +46,6 @@ from app.Schemas.campaign import (
 )
 from app.middleware.auth_middleware import require_admin_access
 from app.services.instagram.list_on_conversations import (
-    instagram_conversation_info,
     instagram_conversation_messages,
     instagram_conversations_list,
 )
@@ -303,13 +302,6 @@ router.add_api_route(
 router.add_api_route(
     path="/instagram/conversation-with-user",
     endpoint=instagram_conversation_messages,
-    methods=["GET"],
-    tags=["Admin"],
-)
-
-router.add_api_route(
-    path="/instagram/conversation-info/{conversation_id}",
-    endpoint=instagram_conversation_info,
     methods=["GET"],
     tags=["Admin"],
 )
