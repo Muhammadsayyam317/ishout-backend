@@ -252,7 +252,7 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                     "attachments": attachment_list or [],
                 }
             print("📡 IG WS EVENT →", broadcast_data)
-            await background_tasks.add_task(
+            background_tasks.add_task(
                 ws_manager.broadcast_event, "instagram.message", payload=broadcast_data
             )
             print("📡 IG WS EVENT SENT →", broadcast_data)
