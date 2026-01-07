@@ -203,22 +203,25 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                     display_name = username or f"User_{psid[:6]}"
                     if attachments:
                         broadcast_data = {
-                            "type": "ig_reply",
-                            "from_psid": psid,
-                            "to_page_id": value.get("to", {}).get("id"),
-                            "from_username": display_name,
-                            "text": text,
-                            "timestamp": value.get("timestamp", time.time()),
+                            "thread_id": psid,
+                            "sender": "USER",
+                            "platform": "INSTAGRAM",
+                            "username": display_name,
+                            "message": text or "[Attachment]",
+                            "timestamp": time.time(),
+                            "attachments": attachment_list if attachment_list else [],
                         }
 
                     if attachments:
                         broadcast_data["attachments"] = attachment_list
+                    print("📡 IG WS EVENT →", broadcast_data)
 
                     background_tasks.add_task(
                         ws_manager.broadcast_event,
                         "instagram.message",
                         payload=broadcast_data,
                     )
+                    print("📡 IG WS EVENT SENT →", broadcast_data)
 
         for messaging_event in entry.get("messaging", []):
             message = messaging_event.get("message")
@@ -253,17 +256,19 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
 
                 if attachments:
                     broadcast_data = {
-                        "type": "ig_reply",
-                        "from_psid": psid,
-                        "to_page_id": page_id,
-                        "from_username": display_name,
-                        "text": text,
+                        "thread_id": psid,
+                        "sender": "USER",
+                        "platform": "INSTAGRAM",
+                        "username": display_name,
+                        "message": text or "[Attachment]",
                         "timestamp": timestamp,
+                        "attachments": attachment_list if attachment_list else [],
                     }
+                    print("📡 IG WS EVENT →", broadcast_data)
 
                 if attachments:
                     broadcast_data["attachments"] = attachment_list
-
+                    print("📡 IG WS EVENT SENT →", broadcast_data)
                 background_tasks.add_task(
                     ws_manager.broadcast_event,
                     "instagram.message",

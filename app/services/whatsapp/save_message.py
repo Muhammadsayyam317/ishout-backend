@@ -12,8 +12,6 @@ async def save_conversation_message(
     human_takeover: bool = False,
 ):
     try:
-        timestamp = datetime.now(timezone.utc)
-
         payload = {
             "thread_id": thread_id,
             "username": username,
@@ -21,7 +19,7 @@ async def save_conversation_message(
             "message": message,
             "agent_paused": agent_paused,
             "human_takeover": human_takeover,
-            "timestamp": timestamp,
+            "timestamp": datetime.now(timezone.utc),
         }
 
         db = get_db()
