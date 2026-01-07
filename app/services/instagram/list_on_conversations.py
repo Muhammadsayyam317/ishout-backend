@@ -5,7 +5,7 @@ from app.config.credentials_config import config
 async def instagram_conversations_list() -> dict:
     url = f"https://graph.facebook.com/v9.0/{config.IG_BUSINESS_ID}/conversations?platform=instagram"
     params = {"access_token": config.INSTAGRAM_PAGE_ACCESS_TOKEN}
-    response = requests.get.get(url, params=params)
+    response = requests.get(url, params=params)
     data = response.json()
     return data
 
