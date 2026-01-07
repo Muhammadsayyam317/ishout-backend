@@ -82,6 +82,10 @@ class Config(BaseModel):
     META_APP_SECRET: str = Field(default=os.getenv("META_APP_SECRET"))
     PAGE_ACCESS_TOKEN: str = Field(default=os.getenv("PAGE_ACCESS_TOKEN"))
     IG_GRAPH_API_VERSION: str = Field(default=os.getenv("IG_GRAPH_API_VERSION"))
+    IG_BUSINESS_ID: str = Field(default=os.getenv("IG_BUSINESS_ID"))
+    INSTAGRAM_PAGE_ACCESS_TOKEN: str = Field(
+        default=os.getenv("INSTAPAGE_ACCESS_TOKEN")
+    )
 
     REDIS_URL: str = Field(default=os.getenv("REDIS_URL"))
 
