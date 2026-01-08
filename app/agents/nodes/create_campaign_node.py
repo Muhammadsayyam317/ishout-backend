@@ -10,7 +10,7 @@ async def node_create_campaign(state: ConversationState):
         if not result.get("success"):
             state["reply"] = (
                 "Sorry, your campaign could not be created.\n\n"
-                "Please try again or contact support."
+                "Please try again or contact support.If the problem persists, please contact support."
             )
             state["reply_sent"] = False
             state["done"] = True

@@ -29,7 +29,6 @@ async def node_verify_user(state):
         # Existing user
         state["is_existing_user"] = True
         state["name"] = user.get("contact_person") or user.get("company_name")
-
         state["reply"] = (
             f"Hi {state['name']}, you’re verified with iShout.\n\n"
             "Tell us what kind of influencers you’re looking for."
@@ -47,5 +46,4 @@ async def node_verify_user(state):
         )
         state["reply_sent"] = False
         state["done"] = True
-
         return state

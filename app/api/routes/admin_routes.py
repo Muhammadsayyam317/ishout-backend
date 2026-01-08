@@ -45,6 +45,10 @@ from app.Schemas.campaign import (
     CampaignStatusUpdateRequest,
 )
 from app.middleware.auth_middleware import require_admin_access
+from app.services.instagram.list_on_conversations import (
+    instagram_conversation_messages,
+    instagram_conversations_list,
+)
 from app.tools.regenerate_influencer import reject_and_regenerate
 
 router = APIRouter()
@@ -285,6 +289,19 @@ router.add_api_route(
 router.add_api_route(
     path="/whatsapp/takeover-value/{thread_id}",
     endpoint=takeover_value,
+    methods=["GET"],
+    tags=["Admin"],
+)
+
+router.add_api_route(
+    path="/instagram/conversations-list",
+    endpoint=instagram_conversations_list,
+    methods=["GET"],
+    tags=["Admin"],
+)
+router.add_api_route(
+    path="/instagram/conversation-with-user",
+    endpoint=instagram_conversation_messages,
     methods=["GET"],
     tags=["Admin"],
 )
