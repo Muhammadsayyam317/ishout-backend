@@ -9,7 +9,7 @@ async def node_check_agent_control(state):
     )
 
     if control:
-        # 🚫 Human takeover → no AI reply at all
+        # 🚫 Human takeover
         if control.get("human_takeover"):
             state["blocked"] = True
             state["block_reason"] = "HUMAN_TAKEOVER"
@@ -22,10 +22,9 @@ async def node_check_agent_control(state):
         if control.get("agent_paused"):
             state["blocked"] = True
             state["block_reason"] = "AGENT_PAUSED"
-
-            # state["reply"] = (
-            #     "⏸️ Our agent is currently paused.\n" "A human will respond shortly."
-            # )
+            state["reply"] = (
+                "⏸️ Our agent is currently paused.\n" "A human will respond shortly."
+            )
             state["reply_sent"] = False
             state["done"] = False
             return state
