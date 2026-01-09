@@ -123,8 +123,7 @@ class AuthService:
 
 
 WELCOME_WHATSAPP_MESSAGE = """Welcome to Ishout 🎉
-We’re excited to have you on board! Your company account has been successfully created on Ishout— the platform that helps brands discover, evaluate, and collaborate with
-the right influencers effortlessly.With Ishout, you can:
+We’re excited to have you on board! Your company account has been successfully created on Ishout— the platform that helps brands discover, evaluate, and collaborate with the right influencers effortlessly.With Ishout, you can:
 
   🔍 Discover relevant influencers for your campaigns
   📊 Review influencer profiles and performance insights
