@@ -1,4 +1,4 @@
-from app.Schemas.whatsappconversation import ConversationState
+from app.model.whatsappconversation import ConversationState
 from app.utils.extract_feilds import (
     extract_followers,
     extract_platforms,

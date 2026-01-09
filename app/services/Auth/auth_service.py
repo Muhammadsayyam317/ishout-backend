@@ -9,13 +9,16 @@ from app.Schemas.user_model import (
 )
 from app.core.security.password import hash_password, verify_password
 from app.core.security.jwt import create_access_token
-from app.core.exception import UnauthorizedException
-from app.services.email.email_service import (
-    WELCOME_EMAIL_TEMPLATE_HTML,
-    send_welcome_email,
+from app.core.exception import (
+    AccountNotActiveException,
+    EmailAlreadyExistsException,
+    PhoneNumberAlreadyExistsException,
+    UnauthorizedException,
 )
 from datetime import datetime, timezone
 from fastapi import BackgroundTasks
+
+from app.services.whatsapp.send_text import send_whatsapp_text_message
 
 
 class AuthService:
@@ -23,15 +26,14 @@ class AuthService:
     @staticmethod
     async def login(request_data: UserLoginRequest) -> Dict[str, Any]:
         user = await UserModel.find_by_email(request_data.email)
-
         if not user:
-            raise UnauthorizedException("Invalid email or password")
+            raise UnauthorizedException()
 
         if user["status"] != UserStatus.ACTIVE:
-            raise UnauthorizedException("Account is not active")
+            raise AccountNotActiveException()
 
         if not verify_password(request_data.password, user["password"]):
-            raise UnauthorizedException("Invalid email or password")
+            raise UnauthorizedException()
 
         token_data = {
             "user_id": str(user["_id"]),
@@ -66,8 +68,12 @@ class AuthService:
     ) -> Dict[str, Any]:
 
         existing_user = await UserModel.find_by_email(request_data.email)
+        phone_number = await UserModel.find_by_phone(request_data.phone)
+
         if existing_user:
-            raise UnauthorizedException("User with this email already exists")
+            raise EmailAlreadyExistsException()
+        if phone_number:
+            raise PhoneNumberAlreadyExistsException()
 
         hashed_password = hash_password(request_data.password)
         now = datetime.now(timezone.utc)
@@ -90,7 +96,6 @@ class AuthService:
         }
 
         access_token = create_access_token(token_data)
-
         user_response = UserResponse(
             user_id=user_id,
             company_name=request_data.company_name,
@@ -104,10 +109,9 @@ class AuthService:
         )
 
         background_tasks.add_task(
-            send_welcome_email,
-            [request_data.email],
-            "Welcome to Ishout",
-            WELCOME_EMAIL_TEMPLATE_HTML,
+            send_whatsapp_text_message,
+            [request_data.phone],
+            WELCOME_WHATSAPP_MESSAGE,
         )
 
         return {
@@ -116,3 +120,14 @@ class AuthService:
             "token_type": "bearer",
             "user": user_response.model_dump(),
         }
+
+
+WELCOME_WHATSAPP_MESSAGE = """Welcome to Ishout 🎉
+We’re excited to have you on board! Your company account has been successfully created on Ishout— the platform that helps brands discover, evaluate, and collaborate with
+the right influencers effortlessly.With Ishout, you can:
+
+  🔍 Discover relevant influencers for your campaigns
+  📊 Review influencer profiles and performance insights
+  ✅ Approve or reject influencers directly from your dashboard or WhatsApp
+  🚀 Manage campaigns faster and smarter
+"""

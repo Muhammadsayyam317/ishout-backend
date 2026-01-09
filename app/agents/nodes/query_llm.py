@@ -1,4 +1,4 @@
-from app.Schemas.whatsappconversation import ConversationState
+from app.model.whatsappconversation import ConversationState
 from app.tools.whatsapp_influencer import find_influencers_for_whatsapp
 
 

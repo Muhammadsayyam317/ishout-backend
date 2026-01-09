@@ -1,4 +1,4 @@
-from app.Schemas.whatsappconversation import ConversationState
+from app.model.whatsappconversation import ConversationState
 from app.services.whatsapp.create_campaign import create_whatsapp_campaign
 
 
