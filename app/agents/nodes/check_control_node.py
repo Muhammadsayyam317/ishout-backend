@@ -1,4 +1,4 @@
-from app.Schemas.whatsappconversation import AgentControl
+from app.model.whatsappconversation import AgentControl
 from app.db.connection import get_db
 
 

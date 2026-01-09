@@ -1,6 +1,6 @@
 from datetime import datetime
 from bson.objectid import ObjectId
-from app.Schemas.whatsappconversation import WhatsappConversationMessage
+from app.model.whatsappconversation import WhatsappConversationMessage
 from app.config.credentials_config import config
 from app.core.exception import (
     BadRequestException,
@@ -214,14 +214,21 @@ async def whatsapp_messages_cursor(
     try:
         db = get_db()
         collection = db.get_collection("whatsapp_messages")
+
         query = {"thread_id": thread_id}
 
         if before:
             cursor_time = datetime.fromisoformat(before)
             query["timestamp"] = {"$lt": cursor_time}
-        cursor = collection.find(query).sort("timestamp", -1).limit(limit + 1)
+
+        cursor = (
+            collection.find(query)
+            .sort([("timestamp", -1), ("_id", -1)])
+            .limit(limit + 1)
+        )
 
         docs = await cursor.to_list(length=limit + 1)
+
         has_more = len(docs) > limit
         docs = docs[:limit]
         docs.reverse()
@@ -237,7 +244,9 @@ async def whatsapp_messages_cursor(
             }
             for d in docs
         ]
+
         next_cursor = messages[0]["timestamp"] if has_more else None
+
         return {
             "messages": messages,
             "next_cursor": next_cursor,

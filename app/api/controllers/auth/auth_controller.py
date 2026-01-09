@@ -6,8 +6,8 @@ from app.Schemas.user_model import (
 )
 from app.core.exception import (
     InternalServerErrorException,
-    NotFoundException,
     UnauthorizedException,
+    UserNotFoundException,
 )
 from app.core.security.jwt import verify_token
 from app.core.security.password import hash_password, verify_password
@@ -42,7 +42,7 @@ async def change_password(
         users_collection = db.get_collection("users")
         user = await users_collection.find_one({"_id": ObjectId(user_id)})
         if not user:
-            raise NotFoundException(message="User not found")
+            raise UserNotFoundException()
         if not verify_password(request_data.current_password, user.get("password")):
             raise UnauthorizedException(message="Current password is incorrect")
         new_hashed_password = hash_password(request_data.new_password)

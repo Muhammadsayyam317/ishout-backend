@@ -24,10 +24,8 @@ class WebSocketManager:
 
             if user_id:
                 self._user_connections.setdefault(user_id, set()).add(websocket)
-
             if role:
                 self._role_connections.setdefault(role, set()).add(websocket)
-
         print(f"🔌 WS connected | total={len(self._all_connections)}")
 
     async def disconnect(self, websocket: WebSocket):
@@ -36,7 +34,6 @@ class WebSocketManager:
 
             for sockets in self._user_connections.values():
                 sockets.discard(websocket)
-
             for sockets in self._role_connections.values():
                 sockets.discard(websocket)
 

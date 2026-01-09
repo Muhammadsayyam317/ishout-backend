@@ -53,6 +53,22 @@ from app.tools.regenerate_influencer import reject_and_regenerate
 
 router = APIRouter()
 
+
+@router.post("/campaigns/generate-influencers/{campaign_id}", tags=["Admin"])
+async def generate_influencers_route(
+    campaign_id: str,
+    request_data: AdminGenerateInfluencersRequest,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(require_admin_access),
+):
+    try:
+        return await admin_generate_influencers(
+            campaign_id, request_data, background_tasks
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 router.add_api_route(
     path="/campaigns",
     endpoint=get_all_campaigns,
@@ -116,21 +132,6 @@ router.add_api_route(
     methods=["PATCH"],
     tags=["Admin"],
 )
-
-
-@router.post("/campaigns/generate-influencers/{campaign_id}", tags=["Admin"])
-async def generate_influencers_route(
-    campaign_id: str,
-    request_data: AdminGenerateInfluencersRequest,
-    background_tasks: BackgroundTasks,
-    current_user: dict = Depends(require_admin_access),
-):
-    try:
-        return await admin_generate_influencers(
-            campaign_id, request_data, background_tasks
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 router.add_api_route(

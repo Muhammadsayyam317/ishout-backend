@@ -4,7 +4,7 @@ from app.Schemas.campaign import CampaignStatus
 from app.agents.nodes.notify_admin import node_notify_admin_campaign_created
 from app.config.credentials_config import config
 from app.db.connection import get_db
-from app.Schemas.whatsappconversation import ConversationState
+from app.model.whatsappconversation import ConversationState
 from app.utils.helpers import normalize_phone
 
 
