@@ -99,7 +99,6 @@ async def approvedAdminCampaignById(
                 "campaign_id": ObjectId(campaign_id),
                 "status": CampaignInfluencerStatus.APPROVED.value,
                 "admin_approved": True,
-                "company_approved": False,
             }
         )
         influencers = await cursor.to_list(length=None)
