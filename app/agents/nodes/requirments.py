@@ -76,9 +76,9 @@ async def node_requirements(state):
 
         if "category" in missing:
             state["reply"] = (
-                f"Perfect choice! ✨ *{', '.join(state['platform'])}* is a great pick.\n\n"
+                f"Perfect choice! ✨ *{', '.join(state['platform'])}* is a great pick.\n"
                 "Now let’s narrow it down so we can match you with the *right influencers* 🎯\n\n"
-                "Which category best fits your brand?\n\n"
+                "Which category best fits your brand?\n"
                 "💡 Available Categories:\n"
                 "👗 Fashion\n"
                 "💄 Beauty\n"
@@ -93,7 +93,7 @@ async def node_requirements(state):
 
         if "country" in missing:
             state["reply"] = (
-                f"Awesome choice! ✨ *{', '.join(state['category'])}* influencers are a great fit.\n\n"
+                f"Awesome choice! ✨ *{', '.join(state['category'])}* influencers are a great fit.\n"
                 "Let’s make it even more precise so your campaign performs better 🎯\n\n"
                 "Which country or region should your influencers be based in?\n\n"
                 "🌍 Available Locations:\n"
@@ -112,7 +112,7 @@ async def node_requirements(state):
 
         if "limit" in missing:
             state["reply"] = (
-                f"Perfect! 🌍 We’ll focus on influencers based in *{', '.join(state['country'])}*.\n\n"
+                f"Perfect! 🌍 We’ll focus on influencers based in *{', '.join(state['country'])}*.\n"
                 "Now let’s decide the reach of your campaign 🚀\n\n"
                 "How many influencers would you like to collaborate with?\n\n"
                 "🔢 Popular choices:\n"
@@ -126,7 +126,7 @@ async def node_requirements(state):
 
         if "followers" in missing:
             state["reply"] = (
-                f"Great! 🙌 We’ll line up *{state.get('limit')}* influencers for your campaign.\n\n"
+                f"Great! 🙌 We’ll line up *{state.get('limit')}* influencers for your campaign.\n"
                 "Now let’s choose the *reach level* that fits your goals 🎯\n\n"
                 "What follower range are you aiming for?\n\n"
                 "👥 Popular options:\n"
