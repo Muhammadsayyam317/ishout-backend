@@ -76,9 +76,9 @@ async def node_requirements(state):
 
         if "category" in missing:
             state["reply"] = (
-                f"Perfect choice! ✨ *{', '.join(state['platform'])}* is a great pick.\n\n"
+                f"Perfect choice! ✨ *{', '.join(state['platform'])}* is a great pick.\n"
                 "Now let’s narrow it down so we can match you with the *right influencers* 🎯\n\n"
-                "Which category best fits your brand?\n\n"
+                "Which category best fits your brand?\n"
                 "💡 Available Categories:\n"
                 "👗 Fashion\n"
                 "💄 Beauty\n"
@@ -93,7 +93,7 @@ async def node_requirements(state):
 
         if "country" in missing:
             state["reply"] = (
-                f"Awesome choice! ✨ *{', '.join(state['category'])}* influencers are a great fit.\n\n"
+                f"Awesome choice! ✨ *{', '.join(state['category'])}* influencers are a great fit.\n"
                 "Let’s make it even more precise so your campaign performs better 🎯\n\n"
                 "Which country or region should your influencers be based in?\n\n"
                 "🌍 Available Locations:\n"
@@ -112,7 +112,7 @@ async def node_requirements(state):
 
         if "limit" in missing:
             state["reply"] = (
-                f"Perfect! 🌍 We’ll focus on influencers based in *{', '.join(state['country'])}*.\n\n"
+                f"Perfect! 🌍 We’ll focus on influencers based in *{', '.join(state['country'])}*.\n"
                 "Now let’s decide the reach of your campaign 🚀\n\n"
                 "How many influencers would you like to collaborate with?\n\n"
                 "🔢 Popular choices:\n"
@@ -126,13 +126,15 @@ async def node_requirements(state):
 
         if "followers" in missing:
             state["reply"] = (
-                f"Noted! We'll find *{state.get('limit')}* influencers for you.\n\n"
-                "What follower range are you targeting?\n\n"
-                "👥 Examples:\n"
-                "• 50k (Micro influencers)\n"
-                "• 200k (Mid-tier)\n"
-                "• 500k+ (Macro influencers)\n"
-                "• 1M+ (Mega influencers)"
+                f"Great! 🙌 We’ll line up *{state.get('limit')}* influencers for your campaign.\n"
+                "Now let’s choose the *reach level* that fits your goals 🎯\n\n"
+                "What follower range are you aiming for?\n\n"
+                "👥 Popular options:\n"
+                "✨ 50k+  – Micro (high engagement)\n"
+                "🔥 200k+ – Mid-tier (balanced reach)\n"
+                "🚀 500k+ – Macro (strong visibility)\n"
+                "🌟 1M+   – Mega (maximum impact)\n\n"
+                "👉 Just reply with the number (e.g., 50k, 200k)."
             )
             return state
         state["reply"] = None
