@@ -126,13 +126,15 @@ async def node_requirements(state):
 
         if "followers" in missing:
             state["reply"] = (
-                f"Noted! We'll find *{state.get('limit')}* influencers for you.\n\n"
-                "What follower range are you targeting?\n\n"
-                "👥 Examples:\n"
-                "• 50k (Micro influencers)\n"
-                "• 200k (Mid-tier)\n"
-                "• 500k+ (Macro influencers)\n"
-                "• 1M+ (Mega influencers)"
+                f"Great! 🙌 We’ll line up *{state.get('limit')}* influencers for your campaign.\n\n"
+                "Now let’s choose the *reach level* that fits your goals 🎯\n\n"
+                "What follower range are you aiming for?\n\n"
+                "👥 Popular options:\n"
+                "✨ 50k+  – Micro (high engagement)\n"
+                "🔥 200k+ – Mid-tier (balanced reach)\n"
+                "🚀 500k+ – Macro (strong visibility)\n"
+                "🌟 1M+   – Mega (maximum impact)\n\n"
+                "👉 Just reply with the number (e.g., 50k, 200k)."
             )
             return state
         state["reply"] = None
