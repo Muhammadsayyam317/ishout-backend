@@ -65,34 +65,62 @@ async def node_requirements(state):
 
         if "platform" in missing:
             state["reply"] = (
-                "👋 Welcome to iShout!\n\n"
-                "Let's find the perfect influencers for your campaign 🎲\n\n"
-                "Which social media platform are you targeting?\n\n"
-                "📱 Available Platforms: Instagram, TikTok, YouTube"
+                "✨ Welcome to iShout! ✨!\n\n"
+                "Which platform do you want to promote on?🎲\n\n"
+                "📸 Instagram – Visual storytelling & high engagement\n"
+                "🎵 TikTok – Viral reach & trend-driven growth\n"
+                "🎥 YouTube – Long-form impact & trust building\n\n"
+                "👉 Just reply with the platform name to continue.)"
             )
             return state
 
         if "category" in missing:
             state["reply"] = (
-                f"Great! *{', '.join(state['platform'])}* it is!\n\n"
-                "Now, what category or niche are you looking for?\n\n"
-                "💡 Categories: Fashion, Beauty, Tech, Fitness, Food, Travel, Gaming"
+                f"Perfect choice! ✨ *{', '.join(state['platform'])}* is a great pick.\n\n"
+                "Now let’s narrow it down so we can match you with the *right influencers* 🎯\n\n"
+                "Which category best fits your brand?\n\n"
+                "💡 Available Categories:\n"
+                "👗 Fashion\n"
+                "💄 Beauty\n"
+                "📱 Tech\n"
+                "💪 Fitness\n"
+                "🍔 Food\n"
+                "✈️ Travel\n"
+                "🎮 Gaming\n\n"
+                "👉 Just reply with the category name."
             )
             return state
 
         if "country" in missing:
             state["reply"] = (
-                f"Perfect! *{', '.join(state['category'])}* influencers coming up!\n\n"
-                "Which country or region should these influencers be based in?\n\n"
-                "🌍 Countries: UAE, Kuwait, Saudi Arabia, Qatar, Oman, Lebanon, Jordan, Iraq, Egypt"
+                f"Awesome choice! ✨ *{', '.join(state['category'])}* influencers are a great fit.\n\n"
+                "Let’s make it even more precise so your campaign performs better 🎯\n\n"
+                "Which country or region should your influencers be based in?\n\n"
+                "🌍 Available Locations:\n"
+                "🇦🇪 UAE\n"
+                "🇰🇼 Kuwait\n"
+                "🇸🇦 Saudi Arabia\n"
+                "🇶🇦 Qatar\n"
+                "🇴🇲 Oman\n"
+                "🇱🇧 Lebanon\n"
+                "🇯🇴 Jordan\n"
+                "🇮🇶 Iraq\n"
+                "🇪🇬 Egypt\n\n"
+                "👉 Just reply with the country name."
             )
             return state
 
         if "limit" in missing:
             state["reply"] = (
-                f"Got it! Looking for influencers in *{', '.join(state['country'])}*\n\n"
-                "How many influencers would you like to connect with?\n\n"
-                "🔢 Examples: 5, 10, 20, 50"
+                f"Perfect! 🌍 We’ll focus on influencers based in *{', '.join(state['country'])}*.\n\n"
+                "Now let’s decide the reach of your campaign 🚀\n\n"
+                "How many influencers would you like to collaborate with?\n\n"
+                "🔢 Popular choices:\n"
+                "✨ 5  – highly targeted\n"
+                "🔥 10 – balanced reach\n"
+                "🚀 20 – strong visibility\n"
+                "🌍 50 – maximum exposure\n\n"
+                "👉 Just reply with a number."
             )
             return state
 
