@@ -2,9 +2,9 @@ from enum import Enum
 
 
 class CampaignInfluencerStatus(str, Enum):
-    approved = "approved"
-    rejected = "rejected"
-    pending = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    PENDING = "pending"
 
 
 class CampaignStatus(str, Enum):

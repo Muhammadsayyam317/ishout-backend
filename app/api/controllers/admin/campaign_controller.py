@@ -261,7 +261,7 @@ async def AdminApprovedSingleInfluencer(
                 "$set": {
                     "admin_approved": (
                         True
-                        if request_data.status == CampaignInfluencerStatus.approved
+                        if request_data.status == CampaignInfluencerStatus.APPROVED
                         else False
                     ),
                     "InfluencerStatus": request_data.status.value,
