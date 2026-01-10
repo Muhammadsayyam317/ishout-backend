@@ -208,7 +208,7 @@ async def AdminApprovedSingleInfluencer(
         campaign_id = ObjectId(request_data.campaign_id)
         influencer_id_str = request_data.influencer_id
         influencer_id_obj = ObjectId(request_data.influencer_id)
-        is_admin_approved = request_data.status == CampaignInfluencerStatus.approved
+        is_admin_approved = request_data.status == CampaignInfluencerStatus.APPROVED
 
         update_fields = {
             "username": request_data.username,
@@ -259,12 +259,8 @@ async def AdminApprovedSingleInfluencer(
             },
             {
                 "$set": {
-                    "admin_approved": (
-                        True
-                        if request_data.status == CampaignInfluencerStatus.APPROVED
-                        else False
-                    ),
-                    "InfluencerStatus": request_data.status.value,
+                    "admin_approved": is_admin_approved,
+                    "status": request_data.status.value,
                     "pricing": request_data.pricing,
                     "updated_at": datetime.now(timezone.utc),
                 }
