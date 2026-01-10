@@ -18,9 +18,9 @@ class CampaignInfluencersRequest(BaseModel):
     followers: Optional[int] = None
     country: Optional[str] = None
     status: CampaignInfluencerStatus
-    admin_approved: bool = False
-    company_approved: bool = False
-    company_user_id: str
+    admin_approved: Optional[bool] = None
+    company_approved: Optional[bool] = None
+    company_user_id: Optional[str] = None
     pricing: Optional[float] = None
 
 
