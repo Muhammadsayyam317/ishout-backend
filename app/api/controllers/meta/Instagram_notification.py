@@ -24,7 +24,6 @@ async def verify_webhook(request: Request):
         and params.get("hub.verify_token") == config.META_VERIFY_TOKEN
     ):
         return Response(content=params.get("hub.challenge"), status_code=200)
-
     return Response(status_code=403)
 
 
@@ -61,11 +60,11 @@ def build_message_payload(
 ) -> dict:
     return {
         "thread_id": psid,
-        "sender": "USER",
+        "sender_type": "ADMIN",
         "platform": "INSTAGRAM",
-        "username": f"User_{psid[:8]}" if psid else "Unknown",
+        "username": "Admin",
         "message": text if text else "[Attachment]",
-        "timestamp": timestamp,
+        "timestamp": time.time(),
         "attachments": build_attachments(attachments),
     }
 
@@ -78,10 +77,8 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
         body = await request.json()
     except json.JSONDecodeError:
         return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
-
     now = time.time()
     cleanup_processed_messages(now)
-
     for entry in body.get("entry", []):
         # Messenger-style payload
         for messaging_event in entry.get("messaging", []):
