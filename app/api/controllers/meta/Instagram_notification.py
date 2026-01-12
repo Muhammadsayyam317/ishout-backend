@@ -1,21 +1,12 @@
 import json
 import time
-from typing import Dict
-from fastapi import (
-    BackgroundTasks,
-    Request,
-    Response,
-)
+from fastapi import BackgroundTasks, Request, Response
 from fastapi.responses import JSONResponse
+from app.config import config
 from app.model.Instagram.instagram_message import InstagramMessageModel
 from app.services.websocket_manager import ws_manager
-from app.config import config
 
-
-PROFILE_CACHE: Dict[str, Dict] = {}
-PROFILE_TTL_SEC = 3600
 PROCESSED_MESSAGES: set = set()
-MESSAGE_CACHE_TTL_SEC = 3600
 
 
 async def verify_webhook(request: Request):
@@ -35,6 +26,7 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
     except json.JSONDecodeError:
         return JSONResponse({"error": "Invalid JSON body"}, status_code=400)
 
+    # Clean up processed messages every hour
     current_time = time.time()
     if hasattr(handle_webhook, "_last_cleanup"):
         if current_time - handle_webhook._last_cleanup > 3600:
@@ -51,7 +43,6 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                 message_id = value["message"].get("mid")
                 if message_id and message_id in PROCESSED_MESSAGES:
                     continue
-
                 if message_id:
                     PROCESSED_MESSAGES.add(message_id)
 
@@ -60,23 +51,22 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                 text = message_data.get("text", "")
                 attachments = message_data.get("attachments", [])
 
-                attachment_list = []
-                for attachment in attachments:
-                    attachment_list.append(
-                        {
-                            "type": attachment.get("type"),
-                            "url": attachment.get("payload", {}).get("url"),
-                        }
-                    )
-            if text or attachments:
+                attachment_list = [
+                    {"type": att.get("type"), "url": att.get("payload", {}).get("url")}
+                    for att in attachments
+                ]
+
+                display_name = f"User_{psid[:8]}" if psid else "Unknown"
                 broadcast_data = {
                     "thread_id": psid,
                     "sender": "USER",
                     "platform": "INSTAGRAM",
+                    "username": display_name,
                     "message": text if text else "[Attachment]",
                     "timestamp": value.get("timestamp", time.time()),
                     "attachments": attachment_list or [],
                 }
+
                 print("📡 IG WS EVENT →", broadcast_data)
                 await background_tasks.add_task(
                     ws_manager.broadcast_event,
@@ -87,37 +77,39 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
 
         for messaging_event in entry.get("messaging", []):
             message = messaging_event.get("message")
+            if not message or not (message.get("text") or message.get("attachments")):
+                continue
 
-            if message and (message.get("text") or message.get("attachments")):
-                message_id = message.get("mid")
-                if message_id and message_id in PROCESSED_MESSAGES:
-                    continue
+            message_id = message.get("mid")
+            if message_id and message_id in PROCESSED_MESSAGES:
+                continue
+            if message_id:
+                PROCESSED_MESSAGES.add(message_id)
 
-                if message_id:
-                    PROCESSED_MESSAGES.add(message_id)
-                sender = messaging_event.get("sender", {})
-                psid = sender.get("id")
-                text = message.get("text", "")
-                attachments = message.get("attachments", [])
-                timestamp = messaging_event.get("timestamp", time.time())
-                attachment_list = []
-                for attachment in attachments:
-                    attachment_list.append(
-                        {
-                            "type": attachment.get("type"),
-                            "url": attachment.get("payload", {}).get("url"),
-                        }
-                    )
-                broadcast_data = {
-                    "thread_id": psid,
-                    "sender": "USER",
-                    "platform": "INSTAGRAM",
-                    "message": text if text else "[Attachment]",
-                    "timestamp": timestamp,
-                    "attachments": attachment_list or [],
-                }
-            await InstagramMessageModel.create(broadcast_data)
+            sender = messaging_event.get("sender", {})
+            psid = sender.get("id")
+            text = message.get("text", "")
+            attachments = message.get("attachments", [])
+            timestamp = messaging_event.get("timestamp", time.time())
+
+            attachment_list = [
+                {"type": att.get("type"), "url": att.get("payload", {}).get("url")}
+                for att in attachments
+            ]
+
+            display_name = f"User_{psid[:8]}" if psid else "Unknown"
+            broadcast_data = {
+                "thread_id": psid,
+                "sender": "USER",
+                "platform": "INSTAGRAM",
+                "username": display_name,
+                "message": text if text else "[Attachment]",
+                "timestamp": timestamp,
+                "attachments": attachment_list or [],
+            }
+
             print("📡 IG WS EVENT →", broadcast_data)
+            await InstagramMessageModel.create(broadcast_data)
             background_tasks.add_task(
                 ws_manager.broadcast_event, "instagram.message", payload=broadcast_data
             )
