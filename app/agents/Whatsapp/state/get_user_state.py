@@ -1,5 +1,5 @@
 import time
-from app.agents.state.create_user_state import create_new_state
+from app.agents.Whatsapp.state.create_user_state import create_new_state
 from app.core.exception import InternalServerErrorException
 from app.db.mongo_session import get_session_collection
 

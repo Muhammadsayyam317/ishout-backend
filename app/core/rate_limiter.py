@@ -1,5 +1,4 @@
 from redis.asyncio import Redis
-import time
 
 
 class RateLimiter:

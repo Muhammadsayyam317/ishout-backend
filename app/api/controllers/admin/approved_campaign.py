@@ -48,7 +48,6 @@ async def approved_campaign(
             .limit(page_size)
         )
         docs = await cursor.to_list(length=None)
-
         formatted = []
         for doc in docs:
             formatted.append(
@@ -66,9 +65,7 @@ async def approved_campaign(
                     "updated_at": doc.get("updated_at"),
                 }
             )
-
         total_pages = total + page_size - 1
-
         return {
             "campaigns": formatted,
             "total": total,
@@ -103,12 +100,10 @@ async def approvedAdminCampaignById(
         )
         influencers = await cursor.to_list(length=None)
         cleaned = [convert_objectid(i) for i in influencers]
-
         return {
             "approved_influencers": cleaned,
             "total": len(cleaned),
         }
-
     except Exception as e:
         raise InternalServerErrorException(message=str(e)) from e
 
@@ -155,7 +150,6 @@ async def companyApprovedSingleInfluencer(
                 }
             )
             await collection.insert_one(update_fields)
-
         return {"message": "Influencer approved successfully"}
 
     except Exception as e:

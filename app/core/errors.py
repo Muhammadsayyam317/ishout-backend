@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 
 
-def register_exception_handlers(app: FastAPI) -> None:
+def exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(HTTPException)
     async def http_exception_handler(request: Request, exc: HTTPException):
@@ -42,3 +42,13 @@ def register_exception_handlers(app: FastAPI) -> None:
             }
         }
         return JSONResponse(status_code=500, content=payload)
+
+    @app.exception_handler(Exception)
+    async def NotFoundException(request: Request, exec: Exception):
+        payload = {
+            "error": {
+                "status_code": 404,
+                "message": "Not Found",
+            }
+        }
+        return JSONResponse(status_code=404, content=payload)

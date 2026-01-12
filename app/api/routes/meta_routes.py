@@ -1,11 +1,11 @@
 from fastapi import APIRouter
-from app.api.controllers.meta.notification import (
+from app.api.controllers.meta.Instagram_notification import (
     handle_webhook,
     verify_webhook,
 )
 from app.api.controllers.meta.privacy_policy import get_privacy_policy
 from app.api.controllers.meta.whatsapp_webhook import verify_whatsapp_webhook
-from app.agents.whatsapp_agent import handle_whatsapp_events
+from app.agents.Whatsapp.invoke.whatsapp_agent import handle_whatsapp_events
 
 router = APIRouter()
 router.add_api_route(

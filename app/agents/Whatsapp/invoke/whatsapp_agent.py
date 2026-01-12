@@ -1,13 +1,13 @@
 from datetime import datetime, timezone
 from fastapi import Request, HTTPException
-from app.agents.nodes.state import (
+from app.agents.Whatsapp.nodes.state import (
     cleanup_old_checkpoints,
     get_conversation_round,
     increment_conversation_round,
 )
-from app.agents.state.get_user_state import get_user_state
-from app.agents.state.update_user_state import update_user_state
-from app.agents.state.reset_state import reset_user_state
+from app.agents.Whatsapp.state.get_user_state import get_user_state
+from app.agents.Whatsapp.state.update_user_state import update_user_state
+from app.agents.Whatsapp.state.reset_state import reset_user_state
 from app.services.websocket_manager import ws_manager
 from app.services.whatsapp.reply_button import handle_button_reply
 from app.services.whatsapp.save_message import save_conversation_message

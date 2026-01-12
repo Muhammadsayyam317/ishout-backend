@@ -1,7 +1,7 @@
 from typing import Dict, Any
 from datetime import datetime, timezone
 from app.Schemas.campaign import CampaignStatus
-from app.agents.nodes.notify_admin import node_notify_admin_campaign_created
+from app.agents.Whatsapp.nodes.notify_admin import node_notify_admin_campaign_created
 from app.config.credentials_config import config
 from app.db.connection import get_db
 from app.model.whatsappconversation import ConversationState
