@@ -1,7 +1,6 @@
 from agents import Agent, AgentOutputSchema, Runner
 from app.Schemas.instagram.message_schema import AnalyzeMessageOutput
 from app.Schemas.instagram.negotiation_schema import InstagramConversationState
-from app.core.exception import InternalServerErrorException
 from app.utils.prompts import ANALYZE_INFLUENCER_DM_PROMPT
 
 

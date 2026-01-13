@@ -1,4 +1,6 @@
 from agents import Agent, AgentOutputSchema
+from openai import OpenAI
+from app import config
 from app.Guardails.input_guardrails import InstagramInputGuardrail
 from app.Guardails.output_guardrails import InstagramOutputGuardrail
 from app.utils.clients import get_openai_client
@@ -19,8 +21,8 @@ generate_reply_agent = Agent(
 
 
 async def node_generate_reply(state: InstagramConversationState):
+    print(f"Generating reply for: {state.user_message}")
     try:
-        print(f"Generating reply for: {state.user_message}")
         prompt = NEGOTIATE_INFLUENCER_DM_PROMPT.format(
             user_message=state.user_message,
             brand_intent=state.brand_intent or "",
@@ -28,8 +30,10 @@ async def node_generate_reply(state: InstagramConversationState):
             negotiation_strategy=state.negotiation_strategy.value,
         )
 
-        response = await openai_client.chat.completions.create(
+        response = await OpenAI(
+            api_key=config.OPENAI_API_KEY,
             model="gpt-4o-mini",
+        ).chat.completions.create(
             messages=[
                 {"role": "system", "content": NEGOTIATE_INFLUENCER_DM_PROMPT},
                 {"role": "user", "content": prompt},
@@ -37,11 +41,11 @@ async def node_generate_reply(state: InstagramConversationState):
             temperature=0.6,
             max_tokens=300,
             metadata={
-                "thread_id": state.thread_id,
+                "thread_id": str(state.thread_id),
                 "platform": "INSTAGRAM",
-                "negotiation_strategy": state.negotiation_strategy.value,
-                "brand_intent": state.brand_intent,
-                "pricing_mentioned": state.pricing_mentioned,
+                "negotiation_strategy": str(state.negotiation_strategy.value),
+                "brand_intent": str(state.brand_intent or ""),
+                "pricing_mentioned": str(state.pricing_mentioned or ""),
             },
         )
 
@@ -49,9 +53,10 @@ async def node_generate_reply(state: InstagramConversationState):
         reply = response.choices[0].message.content.strip()
         if not reply:
             raise ValueError("Empty LLM response")
-        print(f"Reply: {reply}")
+        print(f"Generated Reply: {reply}")
         state.ai_draft = reply
         state.final_reply = reply
+        print("Exiting from Reply Generation")
         return state
 
     except Exception as e:
