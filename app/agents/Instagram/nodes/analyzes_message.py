@@ -1,13 +1,11 @@
-from agents import Agent, Runner
-from agents.agent_output import AgentOutputSchema
+from agents import Agent, AgentOutputSchema, Runner
 from app.Guardails.input_guardrails import InstagramInputGuardrail
 from app.Guardails.output_guardrails import InstagramOutputGuardrail
-from app.core.exception import InternalServerErrorException
 from app.Schemas.instagram.negotiation_schema import InstagramConversationState
+from app.core.exception import InternalServerErrorException
 from app.utils.prompts import ANALYZE_INFLUENCER_DM_PROMPT
 
-
-analyze_message_agent = Agent(
+analyze_message = Agent(
     name="analyze_message",
     instructions=ANALYZE_INFLUENCER_DM_PROMPT,
     input_guardrails=[InstagramInputGuardrail],
@@ -22,18 +20,22 @@ async def node_analyze_message(
     try:
         print(f"🔍 Analyzing message: {state.user_message}")
 
-        result = await Runner.run(
-            analyze_message_agent,
-            {
-                "message": state.user_message,
-                "thread_id": state.thread_id,
-            },
+        # Proper input for the agent
+        agent_input = InstagramConversationState(
+            thread_id=state.thread_id,
+            user_message=state.user_message,
+            brand_intent=state.brand_intent or "",
+            pricing_mentioned=state.pricing_mentioned or False,
+            negotiation_stage=state.negotiation_stage,
+            negotiation_strategy=state.negotiation_strategy,
         )
-        print(f"Raw agent result: {result}")
+        print(f"Agent input: {agent_input}")
 
-        # ✅ result.final_output is your Pydantic model
+        result = await Runner.run(analyze_message, agent_input)
         output: InstagramConversationState = result.final_output
+        print(f"Output: {output}")
 
+        # Mutate the state
         state.brand_intent = output.brand_intent
         state.pricing_mentioned = output.pricing_mentioned
         state.negotiation_stage = output.negotiation_stage
