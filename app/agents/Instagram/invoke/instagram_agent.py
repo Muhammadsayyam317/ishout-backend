@@ -1,4 +1,4 @@
-from app.agents.Instagram.graph import instagram_graph
+from app.agents.Instagram.graph.instagram_graph import instagram_graph
 from app.core.exception import InternalServerErrorException
 
 

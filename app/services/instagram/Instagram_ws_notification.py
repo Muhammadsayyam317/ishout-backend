@@ -69,6 +69,7 @@ def message_payload(
 # Webhook handler
 # -------------------------
 async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
+    print("Entering handle_webhook")
     try:
         body = await request.json()
     except json.JSONDecodeError:
