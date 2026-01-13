@@ -1,25 +1,32 @@
 from enum import Enum
+from typing import Optional
 from pydantic import BaseModel
 
 
-class NegotiationStage(Enum):
+class NegotiationStage(str, Enum):
     INITIAL = "INITIAL"
     COUNTER = "COUNTER"
     FINAL = "FINAL"
 
 
-class NegotiationStrategy(Enum):
+class NegotiationStrategy(str, Enum):
     SOFT = "SOFT"
     VALUE_BASED = "VALUE_BASED"
     WALK_AWAY = "WALK_AWAY"
 
 
-class AnalyzeMessageResult(BaseModel):
-    brand_intent: str
-    pricing_mentioned: bool
-    campaign_details_missing: bool
-    next_action: str
+class InstagramConversationState(BaseModel):
+    # Required at entry
+    thread_id: str
+    user_message: str
+
+    # Filled by analyze node
+    brand_intent: Optional[str] = None
+    pricing_mentioned: Optional[bool] = None
+
     negotiation_stage: NegotiationStage = NegotiationStage.INITIAL
     negotiation_strategy: NegotiationStrategy = NegotiationStrategy.SOFT
-    ai_draft: str = ""
-    human_approved: bool | None = None
+
+    # Filled later
+    ai_draft: Optional[str] = None
+    final_reply: Optional[str] = None
