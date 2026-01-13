@@ -12,6 +12,6 @@ def get_langfuse_client():
     langfuse_client = Langfuse(
         public_key=config.LANGFUSE_PUBLIC_KEY,
         secret_key=config.LANGFUSE_SECRET_KEY,
-        host=config.LANGFUSE_HOST,
+        host=config.LANGFUSE_BASE_URL,
     )
     return langfuse_client

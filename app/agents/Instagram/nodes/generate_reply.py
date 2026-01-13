@@ -1,7 +1,10 @@
-from app.utils.clients import openai_client
+from app.utils.clients import get_openai_client
 from app.Schemas.instagram.negotiation_schema import InstagramConversationState
 from app.utils.prompts import NEGOTIATE_INFLUENCER_DM_PROMPT
 from app.core.exception import InternalServerErrorException
+
+
+openai_client = get_openai_client()
 
 
 async def node_generate_reply(state: InstagramConversationState):
