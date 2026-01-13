@@ -1,10 +1,10 @@
-from agents import Agent
-from agents import AgentOutputSchema
+from agents import Agent, Runner
+from agents.agent_output import AgentOutputSchema
 from app.Guardails.input_guardrails import InstagramInputGuardrail
 from app.Guardails.output_guardrails import InstagramOutputGuardrail
-from app.utils.prompts import ANALYZE_INFLUENCER_DM_PROMPT
-from app.Schemas.instagram.negotiation_schema import InstagramConversationState
 from app.core.exception import InternalServerErrorException
+from app.Schemas.instagram.negotiation_schema import InstagramConversationState
+from app.utils.prompts import ANALYZE_INFLUENCER_DM_PROMPT
 
 
 analyze_message_agent = Agent(
@@ -22,25 +22,24 @@ async def node_analyze_message(
     try:
         print(f"🔍 Analyzing message: {state.user_message}")
 
-        result = await analyze_message_agent.ainvoke(
+        result = await Runner.run(
+            analyze_message_agent,
             {
                 "message": state.user_message,
                 "thread_id": state.thread_id,
-            }
+            },
         )
+        print(f"Raw agent result: {result}")
 
-        # ✅ Mutate state (LangGraph requirement)
-        state.brand_intent = result.brand_intent
-        state.pricing_mentioned = result.pricing_mentioned
-        state.negotiation_stage = result.negotiation_stage
-        state.negotiation_strategy = result.negotiation_strategy
+        # ✅ result.final_output is your Pydantic model
+        output: InstagramConversationState = result.final_output
+
+        state.brand_intent = output.brand_intent
+        state.pricing_mentioned = output.pricing_mentioned
+        state.negotiation_stage = output.negotiation_stage
+        state.negotiation_strategy = output.negotiation_strategy
 
         print("✅ Analysis complete")
-        print(f"Intent: {state.brand_intent}")
-        print(f"Pricing: {state.pricing_mentioned}")
-        print(f"Stage: {state.negotiation_stage}")
-        print(f"Strategy: {state.negotiation_strategy}")
-
         return state
 
     except Exception as e:

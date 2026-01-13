@@ -1,3 +1,6 @@
+from agents import Agent, AgentOutputSchema
+from app.Guardails.input_guardrails import InstagramInputGuardrail
+from app.Guardails.output_guardrails import InstagramOutputGuardrail
 from app.utils.clients import get_openai_client
 from app.Schemas.instagram.negotiation_schema import InstagramConversationState
 from app.utils.prompts import NEGOTIATE_INFLUENCER_DM_PROMPT
@@ -5,6 +8,14 @@ from app.core.exception import InternalServerErrorException
 
 
 openai_client = get_openai_client()
+
+generate_reply_agent = Agent(
+    name="generate_reply",
+    instructions=NEGOTIATE_INFLUENCER_DM_PROMPT,
+    input_guardrails=[InstagramInputGuardrail],
+    output_guardrails=[InstagramOutputGuardrail],
+    output_type=AgentOutputSchema(InstagramConversationState, strict_json_schema=False),
+)
 
 
 async def node_generate_reply(state: InstagramConversationState):
