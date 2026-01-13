@@ -23,17 +23,15 @@ async def node_analyze_message(
         )
 
         output: dict = result.final_output or {}
-        state.brand_intent = output.get("brand_intent", "")
-        state.pricing_mentioned = output.get("pricing_mentioned", False)
-        state.negotiation_stage = output.get(
-            "negotiation_stage", state.negotiation_stage
+        state.brand_intent = output.brand_intent or ""
+        state.pricing_mentioned = output.pricing_mentioned or False
+        state.negotiation_stage = output.negotiation_stage or state.negotiation_stage
+        state.negotiation_strategy = (
+            output.negotiation_strategy or state.negotiation_strategy
         )
-        state.negotiation_strategy = output.get(
-            "negotiation_strategy", state.negotiation_strategy
-        )
-
         print("✅ Analysis complete")
         return state
-
     except Exception as e:
-        raise InternalServerErrorException(message=f"Analyze message failed: {str(e)}")
+        raise ValueError(
+            f"Analyze message failed for thread_id: {state.thread_id} - {str(e)}"
+        )
