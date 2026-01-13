@@ -1,4 +1,5 @@
 from agents import Agent, AgentOutputSchema, Runner
+from app.Schemas.instagram.message_schema import AnalyzeMessageOutput
 from app.Schemas.instagram.negotiation_schema import InstagramConversationState
 from app.core.exception import InternalServerErrorException
 from app.utils.prompts import ANALYZE_INFLUENCER_DM_PROMPT
@@ -7,7 +8,7 @@ from app.utils.prompts import ANALYZE_INFLUENCER_DM_PROMPT
 analyze_agent = Agent(
     name="analyze_message",
     instructions=ANALYZE_INFLUENCER_DM_PROMPT,
-    output_type=AgentOutputSchema(dict, strict_json_schema=False),
+    output_type=AgentOutputSchema(AnalyzeMessageOutput, strict_json_schema=False),
 )
 
 
