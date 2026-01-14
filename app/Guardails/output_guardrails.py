@@ -32,14 +32,24 @@ guardrail_agent = Agent(
 
 @output_guardrail(name="InstagramOutputGuardrail")
 async def InstagramOutputGuardrail(
-    ctx: RunContextWrapper[None], agent: Agent, input: OutputGuardrailInput
+    ctx: RunContextWrapper[None],
+    agent: Agent,
+    input: OutputGuardrailInput,
 ) -> GuardrailFunctionOutput:
-    result = await Runner.run(guardrail_agent, input=input, context=ctx)
+
+    result = await Runner.run(
+        guardrail_agent,
+        input=input,
+        context=ctx,
+    )
+
+    guardrail_output: OutputGuardrailResult = result.final_output
+
     return GuardrailFunctionOutput(
-        allowed=result.allowed,
-        reason=result.reason,
-        escalate=result.escalate,
-        fallback=result.fallback,
-        output_info=result.final_output.message,
-        tripwire_triggered=result.final_output.tripwire_triggered,
+        allowed=guardrail_output.allowed,
+        reason=guardrail_output.reason,
+        escalate=guardrail_output.escalate,
+        fallback=guardrail_output.fallback,
+        output_info=guardrail_output.output_info,
+        tripwire_triggered=guardrail_output.tripwire_triggered,
     )

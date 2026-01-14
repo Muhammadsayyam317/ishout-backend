@@ -1,6 +1,5 @@
 from agents import Agent, Runner
 from agents.agent_output import AgentOutputSchema
-
 from app.Guardails.input_guardrails import InstagramInputGuardrail
 from app.Guardails.output_guardrails import InstagramOutputGuardrail
 from app.Schemas.instagram.negotiation_schema import InstagramConversationState
@@ -10,6 +9,7 @@ from app.utils.prompts import NEGOTIATE_INFLUENCER_DM_PROMPT
 generate_reply_agent = Agent(
     name="generate_reply",
     instructions=NEGOTIATE_INFLUENCER_DM_PROMPT,
+    model="gpt-4o-mini",
     input_guardrails=[InstagramInputGuardrail],
     output_guardrails=[InstagramOutputGuardrail],
     output_type=AgentOutputSchema(InstagramConversationState, strict_json_schema=False),

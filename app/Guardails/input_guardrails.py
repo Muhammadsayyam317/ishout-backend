@@ -42,12 +42,29 @@ async def InstagramInputGuardrail(
     agent: Agent,
     message: str | list[TResponseInputItem],
 ) -> GuardrailFunctionOutput:
-    result = await Runner.run(guardrail_agent, input=message, context=context)
-    return GuardrailFunctionOutput(
-        allowed=result.allowed,
-        reason=result.reason,
-        escalate=result.escalate,
-        fallback=result.fallback,
-        output_info=result.output,
-        tripwire_triggered=result.output.tripwire_triggered,
+
+    result = await Runner.run(
+        guardrail_agent,
+        input=message,
+        context=context,
     )
+
+    guardrail_output: InputGuardrailResult = result.final_output
+
+    return GuardrailFunctionOutput(
+        allowed=guardrail_output.allowed,
+        reason=guardrail_output.reason,
+        escalate=guardrail_output.escalate,
+        fallback=guardrail_output.fallback,
+        output_info=None,  # input guardrails usually don't need this
+        tripwire_triggered=guardrail_output.tripwire_triggered,
+    )
+
+
+# analyze_message = Agent(
+#     name="analyze_message",
+#     instructions=ANALYZE_INFLUENCER_DM_PROMPT,
+#     input_guardrails=[InstagramInputGuardrail],
+#     output_guardrails=[InstagramOutputGuardrail],
+#     output_type=AgentOutputSchema(InstagramConversationState, strict_json_schema=False),
+# )
