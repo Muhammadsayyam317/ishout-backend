@@ -22,7 +22,7 @@ class InstagramConversationState(BaseModel):
 
     # Filled by analyze node
     brand_intent: Optional[str] = None
-    pricing_mentioned: Optional[str] = None
+    pricing_mentioned: bool = False
 
     negotiation_stage: NegotiationStage = NegotiationStage.INITIAL
     negotiation_strategy: NegotiationStrategy = NegotiationStrategy.SOFT

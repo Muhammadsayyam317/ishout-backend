@@ -21,13 +21,12 @@ async def node_analyze_message(
             input=state.user_message,
         )
 
-        output: dict = result.final_output or {}
+        output: AnalyzeMessageOutput = result.final_output
         state.brand_intent = output.brand_intent or ""
-        state.pricing_mentioned = output.pricing_mentioned or False
-        state.negotiation_stage = output.negotiation_stage or state.negotiation_stage
-        state.negotiation_strategy = (
-            output.negotiation_strategy or state.negotiation_strategy
-        )
+        state.pricing_mentioned = bool(output.pricing_mentioned)
+        state.negotiation_stage = output.negotiation_stage
+        state.negotiation_strategy = output.negotiation_strategy
+
         print("✅ Analysis complete")
         return state
     except Exception as e:
