@@ -1,8 +1,8 @@
 from agents import Agent, AgentOutputSchema
 from openai import OpenAI
-from app import config
 from app.Guardails.input_guardrails import InstagramInputGuardrail
 from app.Guardails.output_guardrails import InstagramOutputGuardrail
+from app.config import config
 from app.utils.clients import get_openai_client
 from app.Schemas.instagram.negotiation_schema import InstagramConversationState
 from app.utils.prompts import NEGOTIATE_INFLUENCER_DM_PROMPT
