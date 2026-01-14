@@ -18,6 +18,7 @@ analyze_agent = Agent(
 async def node_analyze_message(
     state: InstagramConversationState,
 ) -> InstagramConversationState:
+    print("Entering into Analyze Message Node")
     try:
         print(f"🔍 Analyzing message: {state.user_message}")
         result = await Runner.run(
@@ -36,8 +37,10 @@ async def node_analyze_message(
             state.negotiation_strategy = output.negotiation_strategy
 
         print("✅ Analysis complete")
+        print("Exiting from Analyze Message Node")
         return state
     except Exception as e:
+        print(f"Error in Analyze Message Node: {str(e)}")
         raise ValueError(
             f"Analyze message failed for thread_id: {state.thread_id} - {str(e)}"
         )
