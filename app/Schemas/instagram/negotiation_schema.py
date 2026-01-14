@@ -24,8 +24,8 @@ class InstagramConversationState(BaseModel):
     brand_intent: Optional[str] = None
     pricing_mentioned: bool = False
 
-    negotiation_stage: NegotiationStage = NegotiationStage.INITIAL
-    negotiation_strategy: NegotiationStrategy = NegotiationStrategy.SOFT
+    negotiation_stage: Optional[NegotiationStage] = None
+    negotiation_strategy: Optional[NegotiationStrategy] = None
 
     # Filled later
     ai_draft: Optional[str] = None

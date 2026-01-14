@@ -8,3 +8,7 @@ class AnalyzeMessageOutput(BaseModel):
     pricing_mentioned: Optional[bool] = False
     negotiation_stage: Optional[str] = ""
     negotiation_strategy: Optional[str] = ""
+
+
+class GenerateReplyOutput(BaseModel):
+    final_reply: str

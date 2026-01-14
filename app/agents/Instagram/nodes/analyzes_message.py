@@ -23,7 +23,10 @@ async def node_analyze_message(
         print(f"🔍 Analyzing message: {state.user_message}")
         result = await Runner.run(
             analyze_agent,
-            input=state.user_message,
+            input={
+                "message": state.user_message,
+                "thread_id": state.thread_id,
+            },
         )
 
         output: AnalyzeMessageOutput = result.final_output

@@ -2,9 +2,11 @@ from agents import Agent, Runner
 from agents.agent_output import AgentOutputSchema
 from app.Guardails.input_guardrails import InstagramInputGuardrail
 from app.Guardails.output_guardrails import InstagramOutputGuardrail
+from app.Schemas.instagram.message_schema import GenerateReplyOutput
 from app.Schemas.instagram.negotiation_schema import InstagramConversationState
 from app.core.exception import InternalServerErrorException
 from app.utils.prompts import NEGOTIATE_INFLUENCER_DM_PROMPT
+
 
 generate_reply_agent = Agent(
     name="generate_reply",
@@ -12,7 +14,7 @@ generate_reply_agent = Agent(
     model="gpt-4o-mini",
     input_guardrails=[InstagramInputGuardrail],
     output_guardrails=[InstagramOutputGuardrail],
-    output_type=AgentOutputSchema(InstagramConversationState, strict_json_schema=False),
+    output_type=AgentOutputSchema(GenerateReplyOutput, strict_json_schema=False),
 )
 
 
@@ -33,7 +35,7 @@ Negotiation strategy: {state.negotiation_strategy.value}
 """,
         )
 
-        output: InstagramConversationState = result.final_output
+        output: GenerateReplyOutput = result.final_output
         print(f"Output from Reply Generation Node: {output}")
 
         if not output.final_reply:
