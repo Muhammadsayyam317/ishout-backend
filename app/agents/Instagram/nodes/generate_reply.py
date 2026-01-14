@@ -22,26 +22,26 @@ async def node_generate_reply(
     print("Entering into Reply Generation Node")
     try:
         print(f"Generating reply for: {state.user_message}")
-
         result = await Runner.run(
             generate_reply_agent,
-            input={
-                "thread_id": state.thread_id,
-                "user_message": state.user_message,
-                "brand_intent": state.brand_intent,
-                "pricing_mentioned": state.pricing_mentioned,
-                "negotiation_stage": state.negotiation_stage.value,
-                "negotiation_strategy": state.negotiation_strategy.value,
-            },
+            input=f"""
+User message: {state.user_message}
+Brand intent: {state.brand_intent}
+Pricing mentioned: {state.pricing_mentioned}
+Negotiation stage: {state.negotiation_stage.value}
+Negotiation strategy: {state.negotiation_strategy.value}
+""",
         )
 
         output: InstagramConversationState = result.final_output
+        print(f"Output from Reply Generation Node: {output}")
 
         if not output.final_reply:
-            raise ValueError("Empty reply from generate_reply agent")
+            raise ValueError("Empty reply from agent")
 
         state.ai_draft = output.final_reply
         state.final_reply = output.final_reply
+
         print("Exiting from Reply Generation Node")
         return state
 

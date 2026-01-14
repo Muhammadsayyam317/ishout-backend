@@ -27,6 +27,7 @@ async def node_analyze_message(
         )
 
         output: AnalyzeMessageOutput = result.final_output
+        print(f"Output from Analyze Message Node: {output}")
         state.brand_intent = output.brand_intent or ""
         state.pricing_mentioned = bool(output.pricing_mentioned)
 
