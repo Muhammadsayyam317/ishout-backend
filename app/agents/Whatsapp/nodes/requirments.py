@@ -65,12 +65,12 @@ async def node_requirements(state):
 
         if "platform" in missing:
             state["reply"] = (
-                "✨ Welcome to iShout! ✨!\n\n"
+                "✨ Welcome to iShout! ✨\n\n"
                 "Which platform do you want to promote on?🎲\n\n"
                 "📸 Instagram – Visual storytelling & high engagement\n"
                 "🎵 TikTok – Viral reach & trend-driven growth\n"
                 "🎥 YouTube – Long-form impact & trust building\n\n"
-                "👉 Just reply with the platform name to continue.)"
+                "👉 Just reply with the platform name to continue"
             )
             return state
 
