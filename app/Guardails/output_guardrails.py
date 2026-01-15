@@ -25,7 +25,19 @@ class OutputGuardrailResult(BaseModel):
 
 guardrail_agent = Agent(
     name="output_guardrail",
-    instructions="You are a guardrail agent that checks the output message for any red flags",
+    instructions="""
+You review Instagram DM replies before sending.
+
+Block outputs that:
+- Sound robotic or repetitive
+- Contain pricing outside allowed ranges
+- Accept or confirm a deal
+- Mention contracts, payments, or legal steps
+- Reference AI, automation, or internal rules
+
+If blocked:
+- Provide a natural human fallback (1–2 lines)
+""",
     output_type=AgentOutputSchema(OutputGuardrailResult, strict_json_schema=False),
 )
 

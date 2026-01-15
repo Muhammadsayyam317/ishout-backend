@@ -1,5 +1,7 @@
 from agents import Agent, Runner
 from agents.agent_output import AgentOutputSchema
+from app.Guardails.input_guardrails import InstagramInputGuardrail
+from app.Guardails.output_guardrails import InstagramOutputGuardrail
 from app.Schemas.instagram.message_schema import GenerateReplyOutput
 from app.Schemas.instagram.negotiation_schema import InstagramConversationState
 from app.core.exception import InternalServerErrorException
@@ -12,6 +14,8 @@ generate_reply_agent = Agent(
     name="generate_reply",
     instructions=NEGOTIATE_INFLUENCER_DM_PROMPT,
     model="gpt-4o-mini",
+    input_guardrails=[InstagramInputGuardrail],
+    output_guardrails=[InstagramOutputGuardrail],
     output_type=AgentOutputSchema(GenerateReplyOutput, strict_json_schema=False),
 )
 
@@ -49,14 +53,21 @@ async def GenerateReply(message: str, thread_id: str) -> GenerateReplyOutput:
 async def node_generate_reply(
     state: InstagramConversationState,
 ) -> InstagramConversationState:
+
     print("✍️ LangGraph: Generate reply node")
 
-    reply = await GenerateReply(
-        message=state.user_message,
-        thread_id=state.thread_id,
-    )
+    try:
+        reply = await GenerateReply(
+            message=state.user_message,
+            thread_id=state.thread_id,
+        )
+        state.final_reply = reply.final_reply
 
-    state.final_reply = reply.final_reply
-    print(f"Final reply: {state.final_reply}")
+    except Exception as e:
+        print("⚠️ Guardrail or generation failure:", str(e))
+        # FALLBACK
+        state.final_reply = (
+            "Got it. Could you share a bit more detail so I can respond properly?"
+        )
 
     return state
