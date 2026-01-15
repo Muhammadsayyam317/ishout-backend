@@ -1,7 +1,9 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
+
+from app.utils.helpers import normalize_phone
 
 
 class UserRole(str, Enum):
@@ -68,3 +70,16 @@ class UserCampaignResponse(BaseModel):
     total_approved: int = 0
     created_at: datetime
     updated_at: datetime
+
+
+class UserSchema(BaseModel):
+    phone: str
+
+    @field_validator("phone")
+    def validate_phone(cls, value: str) -> str:
+        if not value:
+            raise ValueError("Phone number is required")
+        phone = normalize_phone(value)
+        if not phone:
+            raise ValueError("Invalid phone number")
+        return phone

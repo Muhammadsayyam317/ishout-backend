@@ -1,4 +1,4 @@
-from app.core.redis import init_redis_agent
+from app.core.redis import Initialize_redis
 from app.db.connection import connect, close
 import uvicorn
 from fastapi import FastAPI
@@ -7,7 +7,7 @@ from fastapi.security import HTTPBearer
 from fastapi.openapi.utils import get_openapi
 from app.api.api import api_router
 from contextlib import asynccontextmanager
-from app.core.errors import register_exception_handlers
+from app.core.errors import exception_handlers
 
 
 security = HTTPBearer(
@@ -27,7 +27,7 @@ security_schemes = {
 async def lifespan(app: FastAPI):
     await connect()
     print("connected successfully")
-    await init_redis_agent(app)
+    await Initialize_redis(app)
     yield
     await close()
     print("🧹closed")
@@ -41,7 +41,7 @@ app = FastAPI(
     swagger_ui_init_oauth={"clientId": "swagger-ui"},
     swagger_ui_parameters={"persistAuthorization": True},
 )
-register_exception_handlers(app)
+exception_handlers(app)
 
 
 def custom_openapi():

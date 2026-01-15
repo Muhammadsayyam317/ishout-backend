@@ -41,7 +41,7 @@ async def get_all_users(page: int = 1, page_size: int = 10) -> Dict[str, Any]:
             for user in user
         ]
         total = await users_collection.count_documents({"role": UserRole.COMPANY.value})
-        total_pages = (total + page_size - 1) // page_size
+        total_pages = total + page_size - 1
         has_next = page < total_pages
         has_prev = page > 1
         return {
@@ -65,7 +65,6 @@ async def update_user_status(user_id: str, status: str) -> Dict[str, Any]:
     try:
         db = get_db()
         users_collection = db.get_collection("users")
-
         if status not in [
             UserStatus.ACTIVE.value,
             UserStatus.INACTIVE.value,
@@ -76,7 +75,6 @@ async def update_user_status(user_id: str, status: str) -> Dict[str, Any]:
         result = await users_collection.update_one(
             {"_id": ObjectId(user_id)}, {"$set": {"status": status}}
         )
-
         if result.matched_count == 0:
             raise NotFoundException(message="User not found")
 

@@ -1,10 +1,10 @@
 from langgraph.graph import StateGraph, END
-from app.agents.nodes.check_control_node import node_check_agent_control
-from app.agents.nodes.requirments import node_requirements
-from app.agents.nodes.create_campaign_node import node_create_campaign
-from app.agents.nodes.acknowledge_user_node import node_acknowledge_user
-from app.agents.nodes.verify_user import node_verify_user
-from app.agents.nodes.send_reply import node_send_reply
+from app.agents.Whatsapp.nodes.check_control_node import node_check_agent_control
+from app.agents.Whatsapp.nodes.requirments import node_requirements
+from app.agents.Whatsapp.nodes.create_campaign_node import node_create_campaign
+from app.agents.Whatsapp.nodes.acknowledge_user_node import node_acknowledge_user
+from app.agents.Whatsapp.nodes.verify_user import node_verify_user
+from app.agents.Whatsapp.nodes.send_reply import node_send_reply
 from app.model.whatsappconversation import ConversationState
 from app.utils.custom_logging import node_debug_after, node_debug_before
 
