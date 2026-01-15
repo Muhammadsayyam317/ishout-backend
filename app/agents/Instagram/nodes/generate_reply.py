@@ -21,35 +21,30 @@ async def GenerateReply(message: str, thread_id: str) -> GenerateReplyOutput:
 
         db = get_db()
         collection = db.get_collection("instagram_messages")
+
         cursor = (
             collection.find({"thread_id": thread_id}).sort("timestamp", -1).limit(5)
         )
 
         docs = await cursor.to_list(length=5)
-        docs.reverse()
+        docs.reverse()  # oldest → newest
 
-        history = []
+        conversation_context = ""
         for doc in docs:
-            role = "assistant" if doc["sender_type"] == "AI" else "user"
-            history.append(
-                {
-                    "role": role,
-                    "content": doc["message"],
-                }
-            )
+            speaker = "AI" if doc["sender_type"] == "AI" else "User"
+            conversation_context += f"{speaker}: {doc['message']}\n"
 
-        print("🧠 Conversation history sent to agent:")
-        for h in history:
-            print(f"{h['role']}: {h['content']}")
+        final_input = f"You are continuing an Instagram DM conversation. Conversation so far: {conversation_context} Latest user message: User: {message} Respond appropriately."
+
+        print("🧠 Prompt sent to agent:")
+        print(final_input)
 
         result = await Runner.run(
             generate_reply_agent,
-            input=message,
-            history=history,
+            input=final_input,
         )
 
         output: GenerateReplyOutput = result.final_output
-        print(f"Output from Generate Reply Node: {output}")
         return output
 
     except Exception as e:
