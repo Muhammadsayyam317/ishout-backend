@@ -20,5 +20,6 @@ class NegotiationStrategy(str, Enum):
 class InstagramConversationState(BaseModel):
     thread_id: str
     user_message: str
-    analysis: Optional[AnalyzeMessageOutput] = None
-    final_reply: Optional[str] = None
+    last_messages: list[str] = []
+    analysis: Optional[AnalyzeMessageOutput]
+    final_reply: Optional[str]
