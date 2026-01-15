@@ -28,13 +28,12 @@ async def GenerateReply(message: str) -> GenerateReplyOutput:
         raise InternalServerErrorException(f"Error generating reply: {str(e)}")
 
 
-async def generate_reply_node(
+async def node_generate_reply(
     state: InstagramConversationState,
 ) -> InstagramConversationState:
     print("✍️ LangGraph: Generate reply node")
 
-    reply = await GenerateReply(message=state.user_message)
-    print(f"Reply from Generate Reply Node: {reply}")
-    return InstagramConversationState(
-        **state.model_dump(), final_reply=reply.final_reply
-    )
+    reply = await GenerateReply(state.user_message)
+
+    state.final_reply = reply.final_reply
+    return state

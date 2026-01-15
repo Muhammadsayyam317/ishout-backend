@@ -37,7 +37,5 @@ async def node_analyze_message(
 
     analysis = await AnalyzeMessage(state.user_message)
 
-    return InstagramConversationState(
-        **state.model_dump(),
-        analysis=analysis,
-    )
+    state.analysis = analysis
+    return state

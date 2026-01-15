@@ -10,7 +10,7 @@ async def Initialize_redis(app):
 
     contextmanager = AsyncRedisSaver.from_conn_string(
         config.REDIS_URL,
-        ttl={"default_ttl": 600},  # 10 minutes
+        ttl={"default_ttl": 86400},  # 1 day
     )
     checkpointer = await contextmanager.__aenter__()
     app.state.whatsapp_agent = graph.compile(checkpointer=checkpointer)
