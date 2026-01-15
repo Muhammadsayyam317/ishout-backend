@@ -27,6 +27,9 @@ async def Send_Insta_Message(message: str, psid: str):
                 raise InternalServerErrorException(
                     message=f"Error sending message: {response.text}"
                 )
+            print(f"Message sent to {psid}: {message}")
+            print("Message sent successfully")
             return True
     except Exception as e:
+        print(f"Error sending message: {e}")
         raise InternalServerErrorException(message=str(e)) from e

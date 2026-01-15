@@ -32,8 +32,8 @@ async def node_generate_reply(
     state: InstagramConversationState,
 ) -> InstagramConversationState:
     print("✍️ LangGraph: Generate reply node")
-
     reply = await GenerateReply(state.user_message)
-
     state.final_reply = reply.final_reply
+    print(f"Reply from Generate Reply Node: {state.final_reply}")
+    print(f"Reply Type: {type(state.final_reply)}")
     return state
