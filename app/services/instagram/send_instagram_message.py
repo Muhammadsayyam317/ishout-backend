@@ -28,6 +28,7 @@ async def Send_Insta_Message(message: str, recipient_id: str):
                 raise InternalServerErrorException(
                     message=f"Error sending message: {response.status_code}, {response.text}"
                 )
+            print("FINAL SEND → SUCCESS", recipient_id)
             print(f"Message sent Successfully to {recipient_id}: {message}")
             print("Exiting from Send_Insta_Message")
             return True
