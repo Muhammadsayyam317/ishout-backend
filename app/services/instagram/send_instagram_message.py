@@ -1,18 +1,9 @@
-import time
 import httpx
-from app.Schemas.instagram.message_schema import InstagramMessage
 from app.config import config
 from app.core.exception import InternalServerErrorException
-from app.db.connection import get_db
-from datetime import datetime, timezone
-from fastapi import BackgroundTasks
-
-from app.model.Instagram.instagram_message import InstagramMessageModel
 
 
-async def Send_Insta_Message(
-    message: str, recipient_id: str, background_tasks: BackgroundTasks
-):
+async def Send_Insta_Message(message: str, recipient_id: str):
     print(f"Sending message to {recipient_id}: {message}")
     if not message:
         raise InternalServerErrorException(message="Message is required")

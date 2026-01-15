@@ -8,7 +8,7 @@ from app.agents.Instagram.invoke.instagram_agent import instagram_negotiation_ag
 from app.config import config
 from app.model.Instagram.instagram_message import InstagramMessageModel
 from app.services.websocket_manager import ws_manager
-
+from datetime import datetime
 from app.utils.custom_logging import Background_task_logger
 
 logger = logging.getLogger(__name__)
@@ -60,14 +60,12 @@ def message_payload(
     psid: str | None,
     text: str,
     attachments: list,
-    timestamp: float,
 ) -> dict:
     return {
         "thread_id": psid,
         "sender_type": get_role(psid),
-        "platform": "INSTAGRAM",
         "message": text if text else "[Attachment]",
-        "timestamp": timestamp,
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "attachments": build_attachments(attachments),
     }
 
@@ -100,7 +98,7 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                 psid=psid,
                 text=message.get("text", ""),
                 attachments=message.get("attachments", []),
-                timestamp=messaging_event.get("timestamp", now),
+                timestamp=messaging_event.get("timestamp", time.time()),
             )
             print(f"Payload: {payload}")
             await store_and_broadcast(payload, background_tasks)
