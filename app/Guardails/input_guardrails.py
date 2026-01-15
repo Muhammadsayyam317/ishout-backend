@@ -62,10 +62,13 @@ async def InstagramInputGuardrail(
     message: str | list[TResponseInputItem],
 ) -> GuardrailFunctionOutput:
 
-    await Runner.run(
+    result = await Runner.run(
         guardrail_agent,
         input=message,
         context=context,
     )
 
-    return GuardrailFunctionOutput()
+    return GuardrailFunctionOutput(
+        output_info=result.final_output,
+        tripwire_triggered=result.final_output.tripwire_triggered,
+    )

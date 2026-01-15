@@ -44,10 +44,13 @@ async def InstagramOutputGuardrail(
     input: dict,
 ) -> GuardrailFunctionOutput:
 
-    await Runner.run(
+    result = await Runner.run(
         guardrail_agent,
         input=input,
         context=ctx,
     )
 
-    return GuardrailFunctionOutput()
+    return GuardrailFunctionOutput(
+        output_info=result.final_output,
+        tripwire_triggered=result.final_output.tripwire_triggered,
+    )
