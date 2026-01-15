@@ -26,3 +26,13 @@ class MessageInput(BaseModel):
 
 class GenerateReplyOutput(BaseModel):
     final_reply: str
+
+
+class InstagramMessage(BaseModel):
+    thread_id: str
+    sender_type: str
+    platform: str
+    username: str
+    message: str
+    timestamp: str
+    attachments: list
