@@ -10,6 +10,5 @@ async def send_instagram_reply(state: InstagramConversationState):
     )
     print(f"Reply sent to {state.thread_id}: {state.final_reply}")
     state.final_reply = state.final_reply
-    state.reply_sent = True
     print(f"Reply sent to {state.thread_id}: {state.final_reply}")
     return state

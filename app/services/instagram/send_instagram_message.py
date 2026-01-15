@@ -9,9 +9,8 @@ async def Send_Insta_Message(message: str, psid: str):
         return None
     try:
         PAGE_ACCESS_TOKEN = config.PAGE_ACCESS_TOKEN
-        print(f"PAGE_ACCESS_TOKEN: {PAGE_ACCESS_TOKEN}")
         backend_url = (
-            f"https://graph.facebook.com/{config.IG_GRAPH_API_VERSION}/me/messages"
+            f"https://graph.facebook.com/{config.IG_GRAPH_API_VERSION}/{psid}/messages"
         )
         print(f"backend_url: {backend_url}")
         headers = {
