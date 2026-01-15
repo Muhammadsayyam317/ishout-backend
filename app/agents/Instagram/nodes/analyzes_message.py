@@ -2,8 +2,6 @@ from agents import Agent, AgentOutputSchema, Runner
 from app.Schemas.instagram.message_schema import AnalyzeMessageOutput
 from app.Schemas.instagram.negotiation_schema import (
     InstagramConversationState,
-    NegotiationStage,
-    NegotiationStrategy,
 )
 from app.utils.prompts import ANALYZE_INFLUENCER_DM_PROMPT
 
@@ -11,40 +9,35 @@ from app.utils.prompts import ANALYZE_INFLUENCER_DM_PROMPT
 analyze_agent = Agent(
     name="analyze_message",
     instructions=ANALYZE_INFLUENCER_DM_PROMPT,
+    model="gpt-4o-mini",
     output_type=AgentOutputSchema(AnalyzeMessageOutput, strict_json_schema=False),
 )
+
+
+async def AnalyzeMessage(message: str) -> AnalyzeMessageOutput:
+    try:
+        print(f"🔍 Analyzing message: {message}")
+        print(f"TYPE OF message: {type(message)}")
+        result = await Runner.run(
+            analyze_agent,
+            input=message,
+        )
+        output: AnalyzeMessageOutput = result.final_output
+        print(f"Output from Analyze Message Node: {output}")
+        return output
+    except Exception as e:
+        print(f"Error in Analyze Message Node: {str(e)}")
+        raise ValueError(f"Analyze message failed: {str(e)}")
 
 
 async def node_analyze_message(
     state: InstagramConversationState,
 ) -> InstagramConversationState:
-    print("Entering into Analyze Message Node")
-    try:
-        print(f"🔍 Analyzing message: {state.user_message}")
-        result = await Runner.run(
-            analyze_agent,
-            input={
-                "message": state.user_message,
-                "thread_id": state.thread_id,
-            },
-        )
+    print("🔍 LangGraph: Analyze node")
 
-        output: AnalyzeMessageOutput = result.final_output
-        print(f"Output from Analyze Message Node: {output}")
-        state.brand_intent = output.brand_intent or ""
-        state.pricing_mentioned = bool(output.pricing_mentioned)
+    analysis = await AnalyzeMessage(state.user_message)
 
-        if isinstance(output.negotiation_stage, NegotiationStage):
-            state.negotiation_stage = output.negotiation_stage
-
-        if isinstance(output.negotiation_strategy, NegotiationStrategy):
-            state.negotiation_strategy = output.negotiation_strategy
-
-        print("✅ Analysis complete")
-        print("Exiting from Analyze Message Node")
-        return state
-    except Exception as e:
-        print(f"Error in Analyze Message Node: {str(e)}")
-        raise ValueError(
-            f"Analyze message failed for thread_id: {state.thread_id} - {str(e)}"
-        )
+    return InstagramConversationState(
+        **state.model_dump(),
+        analysis=analysis,
+    )

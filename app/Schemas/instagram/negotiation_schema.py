@@ -2,6 +2,8 @@ from enum import Enum
 from typing import Optional
 from pydantic import BaseModel
 
+from app.Schemas.instagram.message_schema import AnalyzeMessageOutput
+
 
 class NegotiationStage(str, Enum):
     INITIAL = "INITIAL"
@@ -16,17 +18,11 @@ class NegotiationStrategy(str, Enum):
 
 
 class InstagramConversationState(BaseModel):
-    # Required at entry
     thread_id: str
     user_message: str
 
-    # Filled by analyze node
-    brand_intent: Optional[str] = None
-    pricing_mentioned: bool = False
+    # outputs from analysis
+    analysis: Optional[AnalyzeMessageOutput] = None
 
-    negotiation_stage: Optional[NegotiationStage] = None
-    negotiation_strategy: Optional[NegotiationStrategy] = None
-
-    # Filled later
-    ai_draft: Optional[str] = None
+    # final output
     final_reply: Optional[str] = None
