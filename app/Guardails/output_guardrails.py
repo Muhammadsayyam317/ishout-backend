@@ -58,7 +58,7 @@ async def InstagramOutputGuardrail(
     guardrail_output: OutputGuardrailResult = result.final_output
 
     return GuardrailFunctionOutput(
-        allowed=guardrail_output.allowed,
+        success=guardrail_output.allowed,
         reason=guardrail_output.reason,
         escalate=guardrail_output.escalate,
         fallback=guardrail_output.fallback,

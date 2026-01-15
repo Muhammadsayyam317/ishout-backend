@@ -67,10 +67,10 @@ async def InstagramInputGuardrail(
     guardrail_output: InputGuardrailResult = result.final_output
 
     return GuardrailFunctionOutput(
-        allowed=guardrail_output.allowed,
+        success=guardrail_output.allowed,
         reason=guardrail_output.reason,
         escalate=guardrail_output.escalate,
         fallback=guardrail_output.fallback,
-        output_info=None,  # input guardrails usually don't need this
+        output_info=None,
         tripwire_triggered=guardrail_output.tripwire_triggered,
     )
