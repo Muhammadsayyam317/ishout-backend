@@ -98,9 +98,6 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                 psid=psid,
                 text=message.get("text", ""),
                 attachments=message.get("attachments", []),
-                timestamp=messaging_event.get(
-                    "timestamp", datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                ),
             )
             print(f"Payload: {payload}")
             await store_and_broadcast(payload, background_tasks)
@@ -120,7 +117,6 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                 psid=psid,
                 text=message.get("text", ""),
                 attachments=message.get("attachments", []),
-                timestamp=value.get("timestamp", now),
             )
             print(f"Payload from Graph webhook: {payload}")
             await store_and_broadcast(payload, background_tasks)
