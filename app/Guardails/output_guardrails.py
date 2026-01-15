@@ -1,12 +1,12 @@
+from pydantic import BaseModel
 from agents import (
     Agent,
     GuardrailFunctionOutput,
     RunContextWrapper,
     Runner,
     output_guardrail,
+    AgentOutputSchema,
 )
-from pydantic import BaseModel
-from agents import AgentOutputSchema
 
 
 class OutputGuardrailInput(BaseModel):
@@ -48,6 +48,12 @@ async def InstagramOutputGuardrail(
     agent: Agent,
     input: OutputGuardrailInput,
 ) -> GuardrailFunctionOutput:
+    """
+    Evaluates an Instagram DM reply and applies guardrails.
+
+    Returns a GuardrailFunctionOutput indicating if the message is allowed,
+    with optional escalation and fallback information.
+    """
 
     result = await Runner.run(
         guardrail_agent,
@@ -56,9 +62,8 @@ async def InstagramOutputGuardrail(
     )
 
     guardrail_output: OutputGuardrailResult = result.final_output
-
     return GuardrailFunctionOutput(
-        success=guardrail_output.allowed,
+        allowed=guardrail_output.allowed,
         reason=guardrail_output.reason,
         escalate=guardrail_output.escalate,
         fallback=guardrail_output.fallback,
