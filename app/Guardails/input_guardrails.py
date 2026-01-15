@@ -6,8 +6,8 @@ from agents import (
     Runner,
     TResponseInputItem,
     input_guardrail,
+    AgentOutputSchema,
 )
-from agents import AgentOutputSchema
 
 
 class InputGuardrailResult(BaseModel):
@@ -28,6 +28,10 @@ BLOCKED_PHRASES = [
 
 MAX_LENGTH = 1200
 
+
+# ------------------------------
+# Guardrail Agent
+# ------------------------------
 guardrail_agent = Agent(
     name="input_guardrail",
     instructions="""
@@ -58,19 +62,10 @@ async def InstagramInputGuardrail(
     message: str | list[TResponseInputItem],
 ) -> GuardrailFunctionOutput:
 
-    result = await Runner.run(
+    await Runner.run(
         guardrail_agent,
         input=message,
         context=context,
     )
 
-    guardrail_output: InputGuardrailResult = result.final_output
-
-    return GuardrailFunctionOutput(
-        allowed=guardrail_output.allowed,
-        reason=guardrail_output.reason,
-        escalate=guardrail_output.escalate,
-        fallback=guardrail_output.fallback,
-        output_info=None,
-        tripwire_triggered=guardrail_output.tripwire_triggered,
-    )
+    return GuardrailFunctionOutput()

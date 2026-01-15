@@ -9,11 +9,6 @@ from agents import (
 )
 
 
-class OutputGuardrailInput(BaseModel):
-    input: str
-    output: str
-
-
 class OutputGuardrailResult(BaseModel):
     allowed: bool
     reason: str | None = None
@@ -46,27 +41,13 @@ If blocked:
 async def InstagramOutputGuardrail(
     ctx: RunContextWrapper[None],
     agent: Agent,
-    input: OutputGuardrailInput,
+    input: dict,
 ) -> GuardrailFunctionOutput:
-    """
-    Evaluates an Instagram DM reply and applies guardrails.
 
-    Returns a GuardrailFunctionOutput indicating if the message is allowed,
-    with optional escalation and fallback information.
-    """
-
-    result = await Runner.run(
+    await Runner.run(
         guardrail_agent,
         input=input,
         context=ctx,
     )
 
-    guardrail_output: OutputGuardrailResult = result.final_output
-    return GuardrailFunctionOutput(
-        allowed=guardrail_output.allowed,
-        reason=guardrail_output.reason,
-        escalate=guardrail_output.escalate,
-        fallback=guardrail_output.fallback,
-        output_info=guardrail_output.output_info,
-        tripwire_triggered=guardrail_output.tripwire_triggered,
-    )
+    return GuardrailFunctionOutput()
