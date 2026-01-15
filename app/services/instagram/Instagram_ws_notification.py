@@ -147,7 +147,7 @@ async def store_and_broadcast(payload: dict, background_tasks: BackgroundTasks):
     )
     background_tasks.add_task(
         Background_task_logger,
-        "negotiation_agent",
+        "Instagram Negotiation Agent",
         instagram_negotiation_agent,
         payload,
     )

@@ -1,6 +1,6 @@
 from enum import Enum
-from typing import Optional
-from pydantic import BaseModel
+from typing import Optional, List
+from pydantic import BaseModel, Field
 
 from app.Schemas.instagram.message_schema import AnalyzeMessageOutput
 
@@ -20,6 +20,11 @@ class NegotiationStrategy(str, Enum):
 class InstagramConversationState(BaseModel):
     thread_id: str
     user_message: str
-    last_messages: list[str] = []
-    analysis: Optional[AnalyzeMessageOutput]
-    final_reply: Optional[str]
+
+    last_messages: List[str] = Field(default_factory=list)
+
+    analysis: Optional[AnalyzeMessageOutput] = None
+    final_reply: Optional[str] = None
+
+    stage: Optional[NegotiationStage] = None
+    strategy: Optional[NegotiationStrategy] = None
