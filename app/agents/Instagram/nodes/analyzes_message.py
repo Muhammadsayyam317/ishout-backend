@@ -34,8 +34,8 @@ async def node_analyze_message(
     state: InstagramConversationState,
 ) -> InstagramConversationState:
     print("🔍 LangGraph: Analyze node")
-
     analysis = await AnalyzeMessage(state.user_message)
-
     state.analysis = analysis
+    print(f"Analysis Completed: {state.analysis}")
+    print(f"Analysis Type: {type(state.analysis)}")
     return state

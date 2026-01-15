@@ -42,6 +42,9 @@ class Config(BaseModel):
     MONGODB_ATLAS_COLLECTION_GENERATED_INFLUENCERS: str = Field(
         default=os.getenv("MONGODB_ATLAS_COLLECTION_GENERATED_INFLUENCERS")
     )
+    INSTAGRAM_MESSAGE_COLLECTION: str = Field(
+        default=os.getenv("MONGODB_COLLECTION_INSTAGRAM_MESSAGES")
+    )
 
     OPENAI_API_KEY: str = Field(default=os.getenv("OPENAI_API_KEY"))
     OPENAI_MODEL_NAME: str = Field(default=os.getenv("OPENAI_MODEL_NAME"))

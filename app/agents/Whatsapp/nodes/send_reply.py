@@ -21,11 +21,13 @@ async def node_send_reply(state):
         state["reply_sent"] = True
         return state
     await send_whatsapp_message(sender_id, reply)
+    print(f"Reply sent to {sender_id}: {reply}")
     await save_conversation_message(
         thread_id=sender_id,
         sender=SenderType.AI.value,
         message=reply,
     )
-
+    print(f"Reply saved to {sender_id}: {reply}")
     state["reply_sent"] = True
+    print(f"Reply sent: {state['reply_sent']} State: {state}")
     return state

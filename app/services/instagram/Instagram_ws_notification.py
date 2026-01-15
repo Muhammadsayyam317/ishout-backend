@@ -8,6 +8,8 @@ from app.agents.Instagram.invoke.instagram_agent import instagram_negotiation_ag
 from app.config import config
 from app.model.Instagram.instagram_message import InstagramMessageModel
 from app.services.websocket_manager import ws_manager
+from datetime import datetime
+from app.utils.custom_logging import Background_task_logger
 
 logger = logging.getLogger(__name__)
 
@@ -47,20 +49,23 @@ def build_attachments(attachments: list) -> list:
     ]
 
 
+def get_role(psid: str) -> str:
+    if psid is not None and psid == "17841477392364619":
+        return "AI"
+    return "USER"
+
+
 def message_payload(
     *,
     psid: str | None,
     text: str,
     attachments: list,
-    timestamp: float,
 ) -> dict:
     return {
         "thread_id": psid,
-        "sender_type": "ADMIN",
-        "platform": "INSTAGRAM",
-        "username": "Admin",
+        "sender_type": get_role(psid),
         "message": text if text else "[Attachment]",
-        "timestamp": time.time(),
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "attachments": build_attachments(attachments),
     }
 
@@ -85,19 +90,22 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
             message_id = message.get("mid")
             if not message_id or message_id in PROCESSED_MESSAGES:
                 continue
+            print(f"Message ID: {message_id}")
             PROCESSED_MESSAGES.add(message_id)
             psid = messaging_event.get("sender", {}).get("id")
+            print(f"PSID: {psid}")
             payload = message_payload(
                 psid=psid,
                 text=message.get("text", ""),
                 attachments=message.get("attachments", []),
-                timestamp=messaging_event.get("timestamp", now),
             )
+            print(f"Payload: {payload}")
             await store_and_broadcast(payload, background_tasks)
         # Instagram Graph webhook payload
         for change in entry.get("changes", []):
             value = change.get("value", {})
             message = value.get("message")
+            print(f"Message from Graph webhook: {message}")
             if not message:
                 continue
             message_id = message.get("mid")
@@ -109,8 +117,8 @@ async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
                 psid=psid,
                 text=message.get("text", ""),
                 attachments=message.get("attachments", []),
-                timestamp=value.get("timestamp", now),
             )
+            print(f"Payload from Graph webhook: {payload}")
             await store_and_broadcast(payload, background_tasks)
     return JSONResponse({"status": "received"})
 
@@ -131,11 +139,15 @@ async def store_and_broadcast(payload: dict, background_tasks: BackgroundTasks):
     logger.info("📡 IG WS EVENT → %s", ws_payload)
 
     background_tasks.add_task(
+        Background_task_logger,
+        "broadcast_event",
         ws_manager.broadcast_event,
         "instagram.message",
         payload=ws_payload,
     )
     background_tasks.add_task(
+        Background_task_logger,
+        "Instagram Negotiation Agent",
         instagram_negotiation_agent,
         payload,
     )
