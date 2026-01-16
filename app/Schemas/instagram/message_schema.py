@@ -26,6 +26,8 @@ class MessageInput(BaseModel):
 
 class GenerateReplyOutput(BaseModel):
     final_reply: str
+    detected_budget: Optional[int] = None
+    price_relation: Optional[str] = None
 
 
 class InstagramMessage(BaseModel):
