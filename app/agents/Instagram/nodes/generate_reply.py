@@ -1,5 +1,5 @@
+import random
 from agents import Agent, Runner
-from agents.agent_output import AgentOutputSchema
 from app.Guardails.input_guardrails import InstagramInputGuardrail
 from app.Guardails.output_guardrails import InstagramOutputGuardrail
 from app.Schemas.instagram.message_schema import GenerateReplyOutput
@@ -16,7 +16,7 @@ generate_reply_agent = Agent(
     model="gpt-4o-mini",
     input_guardrails=[InstagramInputGuardrail],
     output_guardrails=[InstagramOutputGuardrail],
-    output_type=AgentOutputSchema(GenerateReplyOutput, strict_json_schema=False),
+    output_type=GenerateReplyOutput,
 )
 
 
@@ -27,7 +27,7 @@ async def GenerateReply(message: str, thread_id: str) -> GenerateReplyOutput:
         db = get_db()
         collection = db.get_collection("instagram_messages")
         cursor = (
-            collection.find({"thread_id": thread_id}).sort("timestamp", -1).limit(5)
+            collection.find({"thread_id": thread_id}).sort("timestamp", -1).limit(10)
         )
         docs = await cursor.to_list(length=5)
         docs.reverse()
@@ -68,9 +68,13 @@ async def node_generate_reply(
         print(f"Final reply: {state.final_reply}")
     except Exception as e:
         print("⚠️ Guardrail or generation failure:", str(e))
+        print(f"Final reply: {state.final_reply}")
         # FALLBACK
-        state.final_reply = (
-            "Got it. Could you share a bit more detail so I can respond properly?"
-        )
-
+        fallbacks = [
+            "Got it 👍 Let me check the best options for you.",
+            "Thanks for sharing! I’ll review and update you shortly.",
+            "Perfect, give me a moment to look into this.",
+        ]
+        state.final_reply = random.choice(fallbacks)
+        print(f"Fallback reply: {state.final_reply}")
     return state

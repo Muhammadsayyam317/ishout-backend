@@ -50,7 +50,11 @@ async def InstagramOutputGuardrail(
         input=input,
         context=ctx,
     )
-
+    if not result.final_output.allowed:
+        return GuardrailFunctionOutput(
+            output_info=result.final_output,
+            tripwire_triggered=True,
+        )
     return GuardrailFunctionOutput(
         output_info=result.final_output,
         tripwire_triggered=False,
