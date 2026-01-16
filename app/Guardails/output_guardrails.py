@@ -5,7 +5,6 @@ from agents import (
     RunContextWrapper,
     Runner,
     output_guardrail,
-    AgentOutputSchema,
 )
 
 
@@ -34,7 +33,7 @@ If blocked:
 - Provide a natural human fallback (1–2 lines)
 
 """,
-    output_type=AgentOutputSchema(OutputGuardrailResult, strict_json_schema=False),
+    output_type=OutputGuardrailResult,
 )
 
 
