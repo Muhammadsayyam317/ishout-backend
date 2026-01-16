@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from agents import (
     Agent,
+    AgentOutputSchema,
     GuardrailFunctionOutput,
     RunContextWrapper,
     Runner,
@@ -33,7 +34,7 @@ If blocked:
 - Provide a natural human fallback (1–2 lines)
 
 """,
-    output_type=OutputGuardrailResult,
+    output_type=AgentOutputSchema(OutputGuardrailResult, strict_json_schema=False),
 )
 
 

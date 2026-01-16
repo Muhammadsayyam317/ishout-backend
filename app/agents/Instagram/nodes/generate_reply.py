@@ -1,5 +1,6 @@
 import random
 from agents import Agent, Runner
+from agents.agent_output import AgentOutputSchema
 from app.Guardails.input_guardrails import InstagramInputGuardrail
 from app.Guardails.output_guardrails import InstagramOutputGuardrail
 from app.Schemas.instagram.message_schema import GenerateReplyOutput
@@ -16,7 +17,7 @@ generate_reply_agent = Agent(
     model="gpt-4o-mini",
     input_guardrails=[InstagramInputGuardrail],
     output_guardrails=[InstagramOutputGuardrail],
-    output_type=GenerateReplyOutput,
+    output_type=AgentOutputSchema(GenerateReplyOutput, strict_json_schema=False),
 )
 
 
