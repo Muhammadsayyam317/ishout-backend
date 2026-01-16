@@ -342,7 +342,14 @@ async def add_influencer_Number(
         campaign["phone_number"] = request_data.phone_number
         result = await campaigns_collection.update_one(
             {"influencer_id": ObjectId(request_data.influencer_id)},
-            {"$set": {"phone_number": request_data.phone_number}},
+            {
+                "$set": {
+                    "phone_number": request_data.phone_number,
+                    "max_price": request_data.max_price,
+                    "min_price": request_data.min_price,
+                    "updated_at": datetime.now(timezone.utc),
+                }
+            },
         )
         if result.modified_count == 0:
             raise HTTPException(status_code=404, detail="Failed to update influencer")
@@ -350,7 +357,7 @@ async def add_influencer_Number(
             storeInfluencerNumber,
             request_data,
         )
-        return {"message": "Influencer number added successfully"}
+        return {"message": "Influencer details updated successfully"}
     except HTTPException:
         raise
     except Exception as e:

@@ -26,3 +26,15 @@ class MessageInput(BaseModel):
 
 class GenerateReplyOutput(BaseModel):
     final_reply: str
+    detected_budget: Optional[int] = None
+    price_relation: Optional[str] = None
+
+
+class InstagramMessage(BaseModel):
+    thread_id: str
+    sender_type: str
+    platform: str
+    username: str
+    message: str
+    timestamp: str
+    attachments: list

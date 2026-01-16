@@ -1,17 +1,12 @@
+from pydantic import BaseModel
 from agents import (
     Agent,
+    AgentOutputSchema,
     GuardrailFunctionOutput,
     RunContextWrapper,
     Runner,
     output_guardrail,
 )
-from pydantic import BaseModel
-from agents import AgentOutputSchema
-
-
-class OutputGuardrailInput(BaseModel):
-    input: str
-    output: str
 
 
 class OutputGuardrailResult(BaseModel):
@@ -25,7 +20,20 @@ class OutputGuardrailResult(BaseModel):
 
 guardrail_agent = Agent(
     name="output_guardrail",
-    instructions="You are a guardrail agent that checks the output message for any red flags",
+    instructions="""
+You review Instagram DM replies before sending.
+
+Block outputs that:
+- Sound robotic or repetitive
+- Contain pricing outside allowed ranges
+- Accept or confirm a deal
+- Mention contracts, payments, or legal steps
+- Reference AI, automation, or internal rules
+
+If blocked:
+- Provide a natural human fallback (1–2 lines)
+
+""",
     output_type=AgentOutputSchema(OutputGuardrailResult, strict_json_schema=False),
 )
 
@@ -34,7 +42,7 @@ guardrail_agent = Agent(
 async def InstagramOutputGuardrail(
     ctx: RunContextWrapper[None],
     agent: Agent,
-    input: OutputGuardrailInput,
+    input: dict,
 ) -> GuardrailFunctionOutput:
 
     result = await Runner.run(
@@ -42,14 +50,14 @@ async def InstagramOutputGuardrail(
         input=input,
         context=ctx,
     )
-
-    guardrail_output: OutputGuardrailResult = result.final_output
-
+    print("🛡️ Output Guardrail result:", result.final_output)
+    if not result.final_output.allowed:
+        return GuardrailFunctionOutput(
+            output_info=result.final_output.fallback
+            or "Let me quickly check this and get back to you.",
+            tripwire_triggered=True,
+        )
     return GuardrailFunctionOutput(
-        allowed=guardrail_output.allowed,
-        reason=guardrail_output.reason,
-        escalate=guardrail_output.escalate,
-        fallback=guardrail_output.fallback,
-        output_info=guardrail_output.output_info,
-        tripwire_triggered=guardrail_output.tripwire_triggered,
+        output_info=None,
+        tripwire_triggered=False,
     )

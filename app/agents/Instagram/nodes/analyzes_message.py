@@ -1,4 +1,5 @@
 from agents import Agent, AgentOutputSchema, Runner
+from app.Guardails.input_guardrails import InstagramInputGuardrail
 from app.Schemas.instagram.message_schema import AnalyzeMessageOutput
 from app.Schemas.instagram.negotiation_schema import (
     InstagramConversationState,
@@ -10,6 +11,7 @@ analyze_agent = Agent(
     name="analyze_message",
     instructions=ANALYZE_INFLUENCER_DM_PROMPT,
     model="gpt-4o-mini",
+    input_guardrails=[InstagramInputGuardrail],
     output_type=AgentOutputSchema(AnalyzeMessageOutput, strict_json_schema=False),
 )
 
@@ -34,8 +36,8 @@ async def node_analyze_message(
     state: InstagramConversationState,
 ) -> InstagramConversationState:
     print("🔍 LangGraph: Analyze node")
-
     analysis = await AnalyzeMessage(state.user_message)
-
     state.analysis = analysis
+    print(f"Analysis Completed: {state.analysis}")
+    print(f"Analysis Type: {type(state.analysis)}")
     return state

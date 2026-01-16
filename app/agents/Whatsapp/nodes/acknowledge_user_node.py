@@ -14,11 +14,14 @@ async def node_acknowledge_user(state):
             "✅ Our team has received your request.\n"
             "📢 We’ll notify you once influencers are shortlisted!"
         )
+        print(f"Reply: {state['reply']}")
 
         state["reply_sent"] = False
         state["acknowledged"] = True
         state["done"] = True
-
+        print(
+            f"Acknowledged: {state['acknowledged']} Done: {state['done']} State: {state}"
+        )
         print("Exiting node_acknowledge_user successfully")
         return state
 

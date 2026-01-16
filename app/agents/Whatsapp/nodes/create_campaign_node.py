@@ -14,12 +14,16 @@ async def node_create_campaign(state: ConversationState):
             )
             state["reply_sent"] = False
             state["done"] = True
+            print(f"Done: {state['done']} State: {state}")
             return state
 
         state["campaign_id"] = result["campaign_id"]
+        print(f"Campaign ID: {state['campaign_id']}")
         state["campaign_created"] = True
         state["reply"] = None
+        print(f"Campaign Created: {state['campaign_created']} State: {state}")
         print("Exiting node_create_campaign successfully")
+        print(f"Done: {state['done']} State: {state}")
         return state
 
     except Exception:
