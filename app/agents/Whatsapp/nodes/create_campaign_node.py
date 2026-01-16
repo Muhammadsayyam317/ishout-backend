@@ -5,6 +5,10 @@ from app.services.whatsapp.create_campaign import create_whatsapp_campaign
 async def node_create_campaign(state: ConversationState):
     print("Entering node_create_campaign")
     try:
+        if state.get("campaign_created"):
+            print("Campaign already created")
+            return state
+
         result = await create_whatsapp_campaign(state)
         print("Result: ", result)
         if not result.get("success"):
@@ -34,4 +38,5 @@ async def node_create_campaign(state: ConversationState):
         )
         state["reply_sent"] = False
         state["done"] = True
+
         return state

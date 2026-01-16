@@ -13,6 +13,8 @@ async def node_notify_admin_campaign_created(campaign, user):
             f"📞 Phone: {user.get('phone')}\n"
             f"📱 Platform: {', '.join(campaign['platform'])}\n"
             f"🎯 Category: {', '.join(campaign['category'])}\n"
+            f"🌍 Country: {', '.join(campaign['country'])}\n"
+            f"👥 Followers: {', '.join(campaign['followers'])}\n"
             f"🔢 Influencers: {campaign['limit']}\n"
             f"📌 Status: PENDING"
         )
