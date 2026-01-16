@@ -33,17 +33,20 @@ async def GenerateReply(message: str, thread_id: str) -> GenerateReplyOutput:
         docs.reverse()
         if docs and docs[-1]["message"] == message:
             docs = docs[:-1]
+        print(f"Docs: {docs}")
         if not docs:
             docs = [{"sender_type": "AI", "message": "No prior messages."}]
+        print(f"Docs: {docs}")
         input_context = build_message_context(docs, message)
+        print(f"Input context: {input_context}")
         print("🧠 Prompt sent to agent:")
-        print(input_context)
         result = await Runner.run(
             generate_reply_agent,
             input=input_context,
         )
-
+        print(f"Result: {result}")
         output: GenerateReplyOutput = result.final_output
+        print(f"Output: {output}")
         return output
 
     except Exception as e:
@@ -55,14 +58,14 @@ async def node_generate_reply(
 ) -> InstagramConversationState:
 
     print("✍️ LangGraph: Generate reply node")
-
     try:
         reply = await GenerateReply(
             message=state.user_message,
             thread_id=state.thread_id,
         )
+        print(f"Reply: {reply}")
         state.final_reply = reply.final_reply
-
+        print(f"Final reply: {state.final_reply}")
     except Exception as e:
         print("⚠️ Guardrail or generation failure:", str(e))
         # FALLBACK
