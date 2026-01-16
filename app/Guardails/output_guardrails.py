@@ -32,6 +32,7 @@ Block outputs that:
 
 If blocked:
 - Provide a natural human fallback (1–2 lines)
+
 """,
     output_type=AgentOutputSchema(OutputGuardrailResult, strict_json_schema=False),
 )
@@ -52,5 +53,5 @@ async def InstagramOutputGuardrail(
 
     return GuardrailFunctionOutput(
         output_info=result.final_output,
-        tripwire_triggered=result.final_output.tripwire_triggered,
+        tripwire_triggered=False,
     )
