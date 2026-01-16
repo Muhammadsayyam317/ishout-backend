@@ -51,7 +51,8 @@ async def InstagramOutputGuardrail(
     )
     if not result.final_output.allowed:
         return GuardrailFunctionOutput(
-            output_info=result.final_output,
+            output_info=result.final_output.fallback
+            or "Let me quickly check this and get back to you.",
             tripwire_triggered=True,
         )
     return GuardrailFunctionOutput(

@@ -70,7 +70,8 @@ async def InstagramInputGuardrail(
     )
     if not result.final_output.allowed:
         return GuardrailFunctionOutput(
-            output_info=result.final_output,
+            output_info=result.final_output.reason
+            or "Message cannot be processed safely.",
             tripwire_triggered=True,
         )
     return GuardrailFunctionOutput(
