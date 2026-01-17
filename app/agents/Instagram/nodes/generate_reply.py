@@ -1,7 +1,5 @@
 import random
 from agents import Agent, Runner
-from agents.agent_output import AgentOutputSchema
-from app.Guardails.input_guardrails import InstagramInputGuardrail
 from app.Guardails.output_guardrails import InstagramOutputGuardrail
 from app.Schemas.instagram.message_schema import GenerateReplyOutput
 from app.Schemas.instagram.negotiation_schema import InstagramConversationState
@@ -11,20 +9,9 @@ from app.utils.message_context import build_message_context
 from app.utils.prompts import NEGOTIATE_INFLUENCER_DM_PROMPT
 
 
-generate_reply_agent = Agent(
-    name="generate_reply",
-    instructions=NEGOTIATE_INFLUENCER_DM_PROMPT,
-    model="gpt-4o-mini",
-    input_guardrails=[InstagramInputGuardrail],
-    output_guardrails=[InstagramOutputGuardrail],
-    output_type=AgentOutputSchema(GenerateReplyOutput, strict_json_schema=False),
-)
-
-
 async def GenerateReply(message: str, thread_id: str) -> GenerateReplyOutput:
     try:
         print(f"Generating reply for thread: {thread_id}")
-
         db = get_db()
         collection = db.get_collection("instagram_messages")
         cursor = (
@@ -37,15 +24,24 @@ async def GenerateReply(message: str, thread_id: str) -> GenerateReplyOutput:
         print(f"Docs: {docs}")
         if not docs:
             docs = [{"sender_type": "AI", "message": "No prior messages."}]
-        print(f"Docs: {docs}")
+
         input_context = build_message_context(docs, message)
         print(f"Input context: {input_context}")
         print("🧠 Prompt sent to agent:")
         result = await Runner.run(
-            generate_reply_agent,
+            Agent(
+                name="generate_reply",
+                instructions=NEGOTIATE_INFLUENCER_DM_PROMPT,
+                # output_guardrails=[InstagramOutputGuardrail],
+                output_type=GenerateReplyOutput,
+            ),
             input=input_context,
         )
         print(f"Result: {result}")
+        # if result.final_output is None:
+        #     return GenerateReplyOutput(
+        #         reply="I'm sorry, I can't process this message right now."
+        #     )
         output: GenerateReplyOutput = result.final_output
         print(f"Output: {output}")
         return output

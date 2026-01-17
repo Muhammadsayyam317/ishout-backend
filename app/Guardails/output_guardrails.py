@@ -1,63 +1,36 @@
-from pydantic import BaseModel
 from agents import (
     Agent,
-    AgentOutputSchema,
     GuardrailFunctionOutput,
     RunContextWrapper,
     Runner,
     output_guardrail,
 )
 
-
-class OutputGuardrailResult(BaseModel):
-    allowed: bool
-    reason: str | None = None
-    escalate: bool = False
-    fallback: str | None = None
-    output_info: str | None = None
-    tripwire_triggered: bool | None = None
-
-
-guardrail_agent = Agent(
-    name="output_guardrail",
-    instructions="""
-You review Instagram DM replies before sending.
-
-Block outputs that:
-- Sound robotic or repetitive
-- Contain pricing outside allowed ranges
-- Accept or confirm a deal
-- Mention contracts, payments, or legal steps
-- Reference AI, automation, or internal rules
-
-If blocked:
-- Provide a natural human fallback (1–2 lines)
-
-""",
-    output_type=AgentOutputSchema(OutputGuardrailResult, strict_json_schema=False),
+from app.Schemas.instagram.message_schema import (
+    GuardrailOutput,
+    OutputGuardrailResult,
 )
 
 
 @output_guardrail(name="InstagramOutputGuardrail")
 async def InstagramOutputGuardrail(
-    ctx: RunContextWrapper[None],
+    ctx: RunContextWrapper,
     agent: Agent,
-    input: dict,
+    output: GuardrailOutput,
 ) -> GuardrailFunctionOutput:
 
     result = await Runner.run(
-        guardrail_agent,
-        input=input,
-        context=ctx,
+        Agent(
+            name="output_guardrail_evaluator",
+            instructions="""Review the iShout Instagram DM.iShout is a platform for managing social media campaigns and providing influncers to the brand for their campaigns in multiple platforms.Providing a reply to an Instagram DM.Regarding the reply, you must review it before it is sent.
+            """,
+            output_type=OutputGuardrailResult,
+        ),
+        output.response,
+        context=ctx.context,
     )
     print("🛡️ Output Guardrail result:", result.final_output)
-    if not result.final_output.allowed:
-        return GuardrailFunctionOutput(
-            output_info=result.final_output.fallback
-            or "Let me quickly check this and get back to you.",
-            tripwire_triggered=True,
-        )
     return GuardrailFunctionOutput(
-        output_info=None,
+        output_info=result.final_output.reason,
         tripwire_triggered=False,
     )

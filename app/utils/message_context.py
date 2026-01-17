@@ -5,7 +5,7 @@ def build_message_context(last_messages: list[dict], latest: str) -> str:
         history += f"{speaker}: {msg['message']}\n"
 
     return f"""
-You are replying in an ongoing Instagram DM conversation.
+You are replying in an ongoing Instagram DM conversation.iShout is a platform for managing social media campaigns and providing influncers to the brand for their campaigns in multiple platforms.
 
 STYLE RULES (VERY IMPORTANT):
 - Sound like a real human texting, not customer support

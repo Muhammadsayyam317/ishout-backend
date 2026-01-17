@@ -15,7 +15,6 @@ from app.utils.Enums.user_enum import SenderType
 
 
 async def handle_whatsapp_events(request: Request):
-    print("Entering handle_whatsapp_events")
     try:
         event = await request.json()
         entry = event.get("entry")

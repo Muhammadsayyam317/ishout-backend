@@ -25,9 +25,28 @@ class MessageInput(BaseModel):
 
 
 class GenerateReplyOutput(BaseModel):
-    final_reply: str
-    detected_budget: Optional[int] = None
-    price_relation: Optional[str] = None
+    reply: str
+
+
+class GuardrailOutput(BaseModel):
+    response: str
+
+
+class OutputGuardrailResult(BaseModel):
+    allowed: bool
+    reason: str | None = None
+    escalate: bool = False
+    fallback: str | None = None
+    output_info: str | None = None
+    tripwire_triggered: bool | None = None
+
+
+class InputGuardrailResult(BaseModel):
+    allowed: bool
+    reason: str | None = None
+    escalate: bool = False
+    fallback: str | None = None
+    tripwire_triggered: bool = False
 
 
 class InstagramMessage(BaseModel):

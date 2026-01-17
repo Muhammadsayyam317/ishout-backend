@@ -1,4 +1,4 @@
-from agents import Agent, AgentOutputSchema, Runner
+from agents import Agent, Runner
 from app.Guardails.input_guardrails import InstagramInputGuardrail
 from app.Schemas.instagram.message_schema import AnalyzeMessageOutput
 from app.Schemas.instagram.negotiation_schema import (
@@ -7,21 +7,17 @@ from app.Schemas.instagram.negotiation_schema import (
 from app.utils.prompts import ANALYZE_INFLUENCER_DM_PROMPT
 
 
-analyze_agent = Agent(
-    name="analyze_message",
-    instructions=ANALYZE_INFLUENCER_DM_PROMPT,
-    model="gpt-4o-mini",
-    input_guardrails=[InstagramInputGuardrail],
-    output_type=AgentOutputSchema(AnalyzeMessageOutput, strict_json_schema=False),
-)
-
-
 async def AnalyzeMessage(message: str) -> AnalyzeMessageOutput:
     try:
         print(f"🔍 Analyzing message: {message}")
         print(f"TYPE OF message: {type(message)}")
         result = await Runner.run(
-            analyze_agent,
+            Agent(
+                name="analyze_message",
+                instructions=ANALYZE_INFLUENCER_DM_PROMPT,
+                input_guardrails=[InstagramInputGuardrail],
+                output_type=AnalyzeMessageOutput,
+            ),
             input=message,
         )
         output: AnalyzeMessageOutput = result.final_output

@@ -3,6 +3,7 @@ from app.Schemas.influencers import MoreInfluencerRequest
 from app.agents.Instagram.nodes.analyzes_message import (
     node_analyze_message,
 )
+from app.agents.Instagram.nodes.generate_reply import GenerateReply
 from app.api.controllers.admin.campaign_controller import (
     add_influencer_Number,
     update_status,
@@ -313,6 +314,12 @@ router.add_api_route(
 router.add_api_route(
     path="/instagram/analyze-message",
     endpoint=node_analyze_message,
+    methods=["POST"],
+    tags=["Admin"],
+)
+router.add_api_route(
+    path="/instagram/generate-reply",
+    endpoint=GenerateReply,
     methods=["POST"],
     tags=["Admin"],
 )
