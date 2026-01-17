@@ -1,6 +1,4 @@
-import random
 from agents import Agent, Runner
-from app.Guardails.output_guardrails import InstagramOutputGuardrail
 from app.Schemas.instagram.message_schema import GenerateReplyOutput
 from app.Schemas.instagram.negotiation_schema import InstagramConversationState
 from app.core.exception import InternalServerErrorException
@@ -20,13 +18,10 @@ async def GenerateReply(message: str, thread_id: str) -> GenerateReplyOutput:
         docs.reverse()
         if docs and docs[-1]["message"] == message:
             docs = docs[:-1]
-        print(f"Docs: {docs}")
         if not docs:
             docs = [{"sender_type": "AI", "message": "No prior messages."}]
 
         input_context = build_message_context(docs, message)
-        print(f"Input context: {input_context}")
-        print("🧠 Prompt sent to agent:")
         result = await Runner.run(
             Agent(
                 name="generate_reply",
@@ -52,7 +47,6 @@ async def node_generate_reply(
             message=state.user_message,
             thread_id=state.thread_id,
         )
-        print(f"Reply: {reply}")
         state.reply = reply
         print(f"Reply: {state.reply}")
     except Exception as e:
