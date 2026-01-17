@@ -4,12 +4,12 @@ import logging
 from typing import Set
 from fastapi import BackgroundTasks, Request, Response
 from fastapi.responses import JSONResponse
+from app.Schemas.instagram.negotiation_schema import SenderType
 from app.agents.Instagram.invoke.instagram_agent import instagram_negotiation_agent
 from app.config import config
 from app.model.Instagram.instagram_message import InstagramMessageModel
 from app.services.websocket_manager import ws_manager
 from datetime import datetime
-from app.utils.custom_logging import Background_task_logger
 
 logger = logging.getLogger(__name__)
 
@@ -49,8 +49,11 @@ def build_attachments(attachments: list) -> list:
     ]
 
 
-def get_role(psid: str) -> str:
-    if psid is not None and psid == "17841477392364619":
+IG_BUSINESS_ID = "17841477392364619"
+
+
+def get_role(sender_id: str) -> str:
+    if sender_id == IG_BUSINESS_ID:
         return "AI"
     return "USER"
 
@@ -135,19 +138,21 @@ async def store_and_broadcast(payload: dict, background_tasks: BackgroundTasks):
         return
     ws_payload = payload.copy()
     ws_payload["id"] = str(result.inserted_id)
+    ws_manager.broadcast_event("instagram.message", payload=ws_payload)
+
+    # BLOCK AI MESSAGES
+    if payload["sender_type"] == SenderType.AI:
+        logger.info("🛑 Ignoring admin message")
+        return
 
     logger.info("📡 IG WS EVENT → %s", ws_payload)
 
     background_tasks.add_task(
-        Background_task_logger,
-        "broadcast_event",
         ws_manager.broadcast_event,
         "instagram.message",
         payload=ws_payload,
     )
     background_tasks.add_task(
-        Background_task_logger,
-        "Instagram Negotiation Agent",
         instagram_negotiation_agent,
         payload,
     )

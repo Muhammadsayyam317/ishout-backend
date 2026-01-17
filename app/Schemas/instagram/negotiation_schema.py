@@ -20,6 +20,11 @@ class NegotiationStrategy(str, Enum):
     WALK_AWAY = "WALK_AWAY"
 
 
+class SenderType(str, Enum):
+    USER = "USER"
+    AI = "AI"
+
+
 class InstagramConversationState(BaseModel):
     thread_id: str
     user_message: str
@@ -31,3 +36,4 @@ class InstagramConversationState(BaseModel):
 
     stage: Optional[NegotiationStage] = None
     strategy: Optional[NegotiationStrategy] = None
+    sender_type: Optional[SenderType] = None
