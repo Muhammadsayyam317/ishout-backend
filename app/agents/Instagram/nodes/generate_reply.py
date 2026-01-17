@@ -66,6 +66,6 @@ async def node_generate_reply(
         #     "Thanks for sharing! I’ll review and update you shortly.",
         #     "Perfect, give me a moment to look into this.",
         # ]
-        # state.final_reply = random.choice(fallbacks)
+        # state.reply = random.choice(fallbacks)
         print(f"Fallback reply: {state.reply}")
     return state

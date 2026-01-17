@@ -1,3 +1,4 @@
+from app.Schemas.instagram.message_schema import GenerateReplyOutput
 from app.Schemas.instagram.negotiation_schema import InstagramConversationState
 from app.agents.Instagram.graph.instagram_graph import instagram_graph
 
@@ -13,8 +14,8 @@ async def instagram_negotiation_agent(payload: dict) -> str:
     )
     result = await instagram_graph.ainvoke(initial_state)
     print(f"Result: {result}")
-    final_reply = result.get("final_reply")
-    print(f"Final reply: {final_reply}")
-    if not final_reply:
-        final_reply = "Thanks for your message! We'll get back to you shortly."
-    return final_reply
+    reply: GenerateReplyOutput = result.reply
+    print(f"Reply: {reply}")
+    if not reply.reply:
+        reply.reply = "Thanks for your message! We'll get back to you shortly."
+    return reply
