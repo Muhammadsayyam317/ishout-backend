@@ -11,7 +11,6 @@ from app.utils.prompts import NEGOTIATE_INFLUENCER_DM_PROMPT
 
 async def GenerateReply(message: str, thread_id: str) -> GenerateReplyOutput:
     try:
-        print(f"Generating reply for thread: {thread_id}")
         db = get_db()
         collection = db.get_collection("instagram_messages")
         cursor = (
@@ -36,7 +35,6 @@ async def GenerateReply(message: str, thread_id: str) -> GenerateReplyOutput:
             ),
             input=input_context,
         )
-        print(f"Result: {result}")
         output: GenerateReplyOutput = result.final_output
         print(f"Output: {output}")
         return output

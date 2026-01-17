@@ -9,8 +9,6 @@ from app.utils.prompts import ANALYZE_INFLUENCER_DM_PROMPT
 
 async def AnalyzeMessage(message: str) -> AnalyzeMessageOutput:
     try:
-        print(f"🔍 Analyzing message: {message}")
-        print(f"TYPE OF message: {type(message)}")
         result = await Runner.run(
             Agent(
                 name="analyze_message",
@@ -21,7 +19,6 @@ async def AnalyzeMessage(message: str) -> AnalyzeMessageOutput:
             input=message,
         )
         output: AnalyzeMessageOutput = result.final_output
-        print(f"Output from Analyze Message Node: {output}")
         return output
     except Exception as e:
         print(f"Error in Analyze Message Node: {str(e)}")
@@ -31,9 +28,6 @@ async def AnalyzeMessage(message: str) -> AnalyzeMessageOutput:
 async def node_analyze_message(
     state: InstagramConversationState,
 ) -> InstagramConversationState:
-    print("🔍 LangGraph: Analyze node")
     analysis = await AnalyzeMessage(state.user_message)
     state.analysis = analysis
-    print(f"Analysis Completed: {state.analysis}")
-    print(f"Analysis Type: {type(state.analysis)}")
     return state
