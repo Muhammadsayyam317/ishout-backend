@@ -9,5 +9,4 @@ async def send_instagram_reply(state: InstagramConversationState):
         recipient_id=state.thread_id,
     )
     state.reply = state.reply
-    print(f"Reply sent to {state.thread_id}: {state.reply}")
     return state
