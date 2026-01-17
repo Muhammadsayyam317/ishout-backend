@@ -32,16 +32,11 @@ async def GenerateReply(message: str, thread_id: str) -> GenerateReplyOutput:
             Agent(
                 name="generate_reply",
                 instructions=NEGOTIATE_INFLUENCER_DM_PROMPT,
-                # output_guardrails=[InstagramOutputGuardrail],
                 output_type=GenerateReplyOutput,
             ),
             input=input_context,
         )
         print(f"Result: {result}")
-        # if result.final_output is None:
-        #     return GenerateReplyOutput(
-        #         reply="I'm sorry, I can't process this message right now."
-        #     )
         output: GenerateReplyOutput = result.final_output
         print(f"Output: {output}")
         return output
@@ -53,7 +48,6 @@ async def GenerateReply(message: str, thread_id: str) -> GenerateReplyOutput:
 async def node_generate_reply(
     state: InstagramConversationState,
 ) -> InstagramConversationState:
-
     print("✍️ LangGraph: Generate reply node")
     try:
         reply = await GenerateReply(
@@ -61,17 +55,17 @@ async def node_generate_reply(
             thread_id=state.thread_id,
         )
         print(f"Reply: {reply}")
-        state.final_reply = reply.final_reply
-        print(f"Final reply: {state.final_reply}")
+        state.reply = reply
+        print(f"Reply: {state.reply}")
     except Exception as e:
         print("⚠️ Guardrail or generation failure:", str(e))
-        print(f"Final reply: {state.final_reply}")
+        print(f"Reply: {state.reply}")
         # FALLBACK
-        fallbacks = [
-            "Got it 👍 Let me check the best options for you.",
-            "Thanks for sharing! I’ll review and update you shortly.",
-            "Perfect, give me a moment to look into this.",
-        ]
-        state.final_reply = random.choice(fallbacks)
-        print(f"Fallback reply: {state.final_reply}")
+        # fallbacks = [
+        #     "Got it 👍 Let me check the best options for you.",
+        #     "Thanks for sharing! I’ll review and update you shortly.",
+        #     "Perfect, give me a moment to look into this.",
+        # ]
+        # state.final_reply = random.choice(fallbacks)
+        print(f"Fallback reply: {state.reply}")
     return state
