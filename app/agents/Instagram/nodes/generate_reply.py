@@ -46,7 +46,7 @@ async def GenerateReply(message: str, thread_id: str) -> GenerateReplyOutput:
 
 
 async def node_generate_reply(
-    state: InstagramConversationState,
+    state: dict,
 ) -> InstagramConversationState:
     print("✍️ LangGraph: Generate reply node")
     try:
