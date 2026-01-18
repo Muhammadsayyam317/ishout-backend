@@ -1,10 +1,10 @@
-from app.Schemas.instagram.negotiation_schema import InstagramConversationState
+from app.Schemas.instagram.negotiation_schema import (
+    InstagramConversationState,
+    NegotiationStrategy,
+)
 
 
 def pricing_decision(analysis, min_price, max_price):
-    """
-    Decide what to do next based on influencer's budget.
-    """
     if not analysis.pricing_mentioned:
         return "ASK_PRICE"
 
@@ -21,10 +21,17 @@ def pricing_decision(analysis, min_price, max_price):
 async def node_pricing_decision(
     state: InstagramConversationState,
 ) -> InstagramConversationState:
-    """
-    Node to update negotiation strategy/next_action in state.
-    """
-    decision = pricing_decision(state.analysis, state.min_price, state.max_price)
+    decision = pricing_decision(
+        state.analysis,
+        state.min_price,
+        state.max_price,
+    )
     state.next_action = decision
-    state.strategy = decision
+    STRATEGY_MAP = {
+        "ASK_PRICE": NegotiationStrategy.SOFT,
+        "COUNTER_UP": NegotiationStrategy.VALUE_BASED,
+        "COUNTER_DOWN": NegotiationStrategy.VALUE_BASED,
+        "ACCEPT": NegotiationStrategy.SOFT,
+    }
+    state.strategy = STRATEGY_MAP.get(decision, NegotiationStrategy.SOFT)
     return state

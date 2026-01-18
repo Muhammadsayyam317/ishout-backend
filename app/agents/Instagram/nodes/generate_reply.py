@@ -49,6 +49,7 @@ async def GenerateReply(state: InstagramConversationState) -> GenerateReplyOutpu
             input={
                 "conversation": input_context,
                 "next_action": getattr(state, "next_action", None),
+                "strategy": state.strategy.value if state.strategy else None,
                 "min_price": state.min_price,
                 "max_price": state.max_price,
             },
