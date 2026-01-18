@@ -69,7 +69,6 @@ async def GenerateReply(state: InstagramConversationState) -> GenerateReplyOutpu
         docs.reverse()
         if docs and docs[-1]["message"] == state.user_message:
             docs = docs[:-1]
-        print(f"Docs: {docs}")
         if not docs:
             docs = [
                 {"sender_type": SenderType.AI.value, "message": "No prior messages."}
@@ -83,8 +82,6 @@ async def GenerateReply(state: InstagramConversationState) -> GenerateReplyOutpu
                 name="generate_reply",
                 instructions=NEGOTIATE_INFLUENCER_DM_PROMPT,
                 model="gpt-4o-mini",
-                input_guardrails=[InstagramInputGuardrail],
-                output_type=GenerateReplyOutput,
             ),
             input={
                 "conversation": input_context,
