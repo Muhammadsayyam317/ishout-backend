@@ -36,7 +36,7 @@ async def GenerateReply(state: InstagramConversationState) -> GenerateReplyOutpu
             Agent(
                 name="generate_reply",
                 instructions=instructions,
-                output_type=GenerateReplyOutput,
+                # output_type=GenerateReplyOutput,
             ),
             input={
                 "conversation": input_context,
