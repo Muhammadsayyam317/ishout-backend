@@ -4,7 +4,7 @@ from app.Schemas.instagram.negotiation_schema import InstagramConversationState
 from app.config.credentials_config import config
 from app.core.exception import InternalServerErrorException
 from app.db.connection import get_db
-from app.utils.message_context import build_message_context
+from app.utils.message_context import build_message_context, normalize_ai_reply
 from app.utils.prompts import NEGOTIATE_INFLUENCER_DM_PROMPT
 
 
@@ -59,23 +59,8 @@ async def node_generate_reply(
     print("Enter into Generate Reply Node")
     try:
         reply = await GenerateReply(state)
-
-        # Normalize reply to string
-        if isinstance(reply, GenerateReplyOutput):
-            state.reply = reply.reply
-        elif isinstance(reply, dict) and "reply" in reply:
-            state.reply = reply["reply"]
-        else:
-            raise ValueError("Empty AI reply generated")
-
-        print(f"Reply in Generate Reply Node: {state.reply}")
-        print("Exiting from Generate Reply Node")
-
+        state.reply = normalize_ai_reply(reply)
+        return state
     except Exception as e:
-        print("⚠️ Guardrail or generation failure:", str(e))
-        state.reply = (
-            "Thanks for your message! Let me check and get back to you shortly."
-        )
-        print("Exiting from Generate Reply Node with default reply")
-
-    return state
+        print(f"Error in Generate Reply Node: {str(e)}")
+        raise ValueError(f"Generate reply failed: {str(e)}")
