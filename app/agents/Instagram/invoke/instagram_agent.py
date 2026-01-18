@@ -1,4 +1,3 @@
-from time import timezone
 from app.Schemas.instagram.negotiation_schema import (
     InstagramConversationState,
     SenderType,
@@ -8,7 +7,7 @@ from app.config.credentials_config import config
 from app.db.connection import get_db
 from app.model.Instagram.instagram_message import InstagramMessageModel
 from app.services.instagram.send_instagram_message import Send_Insta_Message
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 
 logger = logging.getLogger(__name__)
