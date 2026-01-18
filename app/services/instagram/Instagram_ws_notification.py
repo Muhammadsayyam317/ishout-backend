@@ -5,7 +5,7 @@ from typing import Set
 from datetime import datetime
 from fastapi import BackgroundTasks, Request, Response
 from fastapi.responses import JSONResponse
-
+import asyncio
 from app.Schemas.instagram.negotiation_schema import SenderType
 from app.agents.Instagram.invoke.instagram_agent import instagram_negotiation_agent
 from app.config import config
@@ -136,32 +136,22 @@ async def process_message_event(
         text=message.get("text", ""),
         attachments=message.get("attachments", []),
     )
-
-    # Store and broadcast
     await store_and_broadcast(payload, background_tasks)
 
 
-# -------------------------
-# Store message + broadcast + AI agent
-# -------------------------
 async def store_and_broadcast(payload: dict, background_tasks: BackgroundTasks):
-    """
-    Store incoming message, broadcast to WS, and invoke AI negotiation.
-    """
     try:
-        # 1️⃣ Store in DB
         result = await InstagramMessageModel.create(payload)
         payload["id"] = str(result.inserted_id)
 
-        # 2️⃣ Broadcast user message to WS
-        ws_manager.broadcast_event("instagram.message", payload=payload)
-        background_tasks.add_task(
-            ws_manager.broadcast_event, "instagram.message", payload=payload
+        # Broadcast WS message
+        asyncio.create_task(
+            ws_manager.broadcast_event("instagram.message", payload=payload)
         )
 
-        # 3️⃣ Only run AI agent for user messages
+        # Only run AI agent for user messages
         if payload["sender_type"] == SenderType.USER:
-            background_tasks.add_task(instagram_negotiation_agent, payload)
+            asyncio.create_task(instagram_negotiation_agent(payload))
 
     except Exception as e:
         logger.exception("Failed to store or process message: %s", e)
