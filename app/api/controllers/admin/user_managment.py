@@ -41,7 +41,7 @@ async def get_all_users(page: int = 1, page_size: int = 10) -> Dict[str, Any]:
             for user in user
         ]
         total = await users_collection.count_documents({"role": UserRole.COMPANY.value})
-        total_pages = total + page_size - 1
+        total_pages = (total + page_size - 1) // page_size
         has_next = page < total_pages
         has_prev = page > 1
         return {
