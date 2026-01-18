@@ -17,7 +17,7 @@ from app.utils.helpers import convert_objectid
 async def get_all_users(page: int = 1, page_size: int = 10) -> Dict[str, Any]:
     try:
         db = get_db()
-        users_collection = db.get_collection("users")
+        users_collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_USERS)
         user = (
             await users_collection.find({"role": UserRole.COMPANY.value})
             .sort("created_at", -1)
@@ -64,7 +64,7 @@ async def get_all_users(page: int = 1, page_size: int = 10) -> Dict[str, Any]:
 async def update_user_status(user_id: str, status: str) -> Dict[str, Any]:
     try:
         db = get_db()
-        users_collection = db.get_collection("users")
+        users_collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_USERS)
         if status not in [
             UserStatus.ACTIVE.value,
             UserStatus.INACTIVE.value,
@@ -211,7 +211,7 @@ async def whatsapp_messages_cursor(
 ) -> Dict[str, Any]:
     try:
         db = get_db()
-        collection = db.get_collection("whatsapp_messages")
+        collection = db.get_collection(config.MONGODB_COLLECTION_WHATSAPP_MESSAGES)
 
         query = {"thread_id": thread_id}
 
