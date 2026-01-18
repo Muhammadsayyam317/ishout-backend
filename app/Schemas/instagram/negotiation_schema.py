@@ -44,6 +44,7 @@ class InstagramConversationState(BaseModel):
     stage: Optional[NegotiationStage] = None
     strategy: Optional[NegotiationStrategy] = None
     sender_type: Optional[SenderType] = None
+    next_action: Optional[str] = None
 
     class InstagramConversatuinResponse(BaseModel):
         _id: ObjectId
