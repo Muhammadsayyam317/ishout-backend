@@ -6,17 +6,9 @@ from app.services.whatsapp.onboarding_message import send_whatsapp_message
 
 
 async def track_unresponsive_users() -> int:
-    """
-    Find threads where:
-    - Last message is AI
-    - AI message is older than 24 hours
-    - User has NOT replied
-    """
     db = get_db()
     collection = db.get_collection(config.INSTAGRAM_MESSAGE_COLLECTION)
-
     cutoff_time = datetime.now(timezone.utc) - timedelta(hours=24)
-
     pipeline = [
         {"$sort": {"timestamp": -1}},
         {
