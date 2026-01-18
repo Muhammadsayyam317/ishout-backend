@@ -30,7 +30,6 @@ async def instagram_negotiation_agent(payload: dict):
         logger.warning(f"No conversation found for thread_id {payload['thread_id']}")
         return None
 
-    # Prepare state for LangGraph
     state = InstagramConversationState(
         thread_id=payload["thread_id"],
         user_message=payload["message"],
@@ -42,38 +41,35 @@ async def instagram_negotiation_agent(payload: dict):
         stage=conv.get("negotiation_stage", "INITIAL"),
     )
 
-    # Invoke the AI graph
     result = await instagram_graph.ainvoke(state)
-    reply_obj = result.get("reply")
+    reply_obj = getattr(result, "reply", None)
+    if not reply_obj:
+        reply_obj = result.get("reply") if isinstance(result, dict) else None
 
-    if not reply_obj or not getattr(reply_obj, "reply", None):
+    if not reply_obj:
         logger.info("No AI reply generated, skipping send")
         return None
 
-    ai_message_text = reply_obj.reply
+    ai_message_text = (
+        reply_obj
+        if isinstance(reply_obj, str)
+        else getattr(reply_obj, "reply", str(reply_obj))
+    )
 
-    try:
-        print("Enter into Send Reply Node")
-        await Send_Insta_Message(
-            message=ai_message_text,
-            recipient_id=payload["thread_id"],
-        )
-        print("Exiting from Send Reply Node")
-        db_payload = {
-            "thread_id": payload["thread_id"],
-            "sender_type": SenderType.AI.value,
-            "message": ai_message_text,
-            "timestamp": datetime.now(timezone.utc),
-            "attachments": [],
-        }
-        print("Enter into Create Instagram Message Model", db_payload)
-        result = await InstagramMessageModel.create(db_payload)
-        logger.info(
-            f"Stored AI reply for thread {payload['thread_id']} with ID {result.inserted_id}"
-        )
-
-    except Exception as e:
-        logger.exception(f"Failed to send or store AI reply: {e}")
-
+    await Send_Insta_Message(
+        message=ai_message_text,
+        recipient_id=payload["thread_id"],
+    )
+    db_payload = {
+        "thread_id": payload["thread_id"],
+        "sender_type": SenderType.AI.value,
+        "message": ai_message_text,
+        "timestamp": datetime.now(timezone.utc),
+        "attachments": [],
+    }
+    result = await InstagramMessageModel.create(db_payload)
+    logger.info(
+        f"Stored AI reply for thread {payload['thread_id']} with ID {result.inserted_id}"
+    )
     print("Exiting from Instagram Negotiation Agent")
     return reply_obj

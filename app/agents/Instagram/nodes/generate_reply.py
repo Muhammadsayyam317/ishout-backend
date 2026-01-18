@@ -59,15 +59,23 @@ async def node_generate_reply(
     print("Enter into Generate Reply Node")
     try:
         reply = await GenerateReply(state)
-        if not reply:
+
+        # Normalize reply to string
+        if isinstance(reply, GenerateReplyOutput):
+            state.reply = reply.reply
+        elif isinstance(reply, dict) and "reply" in reply:
+            state.reply = reply["reply"]
+        else:
             raise ValueError("Empty AI reply generated")
-        state.reply = reply.reply
+
         print(f"Reply in Generate Reply Node: {state.reply}")
         print("Exiting from Generate Reply Node")
+
     except Exception as e:
         print("⚠️ Guardrail or generation failure:", str(e))
         state.reply = (
             "Thanks for your message! Let me check and get back to you shortly."
         )
         print("Exiting from Generate Reply Node with default reply")
+
     return state
