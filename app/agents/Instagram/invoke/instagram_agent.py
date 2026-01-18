@@ -15,19 +15,11 @@ logger = logging.getLogger(__name__)
 
 
 async def instagram_negotiation_agent(payload: dict):
-    """
-    Main agent entry for Instagram negotiation flow.
-    - Receives user message payload from webhook
-    - Runs AI negotiation graph
-    - Sends AI reply
-    - Stores AI reply in DB
-    """
     if payload["sender_type"] == SenderType.AI:
         logger.info("🛑 Ignoring AI/admin message")
         return None
 
     db = get_db()
-    # Get the last conversation info for this thread
     conv = await db.get_collection(config.INSTAGRAM_MESSAGE_COLLECTION).find_one(
         {"thread_id": payload["thread_id"]}
     )
@@ -59,13 +51,11 @@ async def instagram_negotiation_agent(payload: dict):
     ai_message_text = reply_obj.reply
 
     try:
-        # Send AI reply via Instagram
         await Send_Insta_Message(
             message=ai_message_text,
             recipient_id=payload["thread_id"],
         )
 
-        # Store AI reply in DB
         db_payload = {
             "thread_id": payload["thread_id"],
             "sender_type": SenderType.AI.value,

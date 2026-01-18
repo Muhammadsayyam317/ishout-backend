@@ -9,7 +9,7 @@ async def bind_conversation_to_influencer(
     influencer: dict,
 ):
     db = get_db()
-    conv = db.get_collection(config.INSTAGRAM_CONVERSATION_COLLECTION)
+    conv = db.get_collection(config.INSTAGRAM_MESSAGE_COLLECTION)
 
     await conv.update_one(
         {"thread_id": thread_id},

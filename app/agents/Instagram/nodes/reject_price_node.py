@@ -20,7 +20,7 @@ async def manual_negotiation_required(
         if offered_price < state.min_price or offered_price > state.max_price:
             db = get_db()
             campaigns_collection = db.get_collection(
-                config.CAMPAIGN_INFLUENCERS_COLLECTION
+                config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS
             )
 
             result = await campaigns_collection.update_one(
