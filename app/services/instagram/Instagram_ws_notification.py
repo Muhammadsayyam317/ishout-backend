@@ -143,13 +143,10 @@ async def store_and_broadcast(payload: dict, background_tasks: BackgroundTasks):
     try:
         result = await InstagramMessageModel.create(payload)
         payload["id"] = str(result.inserted_id)
-
-        # Broadcast WS message
         asyncio.create_task(
             ws_manager.broadcast_event("instagram.message", payload=payload)
         )
 
-        # Only run AI agent for user messages
         if payload["sender_type"] == SenderType.USER:
             asyncio.create_task(instagram_negotiation_agent(payload))
 

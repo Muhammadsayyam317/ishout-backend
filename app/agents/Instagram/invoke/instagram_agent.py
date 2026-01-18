@@ -15,8 +15,10 @@ logger = logging.getLogger(__name__)
 
 
 async def instagram_negotiation_agent(payload: dict):
+    print("Enter into Instagram Negotiation Agent")
     if payload["sender_type"] == SenderType.AI:
         logger.info("🛑 Ignoring AI/admin message")
+        print("Exiting from Instagram Negotiation Agent")
         return None
 
     db = get_db()
@@ -51,11 +53,12 @@ async def instagram_negotiation_agent(payload: dict):
     ai_message_text = reply_obj.reply
 
     try:
+        print("Enter into Send Reply Node")
         await Send_Insta_Message(
             message=ai_message_text,
             recipient_id=payload["thread_id"],
         )
-
+        print("Exiting from Send Reply Node")
         db_payload = {
             "thread_id": payload["thread_id"],
             "sender_type": SenderType.AI.value,
@@ -63,6 +66,7 @@ async def instagram_negotiation_agent(payload: dict):
             "timestamp": datetime.now(timezone.utc),
             "attachments": [],
         }
+        print("Enter into Create Instagram Message Model", db_payload)
         result = await InstagramMessageModel.create(db_payload)
         logger.info(
             f"Stored AI reply for thread {payload['thread_id']} with ID {result.inserted_id}"
@@ -71,4 +75,5 @@ async def instagram_negotiation_agent(payload: dict):
     except Exception as e:
         logger.exception(f"Failed to send or store AI reply: {e}")
 
+    print("Exiting from Instagram Negotiation Agent")
     return reply_obj

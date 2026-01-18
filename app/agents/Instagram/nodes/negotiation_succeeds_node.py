@@ -9,9 +9,7 @@ logger = logging.getLogger(__name__)
 async def negotiation_succeeds(
     state: InstagramConversationState,
 ) -> InstagramConversationState:
-    """
-    Marks influencer as 'Confirmed' with the agreed final rate after successful negotiation.
-    """
+    print("Enter into Negotiation Succeeds Node")
     try:
         if (
             state.analysis is None
@@ -49,4 +47,5 @@ async def negotiation_succeeds(
     except Exception as e:
         logger.exception(f"Error in negotiation_succeeds node: {e}")
 
+    print("Exiting from Negotiation Succeeds Node")
     return state

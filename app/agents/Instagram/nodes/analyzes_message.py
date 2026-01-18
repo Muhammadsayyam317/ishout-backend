@@ -8,6 +8,7 @@ from app.utils.prompts import ANALYZE_INFLUENCER_DM_PROMPT
 
 
 async def AnalyzeMessage(message: str) -> AnalyzeMessageOutput:
+    print("Entering into Analyze messgae")
     try:
         result = await Runner.run(
             Agent(
@@ -18,7 +19,9 @@ async def AnalyzeMessage(message: str) -> AnalyzeMessageOutput:
             ),
             input=message,
         )
+        print("user meaage", message)
         output: AnalyzeMessageOutput = result.final_output
+        print("Exiting from Analyze Message")
         return output
     except Exception as e:
         print(f"Error in Analyze Message Node: {str(e)}")

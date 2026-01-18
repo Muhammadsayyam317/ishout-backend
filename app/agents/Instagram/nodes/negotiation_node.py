@@ -8,6 +8,7 @@ from app.db.connection import get_db
 
 
 async def negotiation(payload: dict):
+    print("Enter into Negotiation Node")
     if payload["sender_type"] == SenderType.AI:
         return
 
@@ -32,4 +33,5 @@ async def negotiation(payload: dict):
     result = await instagram_graph.ainvoke(state)
     reply = result.get("reply")
 
+    print("Exiting from Negotiation Node")
     return reply

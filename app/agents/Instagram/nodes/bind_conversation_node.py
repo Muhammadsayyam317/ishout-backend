@@ -8,6 +8,7 @@ async def bind_conversation_to_influencer(
     thread_id: str,
     influencer: dict,
 ):
+    print("Enter into bind conversation to influencer")
     db = get_db()
     conv = db.get_collection(config.INSTAGRAM_MESSAGE_COLLECTION)
 
@@ -30,3 +31,4 @@ async def bind_conversation_to_influencer(
         },
         upsert=True,
     )
+    print("Exiting from bind conversation to influencer")

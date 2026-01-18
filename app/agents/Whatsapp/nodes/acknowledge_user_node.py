@@ -18,6 +18,6 @@ async def node_acknowledge_user(state):
         state["done"] = True
         return state
 
-    except Exception as e:
+    except Exception:
         state["done"] = True
         return state
