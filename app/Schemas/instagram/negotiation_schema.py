@@ -34,7 +34,7 @@ class InstagramConversationState(BaseModel):
     last_messages: List[str] = Field(default_factory=list)
 
     analysis: Optional[AnalyzeMessageOutput] = None
-    reply: Optional[str]
+    reply: Optional[str] = None
 
     influencer_id: Optional[str] = None
     campaign_id: Optional[str] = None
