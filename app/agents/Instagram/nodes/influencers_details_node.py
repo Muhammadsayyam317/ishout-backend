@@ -47,22 +47,18 @@ async def influencers_details_node(
             {"campaign_id": state.campaign_id, "influencer_id": state.influencer_id},
             {"$set": update_data},
         )
+        print("Updated influencer details in database")
         if result.modified_count == 0:
             logger.warning(
                 f"No document updated for influencer {state.influencer_id} in campaign {state.campaign_id}"
             )
-
-            # Send polite confirmation message
         confirmation_msg = "Thanks for sharing your availability! We'll review and get back to you shortly."
         await Send_Insta_Message(
             message=confirmation_msg,
             recipient_id=state.thread_id,
         )
         print(f"Sent confirmation message to {state.thread_id}")
-
-        # Optionally store confirmation in state.reply
         state.reply = confirmation_msg
-
     except Exception as e:
         logger.exception(f"Error in Influencers Details Node: {e}")
         state.reply = "Thanks! We'll get back to you shortly."

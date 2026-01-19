@@ -30,16 +30,15 @@ class SenderType(str, Enum):
 class InstagramConversationState(BaseModel):
     thread_id: str
     user_message: str
-    last_messages: List[str] = Field(default_factory=list)
+
     analysis: Optional[AnalyzeMessageOutput] = None
-    reply: Optional[str] = None
-    influencer_id: Optional[str] = None
-    campaign_id: Optional[str] = None
-    min_price: Optional[float] = None
-    max_price: Optional[float] = None
-    stage: Optional[NegotiationStage] = None
-    strategy: Optional[NegotiationStrategy] = None
-    sender_type: Optional[SenderType] = None
+
+    availability: Optional[str] = None
+    rate: Optional[float] = None
+    currency: Optional[str] = None
+    interest: Optional[bool] = None
+
+    final_reply: Optional[str] = None
     next_action: Optional[str] = None
 
     class InstagramConversatuinResponse(BaseModel):

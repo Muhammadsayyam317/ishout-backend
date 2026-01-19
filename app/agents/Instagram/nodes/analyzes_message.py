@@ -28,9 +28,18 @@ async def AnalyzeMessage(message: str) -> AnalyzeMessageOutput:
         raise ValueError(f"Analyze message failed: {str(e)}")
 
 
-async def node_analyze_message(
-    state: InstagramConversationState,
-) -> InstagramConversationState:
+async def node_analyze_message(state: InstagramConversationState):
     analysis = await AnalyzeMessage(state.user_message)
+
     state.analysis = analysis
+
+    if "availability" in analysis.missing_required_details:
+        state.next_action = "ASK_AVAILABILITY"
+    elif "rate_card" in analysis.missing_required_details:
+        state.next_action = "ASK_RATE"
+    elif "interest" in analysis.missing_required_details:
+        state.next_action = "ASK_INTEREST"
+    else:
+        state.next_action = "CONFIRM"
+
     return state
