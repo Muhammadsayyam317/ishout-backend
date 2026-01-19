@@ -41,10 +41,8 @@ async def GenerateReply(message: str, thread_id: str) -> GenerateReplyOutput:
 
 
 async def node_generate_reply(state: InstagramConversationState):
-    if state.next_action == NextAction.ASK_AVAILABILITY:
-        state.final_reply = (
-            "Could you please share your availability for this campaign?"
-        )
-        ai_reply = await GenerateReply(state.user_message, state.thread_id)
-        state.final_reply = f"{ai_reply.final_reply}"
+    ai_reply = await GenerateReply(state.user_message, state.thread_id)
+    state.final_reply = f"{ai_reply.final_reply}"
+    if not state.final_reply:
+        state.final_reply = "Thanks for your message! We'll get back to you shortly."
     return state
