@@ -41,18 +41,10 @@ async def GenerateReply(message: str, thread_id: str) -> GenerateReplyOutput:
 
 
 async def node_generate_reply(state: InstagramConversationState):
-    # Predefined flow
     if state.next_action == NextAction.ASK_AVAILABILITY:
         state.final_reply = (
             "Could you please share your availability for this campaign?"
         )
-    elif state.next_action == NextAction.ASK_RATE:
-        state.final_reply = "Please share your rate card for this campaign."
-    elif state.next_action == NextAction.ASK_INTEREST:
-        state.final_reply = "Are you interested in collaborating on this campaign?"
-    elif state.next_action == NextAction.CONFIRM:
-        state.final_reply = "Thanks for sharing your details! Our team will review and get in touch soon."
-    elif state.next_action == NextAction.ANSWER_QUESTION:
         ai_reply = await GenerateReply(state.user_message, state.thread_id)
         state.final_reply = f"{ai_reply.final_reply}"
     return state
