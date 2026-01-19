@@ -1,43 +1,41 @@
-from agents import Agent, AgentOutputSchema, Runner
-from app.Guardails.input_guardrails import InstagramInputGuardrail
-from app.Schemas.instagram.message_schema import AnalyzeMessageOutput
 from app.Schemas.instagram.negotiation_schema import (
     InstagramConversationState,
+    AnalyzeMessageOutput,
+    NextAction,
 )
+from agents import Agent, Runner
+from app.Guardails.input_guardrails import InstagramInputGuardrail
 from app.utils.prompts import ANALYZE_INFLUENCER_DM_PROMPT
 
 
-analyze_agent = Agent(
-    name="analyze_message",
-    instructions=ANALYZE_INFLUENCER_DM_PROMPT,
-    model="gpt-4o-mini",
-    input_guardrails=[InstagramInputGuardrail],
-    output_type=AgentOutputSchema(AnalyzeMessageOutput, strict_json_schema=False),
-)
-
-
 async def AnalyzeMessage(message: str) -> AnalyzeMessageOutput:
-    try:
-        print(f"🔍 Analyzing message: {message}")
-        print(f"TYPE OF message: {type(message)}")
-        result = await Runner.run(
-            analyze_agent,
-            input=message,
-        )
-        output: AnalyzeMessageOutput = result.final_output
-        print(f"Output from Analyze Message Node: {output}")
-        return output
-    except Exception as e:
-        print(f"Error in Analyze Message Node: {str(e)}")
-        raise ValueError(f"Analyze message failed: {str(e)}")
+    result = await Runner.run(
+        Agent(
+            name="analyze_message",
+            instructions=ANALYZE_INFLUENCER_DM_PROMPT,
+            input_guardrails=[InstagramInputGuardrail],
+            output_type=AnalyzeMessageOutput,
+        ),
+        input=message,
+    )
+    return result.final_output
 
 
-async def node_analyze_message(
-    state: InstagramConversationState,
-) -> InstagramConversationState:
-    print("🔍 LangGraph: Analyze node")
+async def node_analyze_message(state: InstagramConversationState):
     analysis = await AnalyzeMessage(state.user_message)
     state.analysis = analysis
-    print(f"Analysis Completed: {state.analysis}")
-    print(f"Analysis Type: {type(state.analysis)}")
+
+    if analysis.is_question:
+        state.next_action = NextAction.ANSWER_QUESTION
+        return state
+
+    if "availability" in analysis.missing_required_details:
+        state.next_action = NextAction.ASK_AVAILABILITY
+    elif "rate_card" in analysis.missing_required_details:
+        state.next_action = NextAction.ASK_RATE
+    elif "interest" in analysis.missing_required_details:
+        state.next_action = NextAction.ASK_INTEREST
+    else:
+        state.next_action = NextAction.CONFIRM
+
     return state

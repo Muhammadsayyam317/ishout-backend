@@ -4,7 +4,6 @@ from app.utils.helpers import normalize_phone
 
 
 async def node_verify_user(state):
-    print("Entering node_verify_user")
     try:
         sender_id = state.get("sender_id")
         if not sender_id:
@@ -34,11 +33,9 @@ async def node_verify_user(state):
             "Tell us what kind of influencers you’re looking for."
         )
         state["reply_sent"] = False
-        print("Exiting node_verify_user successfully")
         return state
 
     except Exception:
-        print("❌ Error in node_verify_user")
         state["is_existing_user"] = False
         state["reply"] = (
             "Sorry, we couldn't verify your account right now.\n\n"

@@ -4,7 +4,6 @@ from app.core.exception import InternalServerErrorException
 
 
 async def Send_Insta_Message(message: str, recipient_id: str):
-    print(f"Sending message to {recipient_id}: {message}")
     if not message:
         raise InternalServerErrorException(message="Message is required")
     try:
@@ -17,9 +16,6 @@ async def Send_Insta_Message(message: str, recipient_id: str):
             "Content-Type": "application/json",
         }
         payload = {"recipient": {"id": recipient_id}, "message": {"text": message}}
-        print(f"Sending message to {recipient_id}: {message}")
-        print(f"POST URL: {backend_url}")
-        print(f"Payload: {payload}")
 
         async with httpx.AsyncClient(timeout=10.0) as client:
             await client.post(backend_url, json=payload, headers=headers)

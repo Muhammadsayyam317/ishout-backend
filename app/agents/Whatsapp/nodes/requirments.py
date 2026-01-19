@@ -11,7 +11,6 @@ import traceback
 
 async def node_requirements(state):
     try:
-        print("Entering node_requirements")
         msg = state.get("user_message", "")
         new_platforms = extract_platforms(msg)
         limit = extract_limit(msg)
@@ -139,7 +138,6 @@ async def node_requirements(state):
             return state
         state["reply"] = None
         state["ready_for_campaign"] = True
-        print("Exiting node_requirements successfully")
         return state
 
     except Exception:

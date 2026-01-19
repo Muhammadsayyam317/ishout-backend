@@ -8,7 +8,7 @@ from app.utils.helpers import convert_objectid
 def _get_status_message(status: str) -> str:
     status_messages = {
         "pending": "Campaign created and waiting for admin to generate influencers",
-        "processing": "Admin is currently generating influencers for your campaign",
+        "processing": "Admin is currently    influencers for your campaign",
         "completed": "Campaign completed with approved influencers",
     }
     return status_messages.get(status, "Unknown status")
