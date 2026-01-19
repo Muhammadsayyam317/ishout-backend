@@ -101,6 +101,44 @@ async def update_user_status(user_id: str, status: str) -> Dict[str, Any]:
         )
 
 
+async def delete_user(user_id: str) -> Dict[str, Any]:
+    try:
+        db = get_db()
+        user_object_id = ObjectId(user_id)
+        users_collection = db.get_collection("users")
+        campaigns_collection = db.get_collection("campaigns")
+        campaign_influencers_collection = db.get_collection("campaign_influencers")
+        generated_influencers_collection = db.get_collection("generated_influencers")
+
+        campaigns_result = await campaigns_collection.delete_many(
+            {"user_id": user_object_id}
+        )
+        campaign_influencers_result = await campaign_influencers_collection.delete_many(
+            {"user_id": user_object_id}
+        )
+        generated_influencers_result = (
+            await generated_influencers_collection.delete_many(
+                {"user_id": user_object_id}
+            )
+        )
+
+        user_result = await users_collection.delete_one({"_id": user_object_id})
+        if user_result.deleted_count == 0:
+            raise NotFoundException(message="User not found")
+        return {
+            "message": "User and associated influencer data deleted successfully",
+            "deleted": {
+                "campaigns": campaigns_result.deleted_count,
+                "campaign_influencers": campaign_influencers_result.deleted_count,
+                "generated_influencers": generated_influencers_result.deleted_count,
+                "user": user_result.deleted_count,
+            },
+        }
+
+    except Exception as e:
+        raise InternalServerErrorException(message=f"Error deleting user: {str(e)}")
+
+
 async def Whatsapp_Users_Sessions_management(
     page: int = 1,
     page_size: int = 20,

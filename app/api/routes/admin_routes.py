@@ -40,6 +40,7 @@ from app.api.controllers.admin.takeover import (
 from app.api.controllers.admin.user_managment import (
     Whatsapp_Users_Sessions_management,
     Whatsapp_messages_management,
+    delete_user,
     get_all_users,
     update_user_status,
 )
@@ -204,6 +205,12 @@ router.add_api_route(
 router.add_api_route(
     path="/delete-influencer",
     endpoint=deleteInfluencerEmbedding,
+    methods=["DELETE"],
+    tags=["Admin"],
+)
+router.add_api_route(
+    path="/delete-user/{user_id}",
+    endpoint=delete_user,
     methods=["DELETE"],
     tags=["Admin"],
 )

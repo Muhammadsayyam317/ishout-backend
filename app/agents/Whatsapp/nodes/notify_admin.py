@@ -21,5 +21,5 @@ async def node_notify_admin_campaign_created(campaign, user):
         if not success:
             raise Exception("Failed to send message to admin")
         return True
-    except Exception as e:
+    except Exception:
         return False
