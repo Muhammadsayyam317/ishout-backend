@@ -1,14 +1,14 @@
 from agents import Agent, Runner
 from app.Guardails.input_guardrails import InstagramInputGuardrail
-from app.Schemas.instagram.message_schema import AnalyzeMessageOutput
 from app.Schemas.instagram.negotiation_schema import (
+    AnalyzeMessageOutput,
     InstagramConversationState,
+    NextAction,
 )
 from app.utils.prompts import ANALYZE_INFLUENCER_DM_PROMPT
 
 
 async def AnalyzeMessage(message: str) -> AnalyzeMessageOutput:
-    print("Entering into Analyze messgae")
     try:
         result = await Runner.run(
             Agent(
@@ -19,27 +19,24 @@ async def AnalyzeMessage(message: str) -> AnalyzeMessageOutput:
             ),
             input=message,
         )
-        print("user meaage", message)
-        output: AnalyzeMessageOutput = result.final_output
-        print("Exiting from Analyze Message")
-        return output
+        return result.final_output
     except Exception as e:
-        print(f"Error in Analyze Message Node: {str(e)}")
         raise ValueError(f"Analyze message failed: {str(e)}")
 
 
 async def node_analyze_message(state: InstagramConversationState):
     analysis = await AnalyzeMessage(state.user_message)
-
     state.analysis = analysis
 
-    if "availability" in analysis.missing_required_details:
-        state.next_action = "ASK_AVAILABILITY"
+    if analysis.is_question:
+        state.next_action = NextAction.ANSWER_QUESTION
+    elif "availability" in analysis.missing_required_details:
+        state.next_action = NextAction.ASK_AVAILABILITY
     elif "rate_card" in analysis.missing_required_details:
-        state.next_action = "ASK_RATE"
+        state.next_action = NextAction.ASK_RATE
     elif "interest" in analysis.missing_required_details:
-        state.next_action = "ASK_INTEREST"
+        state.next_action = NextAction.ASK_INTEREST
     else:
-        state.next_action = "CONFIRM"
+        state.next_action = NextAction.CONFIRM
 
     return state
