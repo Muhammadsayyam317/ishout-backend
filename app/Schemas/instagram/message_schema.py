@@ -25,9 +25,28 @@ class MessageInput(BaseModel):
 
 
 class GenerateReplyOutput(BaseModel):
-    final_reply: str
-    detected_budget: Optional[int] = None
-    price_relation: Optional[str] = None
+    reply: str
+
+
+class GuardrailOutput(BaseModel):
+    response: str
+
+
+class OutputGuardrailResult(BaseModel):
+    allowed: bool
+    reason: str | None = None
+    escalate: bool = False
+    fallback: str | None = None
+    output_info: str | None = None
+    tripwire_triggered: bool | None = None
+
+
+class InputGuardrailResult(BaseModel):
+    allowed: bool
+    reason: str | None = None
+    escalate: bool = False
+    fallback: str | None = None
+    tripwire_triggered: bool = False
 
 
 class InstagramMessage(BaseModel):
@@ -38,3 +57,16 @@ class InstagramMessage(BaseModel):
     message: str
     timestamp: str
     attachments: list
+
+
+class AnalyzeMessageOutput(BaseModel):
+    intent: str
+    is_question: bool
+    question_topic: Optional[str] = None
+    pricing_mentioned: bool
+    budget_amount: Optional[float] = None
+    currency: Optional[str] = None
+    availability_mentioned: bool
+    interest_mentioned: bool
+    missing_required_details: List[str]
+    recommended_next_action: str

@@ -18,7 +18,6 @@ async def send_whatsapp_text_message(to: str, text: str):
     print(f"Payload: {payload}")
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
-            print(f"Sending message to {to}: {text}")
             response = await client.post(
                 f"https://graph.facebook.com/{config.WHATSAPP_GRAPH_API_VERSION}/{config.WHATSAPP_PHONE_NUMBER}/messages",
                 headers=headers,
@@ -28,8 +27,6 @@ async def send_whatsapp_text_message(to: str, text: str):
                 raise InternalServerErrorException(
                     message=f"Error: {response.status_code}, {response.text}"
                 )
-            print(f"Message sent to {to}: {text}")
-            print("Exiting from send_whatsapp_text_message")
         except Exception as e:
             print(f"Error sending message: {e}")
             raise InternalServerErrorException(

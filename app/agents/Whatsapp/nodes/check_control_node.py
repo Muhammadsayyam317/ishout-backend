@@ -9,7 +9,7 @@ async def node_check_agent_control(state):
     )
 
     if control:
-        # 🚫 Human takeover
+        # Human takeover
         if control.get("human_takeover"):
             state["blocked"] = True
             state["block_reason"] = "HUMAN_TAKEOVER"

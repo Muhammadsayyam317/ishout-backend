@@ -22,19 +22,15 @@ async def node_send_reply(state):
         {"thread_id": sender_id}
     )
     if control and control.get("human_takeover"):
-        print("⛔ AI blocked due to human takeover")
         state["reply_sent"] = True
         return state
     await send_whatsapp_message(sender_id, reply)
-    print(f"Reply sent to {sender_id}: {reply}")
     await save_conversation_message(
         thread_id=sender_id,
         sender=SenderType.AI.value,
         message=reply,
     )
-    print(f"Reply saved to {sender_id}: {reply}")
     state["reply_sent"] = True
-    print(f"Reply sent: {state['reply_sent']} State: {state}")
     # RESET FLOW
     if state.get("reset_after_reply"):
         print("♻️ Resetting full conversation state")
