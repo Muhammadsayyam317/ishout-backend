@@ -68,6 +68,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://ishout.vercel.app",
+        "https://app.ishout.ae",
         "http://localhost:3000",
         "https://backend.ishout.ae",
     ],

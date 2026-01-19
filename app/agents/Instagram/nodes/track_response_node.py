@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta, timezone
-from app.Schemas.instagram.negotiation_schema import SenderType
 from app.config import config
 from app.db.connection import get_db
 from app.services.whatsapp.onboarding_message import send_whatsapp_message
@@ -19,7 +18,7 @@ async def track_unresponsive_users() -> int:
         },
         {
             "$match": {
-                "last_message.sender_type": SenderType.AI.value,
+                "last_message.sender_type": "AI",
                 "last_message.timestamp": {"$lt": cutoff_time},
             }
         },

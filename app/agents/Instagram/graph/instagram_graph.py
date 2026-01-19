@@ -1,9 +1,9 @@
 from langgraph.graph import StateGraph
 from app.Schemas.instagram.negotiation_schema import InstagramConversationState
 from app.agents.Instagram.nodes.analyzes_message import node_analyze_message
+from app.agents.Instagram.nodes.influencers_details_node import influencers_details_node
 from app.agents.Instagram.nodes.generate_reply import node_generate_reply
 from app.agents.Instagram.nodes.Send_reply_node import send_instagram_reply
-from app.agents.Instagram.nodes.influencers_details_node import influencers_details_node
 
 graph = StateGraph(InstagramConversationState)
 
