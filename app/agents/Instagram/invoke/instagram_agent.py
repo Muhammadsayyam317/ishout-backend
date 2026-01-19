@@ -12,6 +12,7 @@ async def instagram_negotiation_agent(payload: dict) -> str:
     )
 
     result = await instagram_graph.ainvoke(initial_state)
-    if not result.final_reply:
+    final_reply = result.get("final_reply")
+    if not final_reply:
         return "Thanks for your message! We'll get back to you shortly."
-    return result.final_reply
+    return final_reply
