@@ -6,7 +6,6 @@ from datetime import datetime
 from fastapi import BackgroundTasks, Request, Response
 from fastapi.responses import JSONResponse
 import asyncio
-from app.Schemas.instagram.negotiation_schema import SenderType
 from app.agents.Instagram.invoke.instagram_agent import instagram_negotiation_agent
 from app.config import config
 from app.model.Instagram.instagram_message import InstagramMessageModel
@@ -51,10 +50,9 @@ IG_BUSINESS_ID = "17841477392364619"
 
 
 def get_role(sender_id: str) -> str:
-    """Determine if sender is AI/admin or user."""
     if sender_id == IG_BUSINESS_ID:
-        return SenderType.AI.value
-    return SenderType.USER.value
+        return "AI"
+    return "USER"
 
 
 def message_payload(
@@ -147,7 +145,7 @@ async def store_and_broadcast(payload: dict, background_tasks: BackgroundTasks):
             ws_manager.broadcast_event("instagram.message", payload=payload)
         )
 
-        if payload["sender_type"] == SenderType.USER:
+        if payload["sender_type"] == "USER":
             asyncio.create_task(instagram_negotiation_agent(payload))
 
     except Exception as e:
