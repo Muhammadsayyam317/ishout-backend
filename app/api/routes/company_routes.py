@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from app.api.controllers.admin.approved_campaign import (
     companyApprovedSingleInfluencer,
 )
-from app.api.controllers.auth.auth_controller import change_password
+from app.api.controllers.auth.password_controller import change_password
 from app.api.controllers.company.all_campaign import (
     CompaignwithAdminApprovedInfluencersById,
     all_campaigns,
@@ -20,6 +20,7 @@ from app.Schemas.campaign import (
     CreateCampaignRequest,
     UserRejectInfluencersRequest,
 )
+from app.services.whatsapp.send_text import send_message_from_ishout_to_user
 from app.tools.search_influencers import search_influencers
 from app.api.controllers.company.profile import get_user_profile, update_user_profile
 
@@ -116,4 +117,11 @@ router.add_api_route(
     endpoint=change_password,
     methods=["PUT"],
     tags=["User"],
+)
+
+router.add_api_route(
+    path="/send-message-to-user",
+    endpoint=send_message_from_ishout_to_user,
+    methods=["POST"],
+    tags=["Company"],
 )

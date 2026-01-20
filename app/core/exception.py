@@ -52,6 +52,11 @@ class EmailAlreadyExistsException(AppException):
         super().__init__(status.HTTP_400_BAD_REQUEST, message)
 
 
+class EmailNotFoundException(AppException):
+    def __init__(self, message="Email not found"):
+        super().__init__(status.HTTP_404_NOT_FOUND, message)
+
+
 class UserNotFoundException(AppException):
     def __init__(self, message="User not found with the given email or phone number"):
         super().__init__(status.HTTP_404_NOT_FOUND, message)
