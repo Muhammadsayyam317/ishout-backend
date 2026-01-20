@@ -58,7 +58,6 @@ async def reject_influencers_route(
     request_data: UserRejectInfluencersRequest,
     current_user: dict = Depends(require_company_user_access),
 ):
-    """Reject approved influencers for a campaign (Company users only)"""
     try:
         return await user_reject_influencers(
             request_data.campaign_id,
