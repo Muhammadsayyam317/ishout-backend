@@ -1,10 +1,15 @@
 from fastapi import APIRouter, BackgroundTasks
 from app.Schemas.user_model import (
     CompanyRegistrationRequest,
+    ForgetPasswordRequest,
     UserLoginRequest,
 )
 
-from app.api.controllers.auth.auth_controller import login_user, register_company
+from app.api.controllers.auth.auth_controller import (
+    login_user,
+    register_company,
+)
+from app.api.controllers.auth.password_controller import forgot_password
 from app.core.exception import InternalServerErrorException
 
 router = APIRouter()
@@ -27,3 +32,21 @@ async def login_route(request_data: UserLoginRequest):
         return await login_user(request_data)
     except Exception as e:
         raise InternalServerErrorException(message=str(e)) from e
+
+
+@router.post("/forgot-password", tags=["Auth"])
+async def forgot_password_route(
+    background_tasks: BackgroundTasks, request_data: ForgetPasswordRequest
+):
+    try:
+        return await forgot_password(background_tasks, request_data)
+    except Exception as e:
+        raise InternalServerErrorException(message=str(e)) from e
+
+
+# @router.post("/change_password", tags=["Auth"])
+# async def change_password_route(request_data: PasswordChangeRequest):
+#     try:
+#         return await change_password(request_data)
+#     except Exception as e:
+#         raise InternalServerErrorException(message=str(e)) from e
