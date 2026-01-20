@@ -46,6 +46,14 @@ class LoginResponse(BaseModel):
     user: UserResponse
 
 
+class ForgetPasswordRequest(BaseModel):
+    email: str
+
+
+class ForgotPasswordResponse(BaseModel):
+    message: str
+
+
 class PasswordChangeRequest(BaseModel):
     current_password: str
     new_password: str

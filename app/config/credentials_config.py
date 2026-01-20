@@ -56,7 +56,6 @@ class Config(BaseModel):
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(
         default=int(os.getenv("JWT_ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))
     )
-    RESEND_API_KEY: str = Field(default=os.getenv("RESEND_API_KEY"))
 
     RECIPENT_NUMBER: str = Field(default=os.getenv("RECIPENT_NUMBER"))
     WHATSAPP_PHONE_NUMBER: str = Field(default=os.getenv("WHATSAPP_PHONE_NUMBER"))
@@ -91,12 +90,13 @@ class Config(BaseModel):
     )
 
     REDIS_URL: str = Field(default=os.getenv("REDIS_URL"))
-
     RESEND_FROM_EMAIL: str = Field(default=os.getenv("RESEND_FROM_EMAIL"))
     RESEND_API_KEY: str = Field(default=os.getenv("RESEND_API_KEY"))
 
     REGISTER_URL: str = Field(default=os.getenv("REGISTER_URL"))
     ADMIN_PHONE: str = Field(default=os.getenv("ADMIN_PHONE"))
+
+    FRONTEND_URL: str = Field(default=os.getenv("FRONTEND_URL"))
 
 
 # config singleton instance

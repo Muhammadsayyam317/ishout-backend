@@ -7,16 +7,16 @@ from agents import (
 )
 
 from app.Schemas.instagram.message_schema import (
-    GuardrailOutput,
     OutputGuardrailResult,
 )
+from app.Schemas.instagram.negotiation_schema import GenerateReplyOutput
 
 
 @output_guardrail(name="InstagramOutputGuardrail")
 async def InstagramOutputGuardrail(
     ctx: RunContextWrapper,
     agent: Agent,
-    output: GuardrailOutput,
+    output: GenerateReplyOutput,
 ) -> GuardrailFunctionOutput:
 
     result = await Runner.run(
@@ -26,7 +26,7 @@ async def InstagramOutputGuardrail(
             """,
             output_type=OutputGuardrailResult,
         ),
-        output.response,
+        output.reply,
         context=ctx.context,
     )
     print("🛡️ Output Guardrail result:", result.final_output)
