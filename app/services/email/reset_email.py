@@ -31,7 +31,7 @@ def create_reset_password_token(email: str):
     token = jwt.encode(data, config.JWT_SECRET_KEY, config.JWT_ALGORITHM)
     return {
         "token": token,
-        "forget_url_link": f"{config.FRONTEND_URL}/reset-password?token={token}",
+        "forget_url_link": f"{config.FRONTEND_URL}/auth/reset-password?token={token}",
         "expiry_time": expiry_time,
     }
 
