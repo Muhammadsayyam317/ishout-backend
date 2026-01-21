@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import random
 from bson import ObjectId
 from fastapi import BackgroundTasks
 from typing import Dict, Any
@@ -54,8 +55,36 @@ async def forgot_password(
             "forget_url_link": forget_url_link,
             "expiry_time": expiry_time,
         }
-        background_tasks.add_task(send_reset_email, user_email["email"], email_body)
-        return {"message": "Password reset email sent"}
+        otp = generate_otp(user_email["email"])
+        background_tasks.add_task(
+            send_reset_email, user_email["email"], email_body, otp
+        )
+        return {
+            "message": "Password reset email sent",
+            "otp": otp,
+        }
+    except Exception as e:
+        raise InternalServerErrorException(message=str(e)) from e
+
+
+otp_storage = {}
+
+
+def generate_otp(email: str):
+    otp = str(random.randint(100000, 999999))
+    otp_storage[email] = otp
+    return otp
+
+
+async def verify_otp(token: str, otp: str):
+    try:
+        if token not in otp_storage:
+            raise UnauthorizedException()
+        if otp != otp_storage[token]:
+            del otp_storage[token]
+            raise UnauthorizedException()
+        del otp_storage[token]
+        return {"message": "OTP verified successfully"}
     except Exception as e:
         raise InternalServerErrorException(message=str(e)) from e
 
