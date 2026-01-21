@@ -353,10 +353,11 @@ async def add_influencer_Number(
         )
         if result.modified_count == 0:
             raise HTTPException(status_code=404, detail="Failed to update influencer")
-        background_tasks.add_task(
-            storeInfluencerNumber,
-            request_data,
-        )
+        if request_data.phone_number and request_data.platform:
+            background_tasks.add_task(
+                storeInfluencerNumber,
+                request_data,
+            )
         return {"message": "Influencer details updated successfully"}
     except HTTPException:
         raise
