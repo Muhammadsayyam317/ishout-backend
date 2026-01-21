@@ -52,7 +52,7 @@ class GenerateInfluencersRequest(BaseModel):
 
 class AddInfluencerNumberRequest(BaseModel):
     influencer_id: str
-    phone_number: str
-    platform: str
-    max_price: float
-    min_price: float
+    phone_number: Optional[str] = None
+    platform: Optional[str] = None
+    max_price: Optional[float] = None
+    min_price: Optional[float] = None
