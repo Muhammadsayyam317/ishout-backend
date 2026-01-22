@@ -358,7 +358,14 @@ async def add_influencer_Number(
                 storeInfluencerNumber,
                 request_data,
             )
-        return {"message": "Influencer details updated successfully"}
+        return {
+            "message": "Influencer details updated successfully",
+            "influencer_id": request_data.influencer_id,
+            "phone_number": request_data.phone_number,
+            "platform": request_data.platform,
+            "max_price": request_data.max_price,
+            "min_price": request_data.min_price,
+        }
     except HTTPException:
         raise
     except Exception as e:

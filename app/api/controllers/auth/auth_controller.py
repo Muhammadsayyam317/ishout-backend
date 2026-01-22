@@ -1,9 +1,11 @@
 from typing import Dict, Any
-from app.core.exception import InternalServerErrorException, UnauthorizedException
+from app.core.exception import (
+    UnauthorizedException,
+)
 from app.core.security.jwt import verify_token
 from app.Schemas.user_model import UserLoginRequest
 from app.services.Auth.auth_service import AuthService
-from fastapi import BackgroundTasks
+from fastapi import BackgroundTasks, HTTPException
 from app.Schemas.user_model import (
     CompanyRegistrationRequest,
 )
@@ -12,8 +14,8 @@ from app.Schemas.user_model import (
 async def login_user(request_data: UserLoginRequest) -> Dict[str, Any]:
     try:
         return await AuthService.login(request_data)
-    except Exception as e:
-        raise InternalServerErrorException() from e
+    except UnauthorizedException as e:
+        raise HTTPException(status_code=401, detail=e.detail["message"])
 
 
 async def register_company(
@@ -34,4 +36,4 @@ async def get_current_user(token: str) -> Dict[str, Any]:
             "role": payload.get("role"),
         }
     except Exception as e:
-        raise InternalServerErrorException(message=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
