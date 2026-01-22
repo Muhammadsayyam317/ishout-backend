@@ -45,7 +45,6 @@ class Config(BaseModel):
     INSTAGRAM_MESSAGE_COLLECTION: str = Field(
         default=os.getenv("MONGODB_COLLECTION_INSTAGRAM_MESSAGES")
     )
-
     OPENAI_API_KEY: str = Field(default=os.getenv("OPENAI_API_KEY"))
     OPENAI_MODEL_NAME: str = Field(default=os.getenv("OPENAI_MODEL_NAME"))
     EMBEDDING_MODEL: str = Field(default=os.getenv("EMBEDDING_MODEL"))
@@ -97,6 +96,7 @@ class Config(BaseModel):
     ADMIN_PHONE: str = Field(default=os.getenv("ADMIN_PHONE"))
 
     FRONTEND_URL: str = Field(default=os.getenv("FRONTEND_URL"))
+    VERIFY_OTP_URL: str = Field(default=os.getenv("VERIFY_OTP_URL"))
 
 
 # config singleton instance

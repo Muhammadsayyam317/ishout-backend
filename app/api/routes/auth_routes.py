@@ -1,7 +1,9 @@
 from fastapi import APIRouter, BackgroundTasks
+from app.Schemas.password import VerifyOtpRequest
 from app.Schemas.user_model import (
     CompanyRegistrationRequest,
     ForgetPasswordRequest,
+    PasswordChangeRequest,
     UserLoginRequest,
 )
 
@@ -9,7 +11,11 @@ from app.api.controllers.auth.auth_controller import (
     login_user,
     register_company,
 )
-from app.api.controllers.auth.password_controller import forgot_password
+from app.api.controllers.auth.password_controller import (
+    change_password,
+    forgot_password,
+    verify_otp,
+)
 from app.core.exception import InternalServerErrorException
 
 router = APIRouter()
@@ -44,9 +50,17 @@ async def forgot_password_route(
         raise InternalServerErrorException(message=str(e)) from e
 
 
-# @router.post("/change_password", tags=["Auth"])
-# async def change_password_route(request_data: PasswordChangeRequest):
-#     try:
-#         return await change_password(request_data)
-#     except Exception as e:
-#         raise InternalServerErrorException(message=str(e)) from e
+@router.post("/verify-otp", tags=["Auth"])
+async def verify_otp_route(request_data: VerifyOtpRequest):
+    try:
+        return await verify_otp(request_data.email, request_data.otp)
+    except Exception as e:
+        raise InternalServerErrorException(message=str(e)) from e
+
+
+@router.post("/change_password", tags=["Auth"])
+async def change_password_route(request_data: PasswordChangeRequest):
+    try:
+        return await change_password(request_data)
+    except Exception as e:
+        raise InternalServerErrorException(message=str(e)) from e
