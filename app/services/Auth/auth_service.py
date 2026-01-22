@@ -74,10 +74,8 @@ class AuthService:
             raise EmailAlreadyExistsException()
         if phone_number:
             raise PhoneNumberAlreadyExistsException()
-
         hashed_password = hash_password(request_data.password)
         now = datetime.now(timezone.utc)
-
         user_doc = request_data.model_dump(exclude={"password"}) | {
             "password": hashed_password,
             "role": UserRole.COMPANY,
@@ -88,7 +86,6 @@ class AuthService:
 
         result = await UserModel.create(user_doc)
         user_id = str(result.inserted_id)
-
         token_data = {
             "user_id": user_id,
             "email": request_data.email,
