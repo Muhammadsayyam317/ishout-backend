@@ -37,6 +37,16 @@ class UnauthorizedException(AppException):
         super().__init__(status.HTTP_401_UNAUTHORIZED, message)
 
 
+class OTPAlreadyVerifiedException(AppException):
+    def __init__(self, message="OTP already verified"):
+        super().__init__(status.HTTP_401_UNAUTHORIZED, message)
+
+
+class OTPExpiredException(AppException):
+    def __init__(self, message="OTP expired"):
+        super().__init__(status.HTTP_401_UNAUTHORIZED, message)
+
+
 class AccountNotActiveException(AppException):
     def __init__(self, message="Your account is not active. Please contact support."):
         super().__init__(status.HTTP_401_UNAUTHORIZED, message)

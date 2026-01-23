@@ -5,10 +5,10 @@ async def node_acknowledge_user(state):
 
         state["reply"] = (
             "🎉 *Campaign Created Successfully!*\n\n"
-            f"📱 Platform: {', '.join(state.get('platform', []))}\n"
-            f"🎯 Category: {', '.join(state.get('category', []))}\n"
-            f"🌍 Location: {', '.join(state.get('country', []))}\n"
-            f"👥 Followers: {', '.join(state.get('followers', []))}\n"
+            f"📱 Platform: {', '.join(state.get('platform', [])).capitalize}\n"
+            f"🎯 Category: {', '.join(state.get('category', [])).capitalize}\n"
+            f"🌍 Location: {', '.join(state.get('country', [])).capitalize}\n"
+            f"👥 Followers: {', '.join(state.get('followers', [])).capitalize}\n"
             f"🔢 Influencers: {state.get('limit')}\n\n"
             "✅ Our team has received your request.\n"
             "📢 We’ll notify you once influencers are shortlisted!"

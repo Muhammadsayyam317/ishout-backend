@@ -8,6 +8,8 @@ from app.core.exception import (
     AccountNotActiveException,
     EmailNotFoundException,
     InternalServerErrorException,
+    OTPAlreadyVerifiedException,
+    OTPExpiredException,
     UnauthorizedException,
     UserNotFoundException,
 )
@@ -78,13 +80,16 @@ async def verify_otp(email: str, otp: str):
     verified_key = f"reset_otp_verified:{email}"
     stored_otp = await redis_client.get(otp_key)
     if not stored_otp or stored_otp != otp:
-        raise UnauthorizedException("Invalid or expired OTP")
+        raise OTPExpiredException("Invalid or expired OTP")
     if await redis_client.get(verified_key):
-        raise UnauthorizedException("OTP already verified")
-    await redis_client.setex(verified_key, 600, "1")
+        raise OTPAlreadyVerifiedException("OTP already verified")
+    await redis_client.setex(verified_key, 1200, "1")  # 20 minutes
     await redis_client.delete(otp_key)
     reset_token = create_reset_password_token(email)
-    return reset_token
+    return {
+        "message": "OTP verified successfully",
+        "reset_token": reset_token,
+    }
 
 
 async def change_password(
