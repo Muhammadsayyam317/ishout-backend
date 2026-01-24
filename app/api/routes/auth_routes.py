@@ -52,10 +52,7 @@ async def forgot_password_route(
 
 @router.post("/verify-otp", tags=["Auth"])
 async def verify_otp_route(request_data: VerifyOtpRequest):
-    try:
-        return await verify_otp(request_data.email, request_data.otp)
-    except Exception as e:
-        raise InternalServerErrorException(message=str(e)) from e
+    return await verify_otp(request_data.email, request_data.otp)
 
 
 @router.post("/change_password", tags=["Auth"])
