@@ -78,14 +78,24 @@ def generate_otp():
 async def verify_otp(email: str, otp: str):
     otp_key = f"reset_otp:{email}"
     verified_key = f"reset_otp_verified:{email}"
+
     stored_otp = await redis_client.get(otp_key)
-    if not stored_otp or stored_otp != otp:
-        raise OTPExpiredException("Invalid or expired OTP")
+
+    if not stored_otp:
+        raise OTPExpiredException("OTP expired")
+
+    if stored_otp != otp:
+        raise UnauthorizedException("Invalid OTP")
+
     if await redis_client.get(verified_key):
         raise OTPAlreadyVerifiedException("OTP already verified")
-    await redis_client.setex(verified_key, 1200, "1")  # 20 minutes
+
+    # Mark verified
+    await redis_client.setex(verified_key, 1200, "1")
     await redis_client.delete(otp_key)
+
     reset_token = create_reset_password_token(email)
+
     return {
         "message": "OTP verified successfully",
         "reset_token": reset_token,
@@ -115,9 +125,9 @@ async def change_password(
                 detail="New password and confirm password are not same.",
             )
         if not info:
-            raise UnauthorizedException(message="Invalid token")
+            raise OTPExpiredException(message="Invalid token")
         if info != user["email"]:
-            raise UnauthorizedException(message="User not found")
+            raise UserNotFoundException(message="User not found")
         new_hashed_password = hash_password(request_data.new_password)
         result = await users_collection.update_one(
             {"_id": ObjectId(user_id)},
@@ -146,12 +156,12 @@ async def reset_password(
     otp_key = f"reset_otp:{email}"
     stored_otp = await redis_client.get(otp_key)
     if not stored_otp or stored_otp != otp:
-        raise UnauthorizedException("Invalid or expired OTP")
+        raise OTPExpiredException("Invalid or expired OTP")
 
     # Check token
     decoded_email = decode_reset_password_token(token)
     if decoded_email != email:
-        raise UnauthorizedException("Invalid or expired token")
+        raise OTPExpiredException("Invalid or expired token")
 
     # Update password
     db = get_db()
