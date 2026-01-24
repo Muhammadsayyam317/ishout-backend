@@ -2,17 +2,12 @@ from fastapi import HTTPException, status
 
 
 class AppException(HTTPException):
-    def __init__(
-        self,
-        status_code: int,
-        message: str,
-        details: list | None = None,
-    ):
+    def __init__(self, status_code: int, message: str, details=None):
         super().__init__(
             status_code=status_code,
             detail={
                 "message": message,
-                "details": details,
+                "details": details or [],
             },
         )
 
@@ -35,6 +30,16 @@ class BadRequestException(AppException):
 class UnauthorizedException(AppException):
     def __init__(self, message="Invalid email or password"):
         super().__init__(status.HTTP_401_UNAUTHORIZED, message)
+
+
+class OTPExpiredException(AppException):
+    def __init__(self, message="OTP expired"):
+        super().__init__(status.HTTP_400_BAD_REQUEST, message)
+
+
+class OTPAlreadyVerifiedException(AppException):
+    def __init__(self, message="OTP already verified"):
+        super().__init__(status.HTTP_409_CONFLICT, message)
 
 
 class AccountNotActiveException(AppException):
