@@ -52,27 +52,6 @@ RESET_EMAIL_TEMPLATE_HTML = """
               ">
                 {otp}
               </div>
-
-              <p>
-                Or click the button below to open the reset page and enter this OTP:
-              </p>
-
-              <!-- Button -->
-              <div style="text-align:center;margin:30px 0;">
-                <a href="{verify_otp_url}" 
-                   style="
-                     background:#2563eb;
-                     color:#ffffff;
-                     padding:12px 22px;
-                     border-radius:6px;
-                     text-decoration:none;
-                     font-weight:600;
-                     display:inline-block;
-                   ">
-                  Reset Password
-                </a>
-              </div>
-
               <p style="font-size:14px;color:#6b7280;">
                 This OTP will expire in <strong>5 minutes</strong>. If you did not request a password reset, you can safely ignore this email.
               </p>
