@@ -1,6 +1,6 @@
 from bson import ObjectId
 from fastapi import Depends
-
+from app.config.credentials_config import config
 from app.core.exception import (
     InternalServerErrorException,
     UnauthorizedException,
@@ -22,24 +22,26 @@ async def approved_campaign(
 ):
     try:
         db = get_db()
-        campaigns_collection = db.get_collection("campaigns")
+        campaigns_collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS
+        )
         status_value = CampaignStatus.APPROVED
         query = {"status": status_value}
-
         projection = {
+            "company_name": 1,
             "name": 1,
             "platform": 1,
             "category": 1,
             "followers": 1,
             "country": 1,
             "user_id": 1,
+            "user_type": 1,
             "status": 1,
             "limit": 1,
             "pricing": 1,
             "created_at": 1,
             "updated_at": 1,
         }
-
         total = await campaigns_collection.count_documents(query)
         cursor = (
             campaigns_collection.find(query, projection)
@@ -53,12 +55,14 @@ async def approved_campaign(
             formatted.append(
                 {
                     "campaign_id": str(doc.get("_id")),
+                    "company_name": doc.get("company_name"),
                     "name": doc.get("name"),
                     "platform": doc.get("platform"),
                     "category": doc.get("category"),
                     "followers": doc.get("followers"),
                     "country": doc.get("country"),
                     "user_id": str(doc.get("user_id")) if doc.get("user_id") else None,
+                    "user_type": doc.get("user_type"),
                     "status": doc.get("status"),
                     "limit": doc.get("limit"),
                     "created_at": doc.get("created_at"),
