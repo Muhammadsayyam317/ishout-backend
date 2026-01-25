@@ -22,6 +22,7 @@ async def AnalyzeMessage(message: str) -> AnalyzeMessageOutput:
 
 
 async def node_analyze_message(state: InstagramConversationState):
+    print("Entering into Node Analyze Message")
     analysis = await AnalyzeMessage(state.user_message)
     state.analysis = analysis
 
@@ -37,5 +38,5 @@ async def node_analyze_message(state: InstagramConversationState):
         state.next_action = NextAction.ASK_INTEREST
     else:
         state.next_action = NextAction.CONFIRM
-
+    print("Exiting Node Analyze Message")
     return state

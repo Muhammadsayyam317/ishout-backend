@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 
 async def influencers_details_node(state: InstagramConversationState):
+    print("Entering into Influencers Details")
     if not state.influencer_details:
         state.final_reply = "Please provide your campaign details."
         return state
@@ -24,5 +25,5 @@ async def influencers_details_node(state: InstagramConversationState):
     confirmation_msg = "Thanks for sharing your details! We'll get back to you shortly."
     await Send_Insta_Message(message=confirmation_msg, recipient_id=state.thread_id)
     state.final_reply = confirmation_msg
-
+    print("Exiting from Influencers Details")
     return state

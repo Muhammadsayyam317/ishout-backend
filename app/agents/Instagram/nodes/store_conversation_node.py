@@ -3,7 +3,7 @@ from app.config.credentials_config import config
 from app.db.connection import get_db
 
 
-async def bind_conversation_to_influencer(
+async def store_influencer_conversation(
     *,
     thread_id: str,
     influencer: dict,
