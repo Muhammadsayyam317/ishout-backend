@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional, List
+from typing import Optional, List, TypedDict
 from pydantic import BaseModel
 
 
@@ -43,16 +43,16 @@ class GenerateReplyOutput(BaseModel):
 
 
 # ------------------ Conversation State ------------------
-class InstagramConversationState(BaseModel):
+class InstagramConversationState(TypedDict):
     thread_id: str
     user_message: str
-    analysis: Optional[AnalyzeMessageOutput] = None
-    availability: Optional[str] = None
-    rate: Optional[float] = None
-    currency: Optional[str] = None
-    interest: Optional[bool] = None
-    influencer_details: Optional[InfluencerDetailsInput] = None
-    final_reply: Optional[str] = None
-    next_action: Optional[NextAction] = None
-    influencer_id: Optional[str] = None
-    campaign_id: Optional[str] = None
+    analysis: AnalyzeMessageOutput
+    availability: str
+    rate: float
+    currency: str
+    interest: bool
+    influencer_details: InfluencerDetailsInput
+    final_reply: str
+    next_action: NextAction
+    influencer_id: str
+    campaign_id: str
