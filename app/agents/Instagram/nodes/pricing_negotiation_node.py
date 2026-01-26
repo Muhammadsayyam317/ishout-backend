@@ -7,7 +7,7 @@ from app.Schemas.instagram.negotiation_schema import (
 
 async def pricing_negotiation_node(state: InstagramConversationState):
     print("Entering into Node Pricing Negotiation")
-    rate = state["influencerResponse"].get("rate")
+    rate = state.influencerResponse.get("rate")
     rules = state["pricingRules"]
 
     # If rate is missing, ask for price

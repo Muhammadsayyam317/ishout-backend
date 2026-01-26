@@ -4,22 +4,29 @@ from app.agents.Instagram.state.influencer_details_state import (
 
 
 async def normalize_state(state: InstagramConversationState):
-    state.setdefault("askedQuestions", {})
-    state.setdefault("influencerResponse", {})
-    state.setdefault("pricingRules", {})
-    state.setdefault("history", [])
+    if state.askedQuestions is None:
+        state.askedQuestions = {}
 
-    state["lastMessage"] = state["user_message"]
-    state["history"].append(state["user_message"])
+    if state.influencerResponse is None:
+        state.influencerResponse = {}
 
-    # Stop using state.rate / availability / interest
-    if state.get("rate") is not None:
-        state["influencerResponse"]["rate"] = state["rate"]
+    if state.pricingRules is None:
+        state.pricingRules = {}
 
-    if state.get("availability"):
-        state["influencerResponse"]["availability"] = state["availability"]
+    if state.history is None:
+        state.history = []
 
-    if state.get("interest") is not None:
-        state["influencerResponse"]["interest"] = state["interest"]
+    state.lastMessage = state.user_message
+    state.history.append(state.user_message)
+
+    # migrate legacy fields
+    if state.rate is not None:
+        state.influencerResponse["rate"] = state.rate
+
+    if state.availability:
+        state.influencerResponse["availability"] = state.availability
+
+    if state.interest is not None:
+        state.influencerResponse["interest"] = state.interest
 
     return state
