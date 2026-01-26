@@ -9,9 +9,7 @@ logger = logging.getLogger(__name__)
 async def manual_negotiation_required(
     state: InstagramConversationState,
 ) -> InstagramConversationState:
-    """
-    Flags the influencer as 'Manual Negotiation Required' if they reject both min and max prices.
-    """
+    print("Entering into Node Manual Negotiation Required")
     try:
         offered_price = getattr(state.analysis, "budget_amount", None)
         if offered_price is None:
@@ -45,5 +43,5 @@ async def manual_negotiation_required(
 
     except Exception as e:
         logger.exception(f"Error in manual_negotiation_required node: {e}")
-
+    print("Exiting from Node Manual Negotiation Required")
     return state

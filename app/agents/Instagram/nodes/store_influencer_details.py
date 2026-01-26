@@ -5,7 +5,7 @@ from app.config.credentials_config import config
 from datetime import datetime, timezone
 
 
-async def influencers_details_node(state: InstagramConversationState):
+async def store_influencer_details(state: InstagramConversationState):
     print("Entering into Influencers Details")
     if not state.influencer_details:
         state.final_reply = "Please provide your campaign details."

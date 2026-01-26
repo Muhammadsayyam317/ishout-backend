@@ -40,7 +40,7 @@ async def GenerateReply(message: str, thread_id: str) -> GenerateReplyOutput:
         raise InternalServerErrorException(f"Error generating reply: {str(e)}")
 
 
-async def node_generate_reply(state: InstagramConversationState):
+async def generate_ai_reply(state: InstagramConversationState):
     print("Entering into Node Generate Reply")
     ai_reply = await GenerateReply(state.user_message, state.thread_id)
     state.final_reply = ai_reply.reply
