@@ -7,23 +7,34 @@ from datetime import datetime, timezone
 
 async def store_influencer_details(state: InstagramConversationState):
     print("Entering into Influencers Details")
-    if not state.influencer_details:
-        state.final_reply = "Please provide your campaign details."
+
+    influencer_details = state.get("influencer_details")
+
+    if not influencer_details:
+        state["final_reply"] = "Please provide your campaign details."
         return state
 
-    details = state.influencer_details
     db = get_db()
     collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS)
-    update_data = details.model_dump()
+
+    update_data = influencer_details.model_dump()
     update_data["updated_at"] = datetime.now(timezone.utc)
 
     await collection.update_one(
-        {"campaign_id": state.campaign_id, "influencer_id": state.influencer_id},
+        {
+            "campaign_id": state.get("campaign_id"),
+            "influencer_id": state.get("influencer_id"),
+        },
         {"$set": update_data},
+        upsert=True,
     )
 
     confirmation_msg = "Thanks for sharing your details! We'll get back to you shortly."
-    await Send_Insta_Message(message=confirmation_msg, recipient_id=state.thread_id)
-    state.final_reply = confirmation_msg
+    await Send_Insta_Message(
+        message=confirmation_msg,
+        recipient_id=state.get("thread_id"),
+    )
+
+    state["final_reply"] = confirmation_msg
     print("Exiting from Influencers Details")
     return state
