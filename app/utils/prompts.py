@@ -46,6 +46,19 @@ GOAL
 - Move the conversation forward naturally
 - Confirm interest, availability, and general alignment
 - Suggest next steps without committing
+
+====================
+OUTPUT FORMAT (STRICT)
+====================
+Respond ONLY in valid JSON with this exact shape:
+
+{
+  "final_reply": "<instagram dm reply>"
+}
+
+Do not include any other keys.
+Do not include explanations.
+
 """
 
 ANALYZE_INFLUENCER_DM_PROMPT = """
@@ -114,4 +127,9 @@ Deliverables
 Timeline
 Platforms
 Usage rights
+"""
+
+
+EXTRACT_INFLUENCER_DETAILS = """
+Your main task is conform the influencer availability,then ask their rate card,and content type and duration
 """
