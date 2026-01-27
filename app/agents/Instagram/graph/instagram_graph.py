@@ -16,7 +16,6 @@ instagram_graph = StateGraph(InstagramConversationState)
 
 instagram_graph.set_entry_point("normalize_state")
 
-# Add nodes
 instagram_graph.add_node("normalize_state", normalize_state)
 instagram_graph.add_node("store_influencer_details", store_influencer_details)
 instagram_graph.add_node("analyze_intent", analyze_intent)
@@ -27,7 +26,6 @@ instagram_graph.add_node("manual_negotiation", manual_negotiation_required)
 instagram_graph.add_node("generate_ai_reply", generate_ai_reply)
 instagram_graph.add_node("send_reply", send_instagram_reply)
 
-# Sequential flow
 instagram_graph.add_edge("normalize_state", "store_influencer_details")
 instagram_graph.add_edge("store_influencer_details", "analyze_intent")
 instagram_graph.add_edge("analyze_intent", "ask_missing_info")
@@ -39,5 +37,4 @@ instagram_graph.add_edge("manual_negotiation", "store_influencer_details")
 instagram_graph.add_edge("store_influencer_details", "generate_ai_reply")
 instagram_graph.add_edge("generate_ai_reply", "send_reply")
 
-# Compile
 instagram_graph = instagram_graph.compile()
