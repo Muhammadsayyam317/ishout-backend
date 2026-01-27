@@ -3,7 +3,6 @@ from typing import Dict, Literal, Optional, List, TypedDict
 from pydantic import BaseModel
 
 
-# ------------------ Enums ------------------
 class NextAction(str, Enum):
     ANSWER_QUESTION = "answer_question"
     ASK_AVAILABILITY = "ask_availability"
@@ -23,7 +22,6 @@ class NextAction(str, Enum):
     GENERATE_CLARIFICATION = "generate_clarification"
 
 
-# ------------------ Analyze Message Output ------------------
 class AnalyzeMessageOutput(BaseModel):
     intent: str
     is_question: bool
@@ -37,7 +35,6 @@ class AnalyzeMessageOutput(BaseModel):
     recommended_next_action: str
 
 
-# ------------------ Influencer Details Input ------------------
 class InfluencerDetailsInput(BaseModel):
     rate: float
     currency: str
@@ -48,12 +45,10 @@ class InfluencerDetailsInput(BaseModel):
     availability: str
 
 
-# ------------------ Generate Reply Output ------------------
 class GenerateReplyOutput(BaseModel):
     final_reply: str
 
 
-# ------------------ Conversation State ------------------
 class PricingRules(TypedDict, total=False):
     minPrice: float
     maxPrice: float
@@ -82,23 +77,15 @@ class InstagramConversationState(TypedDict):
     convoId: str
     influencer_id: str
     campaign_id: str
-    # Incoming message
     user_message: str
     lastMessage: str
-    # NLP / intent
     intent: Literal["interest", "rate", "availability", "reject", "unclear"]
     analysis: dict
 
-    # Questions tracking
-    askedQuestions: Dict[str, bool]  # rate, availability, interest
-    # Influencer replies
+    askedQuestions: Dict[str, bool]
     influencerResponse: Dict[str, Optional[str | float | bool]]
-    # Pricing
-    pricingRules: Dict[str, float]  # minPrice, maxPrice
-    # Negotiation
+    pricingRules: Dict[str, float]
     negotiationStatus: Literal["pending", "agreed", "rejected", "escalate"]
-    # Reply
     final_reply: str
     next_action: str
-    # History
     history: List[dict]

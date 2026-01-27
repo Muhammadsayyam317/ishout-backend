@@ -3,30 +3,37 @@ from app.agents.Instagram.state.influencer_details_state import (
 )
 
 
-async def normalize_state(state: InstagramConversationState):
-    if state.askedQuestions is None:
-        state.askedQuestions = {}
-
-    if state.influencerResponse is None:
-        state.influencerResponse = {}
-
-    if state.pricingRules is None:
-        state.pricingRules = {}
-
-    if state.history is None:
-        state.history = []
-
-    state.lastMessage = state.user_message
-    state.history.append(state.user_message)
-
-    # migrate legacy fields
-    if state.rate is not None:
-        state.influencerResponse["rate"] = state.rate
-
-    if state.availability:
-        state.influencerResponse["availability"] = state.availability
-
-    if state.interest is not None:
-        state.influencerResponse["interest"] = state.interest
-
-    return state
+def normalize_state(state: InstagramConversationState) -> InstagramConversationState:
+    return {
+        **state,
+        # Question tracking
+        "askedQuestions": state.get("askedQuestions")
+        or {
+            "rate": False,
+            "availability": False,
+            "interest": False,
+        },
+        # Influencer replies
+        "influencerResponse": state.get("influencerResponse")
+        or {
+            "rate": None,
+            "availability": None,
+            "interest": None,
+        },
+        # Pricing rules
+        "pricingRules": state.get("pricingRules")
+        or {
+            "minPrice": 0.0,
+            "maxPrice": 0.0,
+        },
+        # Negotiation state
+        "negotiationStatus": state.get("negotiationStatus", "pending"),
+        # History
+        "history": state.get("history") or [],
+        # Defaults
+        "final_reply": state.get("final_reply", ""),
+        "next_action": state.get("next_action", ""),
+        "analysis": state.get("analysis") or {},
+        "intent": state.get("intent", "unclear"),
+        "lastMessage": state.get("lastMessage", ""),
+    }
