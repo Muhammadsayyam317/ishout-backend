@@ -1,19 +1,29 @@
-import datetime
-from app.config.credentials_config import config
-from app.db.connection import get_db
-from app.Schemas.instagram.negotiation_schema import InstagramConversationState
-from app.services.instagram.send_instagram_message import Send_Insta_Message
+from datetime import datetime, timezone
 import logging
+
+from app.Schemas.instagram.negotiation_schema import InstagramConversationState
+from app.db.connection import get_db
+from app.services.instagram.send_instagram_message import Send_Insta_Message
+from app.config.credentials_config import config
 
 logger = logging.getLogger(__name__)
 
 
 async def store_conversation(state: InstagramConversationState):
-    """Upsert conversation binding and influencer details."""
+    """
+    1. Bind Instagram thread ↔ influencer ↔ campaign
+    2. Persist influencer negotiation inputs if present
+    3. Never crash due to config/env issues
+    """
     db = get_db()
     conv_collection = db.get_collection(config.INSTAGRAM_MESSAGE_COLLECTION)
-    campaign_collection = db.get_collection(config.INSTAGRAM_CAMPAIGN_COLLECTION)
+    campaign_collection = db.get_collection(
+        config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS
+    )
 
+    now = datetime.now(timezone.utc)
+
+    # Conversation binding
     await conv_collection.update_one(
         {"thread_id": state["thread_id"]},
         {
@@ -24,37 +34,49 @@ async def store_conversation(state: InstagramConversationState):
                 "campaign_id": state["campaign_id"],
                 "negotiation_stage": "INITIAL",
                 "ai_enabled": True,
-                "created_at": datetime.utcnow(),
+                "created_at": now,
             }
         },
         upsert=True,
     )
 
-    # Upsert influencer details if provided
-    influencer_details = state.get("influencerResponse")
-    if influencer_details:
+    # Store influencer inputs (SAFE)
+    influencer_response = state.get("influencerResponse") or {}
+    update_payload = {}
+    if "rate" in influencer_response:
+        update_payload["pricing"] = influencer_response["rate"]
+
+    if "availability" in influencer_response:
+        update_payload["availability"] = influencer_response["availability"]
+
+    if update_payload:
+        update_payload["updated_at"] = now
+
         await campaign_collection.update_one(
             {
                 "campaign_id": state["campaign_id"],
                 "influencer_id": state["influencer_id"],
             },
-            {
-                "$set": {
-                    **influencer_details,
-                    "updated_at": datetime.now(datetime.timezone.utc),
-                }
-            },
+            {"$set": update_payload},
             upsert=True,
         )
-
-    # Optional: send confirmation message
+    # Optional confirmation reply
     if not state.get("final_reply"):
-        confirmation = "Thanks for sharing your details! We'll get back to you shortly."
+        confirmation = (
+            "Thanks for sharing the details! "
+            "I'll review this and get back to you shortly."
+        )
         await Send_Insta_Message(
             message=confirmation,
             recipient_id=state["thread_id"],
         )
         state["final_reply"] = confirmation
 
-    logger.debug(f"Conversation stored for thread {state['thread_id']}")
+    logger.info(
+        "Conversation stored | thread=%s influencer=%s campaign=%s",
+        state["thread_id"],
+        state["influencer_id"],
+        state["campaign_id"],
+    )
+
     return state
