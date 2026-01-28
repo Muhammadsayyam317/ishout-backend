@@ -1,7 +1,7 @@
 from app.Schemas.instagram.negotiation_schema import InstagramConversationState
 
 
-def normalize_state(state: InstagramConversationState) -> InstagramConversationState:
+def normalize_state(state: dict) -> dict:
     return {
         **state,
         "history": state.get("history", []),
@@ -16,5 +16,12 @@ def normalize_state(state: InstagramConversationState) -> InstagramConversationS
                 "rate": None,
             },
         ),
-        "pricingRules": state.get("pricingRules", {}),
+        # 🔑 IMPORTANT
+        "pricingRules": state.get(
+            "pricingRules",
+            {
+                "minPrice": 0,
+                "maxPrice": 0,
+            },
+        ),
     }
