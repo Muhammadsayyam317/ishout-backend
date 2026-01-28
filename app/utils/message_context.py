@@ -4,14 +4,16 @@ from app.utils.prompts import NEGOTIATE_INFLUENCER_DM_PROMPT
 
 def build_message_context(last_messages: list[dict], latest: str) -> str:
     """
-    Build the conversation context to provide to the AI.
+    Build conversation context for the AI reply.
     """
-    history = ""
-    for msg in last_messages:
-        speaker = "AI" if msg["sender_type"] == "AI" else "User"
-        history += f"{speaker}: {msg['message']}\n"
 
-    return f"""{NEGOTIATE_INFLUENCER_DM_PROMPT}
+    history = "\n".join(
+        f"{'AI' if msg.get('sender_type') == 'AI' else 'User'}: {msg.get('message', '')}"
+        for msg in last_messages
+    )
+
+    return f"""
+{NEGOTIATE_INFLUENCER_DM_PROMPT}
 
 Conversation so far:
 {history}
@@ -19,8 +21,8 @@ Conversation so far:
 Latest message:
 User: {latest}
 
-Write the next reply as a human would text.
-"""
+Write the next reply as a natural human text message.
+""".strip()
 
 
 def normalize_ai_reply(reply) -> str:
