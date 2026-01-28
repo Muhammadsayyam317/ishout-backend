@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 async def analyze_intent(state: InstagramConversationState):
-    result: AnalyzeMessageOutput = await Runner.run(
+    run_result = await Runner.run(
         Agent(
             name="analyze_message",
             instructions=ANALYZE_INFLUENCER_DM_PROMPT,
@@ -21,19 +21,34 @@ async def analyze_intent(state: InstagramConversationState):
         input=state["user_message"],
     )
 
-    state["analysis"] = result
-    state["intent"] = result.get("intent", "unclear")
+    analysis: AnalyzeMessageOutput = run_result.output
+    print(type(run_result))
+    print(type(run_result.output))
 
-    if result.get("pricing_mentioned") and result.get("budget_amount"):
-        state["influencerResponse"]["rate"] = result["budget_amount"]
-        state["influencerResponse"]["currency"] = result.get("currency", "USD")
+    state["analysis"] = analysis
+    state["intent"] = analysis.get("intent", "unclear")
 
-    if result.get("availability_mentioned"):
+    state.setdefault("influencerResponse", {})
+
+    if analysis.get("pricing_mentioned") and analysis.get("budget_amount") is not None:
+        state["influencerResponse"]["rate"] = analysis["budget_amount"]
+
+    if analysis.get("availability_mentioned"):
         state["influencerResponse"]["availability"] = "provided"
 
-    if result.get("interest_mentioned"):
+    if analysis.get("interest_mentioned"):
         state["influencerResponse"]["interest"] = True
 
-    state["next_action"] = result.get("recommended_next_action", "wait_or_acknowledge")
-    logger.debug(f"Next action determined: {state['next_action']}")
+    # -------- Next Action --------
+    state["next_action"] = analysis.get(
+        "recommended_next_action",
+        "wait_or_acknowledge",
+    )
+
+    logger.debug(
+        "AnalyzeIntent | intent=%s | next_action=%s",
+        state["intent"],
+        state["next_action"],
+    )
+
     return state
