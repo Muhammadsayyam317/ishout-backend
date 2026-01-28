@@ -20,7 +20,7 @@ async def store_conversation(state: InstagramConversationState):
     campaign_collection = db.get_collection(
         config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS
     )
-
+    print("Collection Names: ", conv_collection, campaign_collection)
     now = datetime.now(timezone.utc)
 
     # Conversation binding
