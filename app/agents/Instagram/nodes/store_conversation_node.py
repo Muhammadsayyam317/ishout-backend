@@ -40,7 +40,6 @@ async def store_conversation(state: InstagramConversationState):
         upsert=True,
     )
 
-    # Store influencer inputs (SAFE)
     influencer_response = state.get("influencerResponse") or {}
     update_payload = {}
     if "rate" in influencer_response:
