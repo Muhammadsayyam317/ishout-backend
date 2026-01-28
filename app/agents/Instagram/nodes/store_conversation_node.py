@@ -12,9 +12,7 @@ async def store_conversation(state: InstagramConversationState):
     """Upsert conversation binding and influencer details."""
     db = get_db()
     conv_collection = db.get_collection(config.INSTAGRAM_MESSAGE_COLLECTION)
-    campaigns_collection = db.get_collection(
-        config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS
-    )
+    campaign_collection = db.get_collection(config.INSTAGRAM_CAMPAIGN_COLLECTION)
 
     await conv_collection.update_one(
         {"thread_id": state["thread_id"]},
@@ -35,7 +33,7 @@ async def store_conversation(state: InstagramConversationState):
     # Upsert influencer details if provided
     influencer_details = state.get("influencerResponse")
     if influencer_details:
-        await campaigns_collection.update_one(
+        await campaign_collection.update_one(
             {
                 "campaign_id": state["campaign_id"],
                 "influencer_id": state["influencer_id"],
