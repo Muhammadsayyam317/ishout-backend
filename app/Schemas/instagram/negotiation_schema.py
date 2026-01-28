@@ -1,6 +1,5 @@
 from enum import Enum
 from typing import Dict, Literal, Optional, List, TypedDict
-from pydantic import BaseModel
 
 
 class NextAction(str, Enum):
@@ -22,30 +21,34 @@ class NextAction(str, Enum):
     GENERATE_CLARIFICATION = "generate_clarification"
 
 
-class AnalyzeMessageOutput(BaseModel):
+class AnalyzeMessageOutput(TypedDict):
     intent: str
-    is_question: bool
-    question_topic: Optional[str] = None
     pricing_mentioned: bool
-    budget_amount: Optional[float] = None
-    currency: Optional[str] = None
-    availability_mentioned: bool
-    interest_mentioned: bool
+    budget_amount: Optional[float]
+    currency: Optional[str]
+    deliverables_mentioned: bool
+    deliverables: Optional[str]
+    timeline_mentioned: bool
+    timeline: Optional[str]
+    platforms_mentioned: bool
+    platforms: Optional[List[str]]
+    usage_rights_mentioned: bool
+    exclusivity_mentioned: bool
     missing_required_details: List[str]
     recommended_next_action: str
 
 
-class InfluencerDetailsInput(BaseModel):
+class InfluencerDetailsInput(TypedDict):
     rate: float
-    currency: str
-    content_type: str
-    content_format: str
-    content_length: int
-    content_duration: int
     availability: str
+    exclusivity: str
+    usage_rights: str
+    platforms: List[str]
+    deliverables: str
+    timeline: str
 
 
-class GenerateReplyOutput(BaseModel):
+class GenerateReplyOutput(TypedDict):
     final_reply: str
 
 

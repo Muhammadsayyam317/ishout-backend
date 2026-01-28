@@ -1,47 +1,24 @@
 from app.Schemas.instagram.negotiation_schema import InstagramConversationState
-from app.db.connection import get_db
 from app.config.credentials_config import config
+from app.db.connection import get_db
 import logging
 
 logger = logging.getLogger(__name__)
 
 
-async def manual_negotiation_required(
-    state: InstagramConversationState,
-) -> InstagramConversationState:
-    print("Entering into Node Manual Negotiation Required")
-    try:
-        offered_price = getattr(state.analysis, "budget_amount", None)
-        if offered_price is None:
-            return state
+async def manual_negotiation_required(state: InstagramConversationState):
+    offered_price = state["influencerResponse"].get("rate")
+    min_price = state["pricingRules"].get("minPrice", 0)
+    max_price = state["pricingRules"].get("maxPrice", float("inf"))
 
-        if offered_price < state.min_price or offered_price > state.max_price:
-            db = get_db()
-            campaigns_collection = db.get_collection(
-                config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS
-            )
+    if offered_price is None or min_price <= offered_price <= max_price:
+        return state  # no manual required
 
-            result = await campaigns_collection.update_one(
-                {
-                    "campaign_id": state.campaign_id,
-                    "influencer_id": state.influencer_id,
-                },
-                {
-                    "$set": {
-                        "manual_negotiation_required": True,
-                        "negotiation_stage": "MANUAL",
-                    }
-                },
-            )
-            if result.modified_count == 0:
-                raise Exception(
-                    f"Failed to flag influencer {state.influencer_id} for manual negotiation in campaign {state.campaign_id}."
-                )
-            logger.info(
-                f"Flagged influencer {state.influencer_id} for manual negotiation in campaign {state.campaign_id}."
-            )
-
-    except Exception as e:
-        logger.exception(f"Error in manual_negotiation_required node: {e}")
-    print("Exiting from Node Manual Negotiation Required")
+    db = get_db()
+    collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS)
+    await collection.update_one(
+        {"campaign_id": state["campaign_id"], "influencer_id": state["influencer_id"]},
+        {"$set": {"manual_negotiation_required": True, "negotiation_stage": "MANUAL"}},
+    )
+    logger.info(f"Flagged manual negotiation for influencer {state['influencer_id']}")
     return state

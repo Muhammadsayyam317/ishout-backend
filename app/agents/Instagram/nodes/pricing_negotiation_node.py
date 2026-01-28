@@ -5,34 +5,23 @@ from app.Schemas.instagram.negotiation_schema import (
 )
 
 
-async def pricing_negotiation_node(state: InstagramConversationState):
-    print("Entering into Node Pricing Negotiation")
-    rate = state.influencerResponse.get("rate")
-    rules = state["pricingRules"]
+def pricing_negotiation(state: InstagramConversationState):
+    rate = state["influencerResponse"].get("rate")
+    min_price = state["pricingRules"].get("minPrice", 0)
+    max_price = state["pricingRules"].get("maxPrice", float("inf"))
 
-    if not rate:
+    if rate is None:
         state["next_action"] = NextAction.CONFIRM_PRICING.value
-        state["strategy"] = NegotiationStrategy.SOFT
+        state["strategy"] = NegotiationStrategy.SOFT.value
         return state
 
-    min_price = rules.get("minPrice", 0)
-    max_price = rules.get("maxPrice", float("inf"))
-
-    if rate < min_price:
+    if rate < min_price or rate > max_price:
         state["negotiationStatus"] = "countered"
         state["next_action"] = NextAction.CONFIRM_PRICING.value
-        state["strategy"] = NegotiationStrategy.VALUE_BASED
+        state["strategy"] = NegotiationStrategy.VALUE_BASED.value
         return state
 
-    # Rate above max
-    if rate > max_price:
-        state["negotiationStatus"] = "countered"
-        state["next_action"] = NextAction.CONFIRM_PRICING.value
-        state["strategy"] = NegotiationStrategy.VALUE_BASED
-        return state
-
-    # Rate within range → accept deal
     state["negotiationStatus"] = "agreed"
     state["next_action"] = NextAction.CLOSE_NEGOTIATION.value
-    state["strategy"] = NegotiationStrategy.SOFT
+    state["strategy"] = NegotiationStrategy.SOFT.value
     return state
