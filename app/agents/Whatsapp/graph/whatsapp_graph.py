@@ -8,7 +8,6 @@ from app.agents.Whatsapp.nodes.send_reply import node_send_reply
 from app.model.whatsappconversation import ConversationState
 from app.utils.custom_logging import node_debug_after, node_debug_before
 
-
 graph = StateGraph(ConversationState)
 
 

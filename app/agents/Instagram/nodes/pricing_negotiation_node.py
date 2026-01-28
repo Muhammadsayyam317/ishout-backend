@@ -10,7 +10,6 @@ async def pricing_negotiation_node(state: InstagramConversationState):
     rate = state.influencerResponse.get("rate")
     rules = state["pricingRules"]
 
-    # If rate is missing, ask for price
     if not rate:
         state["next_action"] = NextAction.CONFIRM_PRICING.value
         state["strategy"] = NegotiationStrategy.SOFT
@@ -19,7 +18,6 @@ async def pricing_negotiation_node(state: InstagramConversationState):
     min_price = rules.get("minPrice", 0)
     max_price = rules.get("maxPrice", float("inf"))
 
-    # Rate below min
     if rate < min_price:
         state["negotiationStatus"] = "countered"
         state["next_action"] = NextAction.CONFIRM_PRICING.value

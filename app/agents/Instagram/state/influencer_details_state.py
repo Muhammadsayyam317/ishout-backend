@@ -37,16 +37,20 @@ class ConversationState(TypedDict, total=False):
     history: list[dict]
 
 
-class InstagramConversationState(BaseModel):
+class InstagramConversationState(TypedDict, total=False):
     thread_id: str
+    campaign_id: str
+    influencer_id: str
+
     user_message: str
-    analysis: Optional[AnalyzeMessageOutput] = None
-    availability: Optional[str] = None
-    rate: Optional[float] = None
-    currency: Optional[str] = None
-    interest: Optional[bool] = None
-    influencer_details: Optional[InfluencerDetailsInput] = None
-    final_reply: Optional[str] = None
-    next_action: Optional[NextAction] = None
-    influencer_id: Optional[str] = None
-    campaign_id: Optional[str] = None
+    history: list[dict]
+
+    intent: str
+    analysis: dict
+
+    influencerResponse: dict
+    pricingRules: dict
+
+    negotiationStatus: str
+    next_action: str
+    final_reply: str

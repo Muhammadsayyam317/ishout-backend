@@ -1,6 +1,7 @@
 from typing import List, Optional, Set
 from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain_openai.embeddings import OpenAIEmbeddings
+from langfuse import observe
 from app.config.credentials_config import config
 from app.db.connection import get_pymongo_db
 from app.utils.helpers import (
@@ -12,6 +13,7 @@ from app.utils.helpers import (
 )
 
 
+@observe(name="Search_Instagram_Influencer")
 async def search_instagram_influencers(
     category: List[str],
     limit: int,

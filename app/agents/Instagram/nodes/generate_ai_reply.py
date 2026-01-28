@@ -1,56 +1,31 @@
-from app.Schemas.instagram.negotiation_schema import (
-    InstagramConversationState,
-)
-from agents import Agent, Runner
+from agents import Runner
 from app.Guardails.input_guardrails import InstagramInputGuardrail
 from app.Guardails.output_guardrails import InstagramOutputGuardrail
 from app.Schemas.instagram.message_schema import GenerateReplyOutput
-from app.core.exception import InternalServerErrorException
 from app.utils.message_context import build_message_context
 from app.utils.prompts import NEGOTIATE_INFLUENCER_DM_PROMPT
 
 
-generate_reply_agent = Agent(
-    name="generate_reply",
-    instructions=NEGOTIATE_INFLUENCER_DM_PROMPT,
-    model="gpt-4o-mini",
-    input_guardrails=[InstagramInputGuardrail],
-    output_guardrails=[InstagramOutputGuardrail],
-    output_type=GenerateReplyOutput,
-)
-
-
-async def GenerateReply(state: InstagramConversationState):
-    input_context = build_message_context(
-        state["history"],
-        state["user_message"],
+async def GenerateReply(state: dict) -> dict:
+    result = await Runner.run(
+        NEGOTIATE_INFLUENCER_DM_PROMPT.format(
+            min_price=state["pricingRules"]["minPrice"],
+            max_price=state["pricingRules"]["maxPrice"],
+        ),
+        model="gpt-4o-mini",
+        input_guardrails=[InstagramInputGuardrail],
+        output_guardrails=[InstagramOutputGuardrail],
+        output_type=GenerateReplyOutput,
+        input=build_message_context(state["history"], state["user_message"]),
     )
-
-    try:
-        result = await Runner.run(
-            generate_reply_agent,
-            input=input_context,
-        )
-        return result.final_output
-    except Exception as e:
-        raise InternalServerErrorException(f"Error generating reply: {str(e)}")
+    return result.final_output
 
 
-async def generate_ai_reply(state: InstagramConversationState):
-    print("Entering Generate AI Reply")
-
+async def generate_ai_reply(state: dict):
+    print("Entering into Generate AI Reply")
     ai_reply = await GenerateReply(state)
-
-    state["final_reply"] = ai_reply.final_reply or (
-        "Thanks for your message! We'll get back to you shortly."
-    )
-
-    state["history"].append(
-        {
-            "role": "assistant",
-            "message": state["final_reply"],
-        }
-    )
-
-    print("Exiting Generate AI Reply")
+    reply_text = ai_reply.get("final_reply") or "Got it — will update you shortly."
+    state["final_reply"] = reply_text
+    state["history"].append({"sender_type": "AI", "message": reply_text})
+    print("Exiting from Generate AI Reply")
     return state
