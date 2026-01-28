@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 
 
 async def analyze_intent(state: InstagramConversationState):
-    """Run AI to extract intent and budget, availability, interest."""
     result: AnalyzeMessageOutput = await Runner.run(
         Agent(
             name="analyze_message",

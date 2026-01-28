@@ -1,29 +1,35 @@
 from app.Schemas.instagram.negotiation_schema import (
     InstagramConversationState,
+    MessageIntent,
     NextAction,
 )
 
 
-def determine_next_action(state: InstagramConversationState):
-    """Check missing info and route to the proper next action."""
-    responses = state["influencerResponse"]
+def determine_next_action(
+    state: InstagramConversationState,
+) -> InstagramConversationState:
+    analysis = state["analysis"]
 
-    if state["intent"] == "reject":
-        state["next_action"] = NextAction.REJECT_NEGOTIATION.value
+    # Rejection intent
+    if analysis["intent"] == MessageIntent.REJECT:
+        state["next_action"] = NextAction.GENERATE_REJECTION
+        state["negotiation_status"] = "rejected"
         return state
 
-    if not responses.get("interest"):
-        state["next_action"] = NextAction.ASK_INTEREST.value
+    missing = analysis["missing_required_details"]
+
+    if "interest" in missing:
+        state["next_action"] = NextAction.ASK_INTEREST
         return state
 
-    if not responses.get("availability"):
-        state["next_action"] = NextAction.ASK_AVAILABILITY.value
+    if "availability" in missing:
+        state["next_action"] = NextAction.ASK_AVAILABILITY
         return state
 
-    if not responses.get("rate"):
-        state["next_action"] = NextAction.ASK_RATE.value
+    if "rate" in missing:
+        state["next_action"] = NextAction.ASK_RATE
         return state
 
-    # If all required info provided
-    state["next_action"] = NextAction.CONFIRM_PRICING.value
+    # Everything available
+    state["next_action"] = NextAction.CONFIRM_PRICING
     return state
