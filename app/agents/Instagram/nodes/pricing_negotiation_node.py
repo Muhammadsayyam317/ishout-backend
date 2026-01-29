@@ -6,29 +6,36 @@ from app.Schemas.instagram.negotiation_schema import (
 
 
 def pricing_negotiation(state: InstagramConversationState):
-    print("Entering into Node Pricing Negotiation")
+    print("Entering Pricing Negotiation Node")
     print("--------------------------------")
     print(state)
     print("--------------------------------")
-    rate = state["influencerResponse"].get("rate")
-    min_price = state["pricingRules"].get("minPrice", 0)
-    max_price = state["pricingRules"].get("maxPrice", float("inf"))
+    response = state["influencer_response"]
+    pricing = state["pricing_rules"]
 
+    rate = response.get("rate")
+    min_price = pricing.get("minPrice", 0)
+    max_price = pricing.get("maxPrice", float("inf"))
+
+    # Rate not provided yet
     if rate is None:
-        state["next_action"] = NextAction.CONFIRM_PRICING.value
-        state["strategy"] = NegotiationStrategy.SOFT.value
+        state["next_action"] = NextAction.CONFIRM_PRICING
+        state["strategy"] = NegotiationStrategy.SOFT
         return state
 
+    # Rate outside allowed range
     if rate < min_price or rate > max_price:
-        state["negotiationStatus"] = "countered"
-        state["next_action"] = NextAction.CONFIRM_PRICING.value
-        state["strategy"] = NegotiationStrategy.VALUE_BASED.value
+        state["negotiation_status"] = "escalated"
+        state["next_action"] = NextAction.CONFIRM_PRICING
+        state["strategy"] = NegotiationStrategy.VALUE_BASED
         return state
 
-    state["negotiationStatus"] = "agreed"
-    state["next_action"] = NextAction.CLOSE_NEGOTIATION.value
-    state["strategy"] = NegotiationStrategy.SOFT.value
-    print("Exiting from Node Pricing Negotiation")
+    # Accept deal
+    state["negotiation_status"] = "agreed"
+    state["next_action"] = NextAction.ACCEPT_NEGOTIATION
+    state["strategy"] = NegotiationStrategy.SOFT
+
+    print("Exiting Pricing Negotiation Node")
     print("--------------------------------")
     print(state)
     print("--------------------------------")

@@ -6,6 +6,9 @@ from app.Schemas.instagram.negotiation_schema import (
 
 async def ask_missing_info(state: InstagramConversationState):
     print("Entering into Node Ask Missing Info")
+    print("--------------------------------")
+    print(state)
+    print("--------------------------------")
     responses = state["influencerResponse"]
     intent = state.get("intent")
 

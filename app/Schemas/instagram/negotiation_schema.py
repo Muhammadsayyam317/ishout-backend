@@ -104,7 +104,6 @@ class InstagramConversationState(TypedDict):
     influencer_response: Dict[str, Optional[str | float | bool]]
 
     pricing_rules: PricingRules
-
     negotiation_status: Literal["pending", "agreed", "rejected", "escalated"]
 
     next_action: NextAction
