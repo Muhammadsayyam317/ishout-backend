@@ -32,7 +32,7 @@ async def finalize_negotiation(state: InstagramConversationState):
             },
         )
         logger.info(f"Negotiation succeeded: {state['influencer_id']}")
-    elif state["negotiationStatus"] == "rejected":
+    elif state["negotiation_status"] == "rejected":
         await collection.update_one(
             {
                 "campaign_id": state["campaign_id"],
