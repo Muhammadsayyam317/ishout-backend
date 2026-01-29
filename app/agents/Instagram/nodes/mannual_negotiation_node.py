@@ -11,9 +11,9 @@ async def manual_negotiation_required(state: InstagramConversationState):
     print("--------------------------------")
     print(state)
     print("--------------------------------")
-    offered_price = state["influencerResponse"].get("rate")
-    min_price = state["pricingRules"].get("minPrice", 0)
-    max_price = state["pricingRules"].get("maxPrice", float("inf"))
+    offered_price = state["influencer_response"].get("rate")
+    min_price = state["pricing_rules"].get("minPrice", 0)
+    max_price = state["pricing_rules"].get("maxPrice", float("inf"))
 
     if offered_price is None or min_price <= offered_price <= max_price:
         return state
