@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 async def analyze_intent(state: InstagramConversationState):
-    run_result = await Runner.run(
+    result = await Runner.run(
         Agent(
             name="analyze_message",
             instructions=ANALYZE_INFLUENCER_DM_PROMPT,
@@ -21,9 +21,7 @@ async def analyze_intent(state: InstagramConversationState):
         input=state["user_message"],
     )
 
-    analysis: AnalyzeMessageOutput = run_result.output
-    print(type(run_result))
-    print(type(run_result.output))
+    analysis: AnalyzeMessageOutput = result.final_output
 
     state["analysis"] = analysis
     state["intent"] = analysis.get("intent", "unclear")
