@@ -13,6 +13,8 @@ class NextAction(str, Enum):
     GENERATE_CLARIFICATION = "generate_clarification"
     GENERATE_REJECTION = "generate_rejection"
     ESCALATE_NEGOTIATION = "escalate_negotiation"
+    REJECT_NEGOTIATION = "reject_negotiation"
+    ACCEPT_NEGOTIATION = "accept_negotiation"
     CLOSE_CONVERSATION = "close_conversation"
     WAIT_OR_ACKNOWLEDGE = "wait_or_acknowledge"
 
