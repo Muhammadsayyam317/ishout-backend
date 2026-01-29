@@ -16,7 +16,7 @@ async def manual_negotiation_required(state: InstagramConversationState):
     max_price = state["pricingRules"].get("maxPrice", float("inf"))
 
     if offered_price is None or min_price <= offered_price <= max_price:
-        return state  # no manual required
+        return state
 
     db = get_db()
     collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS)

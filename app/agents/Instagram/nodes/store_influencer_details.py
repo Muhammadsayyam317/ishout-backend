@@ -7,6 +7,9 @@ from datetime import datetime, timezone
 
 async def store_influencer_details(state: InstagramConversationState):
     print("Entering into Influencers Details")
+    print("--------------------------------")
+    print(state)
+    print("--------------------------------")
 
     influencer_details = state.get("influencer_details")
 

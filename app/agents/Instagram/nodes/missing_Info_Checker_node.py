@@ -1,7 +1,11 @@
-from app.agents.Instagram.state.influencer_details_state import ConversationState
+from app.Schemas.instagram.negotiation_schema import InstagramConversationState
 
 
-def check_missing_info(state: ConversationState):
+def check_missing_info(state: InstagramConversationState):
+    print("Entering into Node Check Missing Info")
+    print("--------------------------------")
+    print(state)
+    print("--------------------------------")
     print("Entering into Node Check Missing Info")
     if state.get("interest") is None:
         print("Interest is missing")
