@@ -8,6 +8,10 @@ from app.Schemas.instagram.negotiation_schema import (
 def determine_next_action(
     state: InstagramConversationState,
 ) -> InstagramConversationState:
+    print("Entering into Node Determine Next Action")
+    print("--------------------------------")
+    print(state)
+    print("--------------------------------")
     analysis = state["analysis"]
 
     # Rejection intent
@@ -32,4 +36,8 @@ def determine_next_action(
 
     # Everything available
     state["next_action"] = NextAction.CONFIRM_PRICING
+    print("Exiting from Node Determine Next Action")
+    print("--------------------------------")
+    print(state)
+    print("--------------------------------")
     return state

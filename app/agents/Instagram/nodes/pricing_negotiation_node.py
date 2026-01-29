@@ -6,6 +6,10 @@ from app.Schemas.instagram.negotiation_schema import (
 
 
 def pricing_negotiation(state: InstagramConversationState):
+    print("Entering into Node Pricing Negotiation")
+    print("--------------------------------")
+    print(state)
+    print("--------------------------------")
     rate = state["influencerResponse"].get("rate")
     min_price = state["pricingRules"].get("minPrice", 0)
     max_price = state["pricingRules"].get("maxPrice", float("inf"))
@@ -24,4 +28,8 @@ def pricing_negotiation(state: InstagramConversationState):
     state["negotiationStatus"] = "agreed"
     state["next_action"] = NextAction.CLOSE_NEGOTIATION.value
     state["strategy"] = NegotiationStrategy.SOFT.value
+    print("Exiting from Node Pricing Negotiation")
+    print("--------------------------------")
+    print(state)
+    print("--------------------------------")
     return state

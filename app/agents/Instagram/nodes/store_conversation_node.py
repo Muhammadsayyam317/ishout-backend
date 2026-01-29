@@ -10,11 +10,10 @@ logger = logging.getLogger(__name__)
 
 
 async def store_conversation(state: InstagramConversationState):
-    """
-    1. Bind Instagram thread ↔ influencer ↔ campaign
-    2. Persist influencer negotiation inputs if present
-    3. Never crash due to config/env issues
-    """
+    print("Entering into Node Store Conversation")
+    print("--------------------------------")
+    print(state)
+    print("--------------------------------")
     db = get_db()
     conv_collection = db.get_collection(config.INSTAGRAM_MESSAGE_COLLECTION)
     campaign_collection = db.get_collection(
@@ -77,5 +76,8 @@ async def store_conversation(state: InstagramConversationState):
         state["influencer_id"],
         state["campaign_id"],
     )
-
+    print("Exiting from Node Store Conversation")
+    print("--------------------------------")
+    print(state)
+    print("--------------------------------")
     return state

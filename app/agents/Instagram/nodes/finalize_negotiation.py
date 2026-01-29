@@ -9,7 +9,10 @@ logger = logging.getLogger(__name__)
 
 
 async def finalize_negotiation(state: InstagramConversationState):
-    """Mark negotiation as succeeded or rejected in DB."""
+    print("Entering into Node Finalize Negotiation")
+    print("--------------------------------")
+    print(state)
+    print("--------------------------------")
     db = get_db()
     collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS)
 
@@ -39,4 +42,8 @@ async def finalize_negotiation(state: InstagramConversationState):
         )
         logger.info(f"Negotiation rejected: {state['influencer_id']}")
 
+    print("Exiting from Node Finalize Negotiation")
+    print("--------------------------------")
+    print(state)
+    print("--------------------------------")
     return state

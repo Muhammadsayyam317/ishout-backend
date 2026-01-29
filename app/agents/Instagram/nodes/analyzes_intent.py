@@ -11,6 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 async def analyze_intent(state: InstagramConversationState):
+    print("Entering into Node Analyze Intent")
+    print("--------------------------------")
+    print(state)
+    print("--------------------------------")
     result = await Runner.run(
         Agent(
             name="analyze_message",
@@ -48,5 +52,8 @@ async def analyze_intent(state: InstagramConversationState):
         state["intent"],
         state["next_action"],
     )
-
+    print("Exiting from Node Analyze Intent")
+    print("--------------------------------")
+    print(state)
+    print("--------------------------------")
     return state

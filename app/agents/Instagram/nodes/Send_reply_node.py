@@ -6,6 +6,10 @@ logger = logging.getLogger(__name__)
 
 
 async def send_reply(state: InstagramConversationState):
+    print("Entering into Node Send Reply")
+    print("--------------------------------")
+    print(state)
+    print("--------------------------------")
     if not state.get("final_reply"):
         return state
 
@@ -13,4 +17,8 @@ async def send_reply(state: InstagramConversationState):
         message=state["final_reply"], recipient_id=state["thread_id"]
     )
     logger.debug(f"Sent reply to thread {state['thread_id']}")
+    print("Exiting from Node Send Reply")
+    print("--------------------------------")
+    print(state)
+    print("--------------------------------")
     return state

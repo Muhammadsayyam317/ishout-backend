@@ -2,7 +2,10 @@ from app.Schemas.instagram.negotiation_schema import InstagramConversationState
 
 
 def normalize_state(state: dict) -> InstagramConversationState:
-    """Initialize state with defaults if missing."""
+    print("Entering into Node Normalize State")
+    print("--------------------------------")
+    print(state)
+    print("--------------------------------")
     return {
         **state,
         "history": state.get("history", []),

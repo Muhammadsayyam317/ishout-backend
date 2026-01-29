@@ -10,6 +10,10 @@ from app.utils.message_context import build_message_context
 
 
 async def generate_ai_reply(state: InstagramConversationState):
+    print("Entering into Node Generate AI Reply")
+    print("--------------------------------")
+    print(state)
+    print("--------------------------------")
     min_price = state["pricingRules"].get("minPrice", 0)
     max_price = state["pricingRules"].get("maxPrice", 0)
 
@@ -30,4 +34,8 @@ async def generate_ai_reply(state: InstagramConversationState):
     state["final_reply"] = reply_text
     state["history"].append({"role": "assistant", "message": reply_text})
 
+    print("Exiting from Node Generate AI Reply")
+    print("--------------------------------")
+    print(state)
+    print("--------------------------------")
     return state
