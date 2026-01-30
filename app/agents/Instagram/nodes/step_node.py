@@ -11,7 +11,7 @@ def route_next_step(state: InstagramConversationState) -> str:
         NextAction.REJECT_NEGOTIATION,
         NextAction.GENERATE_REJECTION,
     ]:
-        return "handle_reject"
+        return "handle_rejection"
 
     if action in [
         NextAction.ASK_INTEREST,
