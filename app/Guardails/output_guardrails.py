@@ -26,7 +26,7 @@ async def InstagramOutputGuardrail(
             """,
             output_type=OutputGuardrailResult,
         ),
-        output.reply,
+        output["final_reply"],
         context=ctx.context,
     )
     print("🛡️ Output Guardrail result:", result.final_output)
