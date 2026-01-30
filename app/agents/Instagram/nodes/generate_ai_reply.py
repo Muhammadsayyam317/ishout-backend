@@ -1,4 +1,4 @@
-from agents import Runner
+from agents import Runner, Agent
 from app.Guardails.input_guardrails import InstagramInputGuardrail
 from app.Guardails.output_guardrails import InstagramOutputGuardrail
 from app.Schemas.instagram.negotiation_schema import (
@@ -14,23 +14,34 @@ async def generate_ai_reply(state: InstagramConversationState):
     print("--------------------------------")
     print(state)
     print("--------------------------------")
+
     min_price = state["pricing_rules"].get("minPrice", 0)
     max_price = state["pricing_rules"].get("maxPrice", 0)
 
     prompt = NEGOTIATE_INFLUENCER_DM_PROMPT.format(
-        min_price=min_price, max_price=max_price
+        min_price=min_price,
+        max_price=max_price,
     )
 
-    result: GenerateReplyOutput = await Runner.run(
-        prompt,
-        model="gpt-4o-mini",
-        input_guardrails=[InstagramInputGuardrail],
-        output_guardrails=[InstagramOutputGuardrail],
-        output_type=GenerateReplyOutput,
-        input=build_message_context(state["history"], state["user_message"]),
+    result = await Runner.run(
+        Agent(
+            name="generate_reply",
+            instructions=prompt,
+            input_guardrails=[InstagramInputGuardrail],
+            output_guardrails=[InstagramOutputGuardrail],
+            output_type=GenerateReplyOutput,
+        ),
+        input=build_message_context(
+            state["history"],
+            state["user_message"],
+        ),
     )
 
-    reply_text = result.get("final_reply") or "Got it — will update you shortly."
+    reply_text = result.final_output.get(
+        "final_reply",
+        "Got it — will update you shortly.",
+    )
+
     state["final_reply"] = reply_text
     state["history"].append({"role": "assistant", "message": reply_text})
 
