@@ -50,11 +50,12 @@ GOAL
 ====================
 OUTPUT FORMAT (STRICT)
 ====================
+
 Respond ONLY in valid JSON with this exact shape:
 
-{
+{{
   "final_reply": "<instagram dm reply>"
-}
+}}
 
 Do not include any other keys.
 Do not include explanations.

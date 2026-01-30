@@ -21,7 +21,7 @@ async def generate_ai_reply(state: InstagramConversationState):
         min_price=min_price, max_price=max_price
     )
 
-    ai_reply: GenerateReplyOutput = await Runner.run(
+    result: GenerateReplyOutput = await Runner.run(
         prompt,
         model="gpt-4o-mini",
         input_guardrails=[InstagramInputGuardrail],
@@ -30,7 +30,7 @@ async def generate_ai_reply(state: InstagramConversationState):
         input=build_message_context(state["history"], state["user_message"]),
     )
 
-    reply_text = ai_reply.get("final_reply") or "Got it — will update you shortly."
+    reply_text = result.get("final_reply") or "Got it — will update you shortly."
     state["final_reply"] = reply_text
     state["history"].append({"role": "assistant", "message": reply_text})
 
