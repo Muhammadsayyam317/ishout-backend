@@ -17,7 +17,7 @@ async def fetch_pricing_rules(state: InstagramConversationState):
         }
     )
 
-    state["pricingRules"] = {
+    state["pricing_rules"] = {
         "minPrice": doc.get("min_price", 0) if doc else 0,
         "maxPrice": doc.get("max_price", 0) if doc else 0,
     }

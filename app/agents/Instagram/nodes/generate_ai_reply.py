@@ -14,8 +14,8 @@ async def generate_ai_reply(state: InstagramConversationState):
     print("--------------------------------")
     print(state)
     print("--------------------------------")
-    min_price = state["pricingRules"].get("minPrice", 0)
-    max_price = state["pricingRules"].get("maxPrice", 0)
+    min_price = state["pricing_rules"].get("minPrice", 0)
+    max_price = state["pricing_rules"].get("maxPrice", 0)
 
     prompt = NEGOTIATE_INFLUENCER_DM_PROMPT.format(
         min_price=min_price, max_price=max_price

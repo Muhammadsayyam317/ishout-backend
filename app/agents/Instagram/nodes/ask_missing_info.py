@@ -9,7 +9,7 @@ async def ask_missing_info(state: InstagramConversationState):
     print("--------------------------------")
     print(state)
     print("--------------------------------")
-    responses = state["influencerResponse"]
+    responses = state["influencer_response"]
     intent = state.get("intent")
 
     # Handle intents

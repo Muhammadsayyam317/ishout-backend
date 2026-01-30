@@ -39,7 +39,7 @@ async def store_conversation(state: InstagramConversationState):
         upsert=True,
     )
 
-    influencer_response = state.get("influencerResponse") or {}
+    influencer_response = state.get("influencer_response") or {}
     update_payload = {}
     if "rate" in influencer_response:
         update_payload["pricing"] = influencer_response["rate"]

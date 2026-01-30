@@ -30,16 +30,16 @@ async def analyze_intent(state: InstagramConversationState):
     state["analysis"] = analysis
     state["intent"] = analysis.get("intent", "unclear")
 
-    state.setdefault("influencerResponse", {})
+    state.setdefault("influencer_response", {})
 
     if analysis.get("pricing_mentioned") and analysis.get("budget_amount") is not None:
-        state["influencerResponse"]["rate"] = analysis["budget_amount"]
+        state["influencer_response"]["rate"] = analysis["budget_amount"]
 
     if analysis.get("availability_mentioned"):
-        state["influencerResponse"]["availability"] = "provided"
+        state["influencer_response"]["availability"] = "provided"
 
     if analysis.get("interest_mentioned"):
-        state["influencerResponse"]["interest"] = True
+        state["influencer_response"]["interest"] = True
 
     # -------- Next Action --------
     state["next_action"] = analysis.get(
