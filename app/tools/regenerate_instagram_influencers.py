@@ -1,6 +1,7 @@
 from typing import Set
 from langchain_mongodb import MongoDBAtlasVectorSearch
 from langchain_openai.embeddings import OpenAIEmbeddings
+from langfuse import observe
 from app.config.credentials_config import config
 from app.db.connection import get_pymongo_db
 from app.Schemas.reject_influencer import (
@@ -15,6 +16,7 @@ from app.utils.helpers import (
 )
 
 
+@observe(name="regenerate_instagram_influencers")
 async def regenerate_instagram_influencer(
     request_data: SearchRejectRegenerateInfluencersRequest,
 ):

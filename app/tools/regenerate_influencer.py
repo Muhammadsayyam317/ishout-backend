@@ -1,10 +1,12 @@
 from fastapi import HTTPException
+from langfuse import observe
 from app.Schemas.reject_influencer import SearchRejectRegenerateInfluencersRequest
 from app.api.controllers.admin.reject_regenerate_influencers import (
     reject_and_regenerate_influencer,
 )
 
 
+@observe(name="reject_and_regenerate_influencers")
 async def reject_and_regenerate(request_data: SearchRejectRegenerateInfluencersRequest):
     try:
         return await reject_and_regenerate_influencer(
