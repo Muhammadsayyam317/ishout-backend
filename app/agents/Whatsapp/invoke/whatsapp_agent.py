@@ -102,7 +102,6 @@ async def handle_whatsapp_events(request: Request):
             state,
             config={"configurable": {"thread_id": checkpoint_thread_id}},
         )
-
         if final_state:
             await update_user_state(thread_id, final_state)
         return {"status": "ok"}

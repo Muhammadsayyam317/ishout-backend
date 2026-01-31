@@ -1,9 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from app.Schemas.influencers import MoreInfluencerRequest
-from app.agents.Instagram.nodes.analyzes_message import (
-    node_analyze_message,
-)
-from app.agents.Instagram.nodes.generate_reply import GenerateReply
+from app.agents.Instagram.nodes.analyzes_intent import analyze_intent
+from app.agents.Instagram.nodes.generate_ai_reply import generate_ai_reply
 from app.agents.Instagram.nodes.track_response_node import track_unresponsive_users
 from app.api.controllers.admin.campaign_controller import (
     add_influencer_Number,
@@ -321,13 +319,13 @@ router.add_api_route(
 
 router.add_api_route(
     path="/instagram/analyze-message",
-    endpoint=node_analyze_message,
+    endpoint=analyze_intent,
     methods=["POST"],
     tags=["Admin"],
 )
 router.add_api_route(
     path="/instagram/generate-reply",
-    endpoint=GenerateReply,
+    endpoint=generate_ai_reply,
     methods=["POST"],
     tags=["Admin"],
 )

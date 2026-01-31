@@ -6,15 +6,12 @@ from app.agents.Whatsapp.state.reset_state import reset_user_state
 from app.services.whatsapp.onboarding_message import send_whatsapp_message
 from app.services.whatsapp.save_message import save_conversation_message
 from app.utils.Enums.user_enum import SenderType
-
-
 from app.db.connection import get_db
 
 
 async def node_send_reply(state):
     sender_id = state.get("sender_id")
     reply = state.get("reply")
-
     if not sender_id or not reply:
         return state
     db = get_db()
@@ -31,7 +28,6 @@ async def node_send_reply(state):
         message=reply,
     )
     state["reply_sent"] = True
-    # RESET FLOW
     if state.get("reset_after_reply"):
         print("♻️ Resetting full conversation state")
         # Increment conversation round

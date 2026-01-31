@@ -8,6 +8,7 @@ from app.agents.Whatsapp.nodes.send_reply import node_send_reply
 from app.model.whatsappconversation import ConversationState
 from app.utils.custom_logging import node_debug_after, node_debug_before
 
+
 graph = StateGraph(ConversationState)
 
 
@@ -56,3 +57,12 @@ graph.add_conditional_edges(
 graph.add_edge("create_campaign", "acknowledge_user")
 graph.add_edge("acknowledge_user", "send_reply")
 graph.add_edge("send_reply", END)
+
+graph = graph.compile()
+
+
+print("--- Mermaid Code ---")
+print(graph.get_graph().draw_mermaid())  # Prints Mermaid syntax
+
+print("\n--- ASCII Visualization ---")
+print(graph.get_graph().draw_ascii())  # Prints ASCII art
