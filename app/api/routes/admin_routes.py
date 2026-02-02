@@ -1,13 +1,10 @@
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from app.Schemas.influencers import MoreInfluencerRequest
-
-# from app.agents.Instagram.nodes.analyzes_intent import analyze_intent
-# from app.agents.Instagram.nodes.generate_ai_reply import generate_ai_reply
-# from app.agents.Instagram.nodes.track_response_node import track_unresponsive_users
 from app.api.controllers.admin.campaign_controller import (
     add_influencer_Number,
     update_status,
 )
+from app.api.controllers.admin.delete_whatsappchat import delete_whatsapp_chat
 from app.api.controllers.admin.generated_influencers import get_generated_influencers
 from app.api.controllers.admin.influencers_controller import more_influencers
 from app.api.controllers.admin.onboarding_influencers import (
@@ -318,21 +315,9 @@ router.add_api_route(
     tags=["Admin"],
 )
 
-# router.add_api_route(
-#     path="/instagram/analyze-message",
-#     endpoint=analyze_intent,
-#     methods=["POST"],
-#     tags=["Admin"],
-# )
-# router.add_api_route(
-#     path="/instagram/generate-reply",
-#     endpoint=generate_ai_reply,
-#     methods=["POST"],
-#     tags=["Admin"],
-# )
-# router.add_api_route(
-#     path="/instagram/track-user-response",
-#     endpoint=track_unresponsive_users,
-#     methods=["GET"],
-#     tags=["Admin"],
-# )
+router.add_api_route(
+    path="/delete-whatsapp-chat/{thread_id}",
+    endpoint=delete_whatsapp_chat,
+    methods=["DELETE"],
+    tags=["Admin"],
+)
