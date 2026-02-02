@@ -140,21 +140,31 @@ async def delete_user(user_id: str) -> Dict[str, Any]:
 
 
 async def Whatsapp_Users_Sessions_management(
-    page: int = 1,
-    page_size: int = 20,
+    page: int = 1, page_size: int = 20
 ) -> Dict[str, Any]:
     try:
         db = get_db()
         collection = db.get_collection(
             config.MONGODB_ATLAS_COLLECTION_WHATSAPP_SESSIONS
         )
+        agent_control_collection = db.get_collection("agent_controls")
+
         skip = (page - 1) * page_size
         cursor = collection.find().sort("last_active", -1).skip(skip).limit(page_size)
         users = await cursor.to_list(length=page_size)
         users = [convert_objectid(user) for user in users]
 
         user_response = []
+
         for user in users:
+            # Fetch agent control for this user by thread_id
+            agent_control_doc = await agent_control_collection.find_one(
+                {"thread_id": user.get("thread_id")}
+            )
+            agent_control_doc = (
+                convert_objectid(agent_control_doc) if agent_control_doc else {}
+            )
+
             user_response.append(
                 {
                     "id": user.get("_id"),
@@ -167,6 +177,8 @@ async def Whatsapp_Users_Sessions_management(
                     "campaign_created": user.get("campaign_created", False),
                     "acknowledged": user.get("acknowledged", False),
                     "conversation_round": user.get("conversation_round", 0),
+                    "agent_paused": agent_control_doc.get("agent_paused", False),
+                    "human_takeover": agent_control_doc.get("human_takeover", False),
                     "status": (
                         "COMPLETED"
                         if user.get("done")
@@ -174,10 +186,12 @@ async def Whatsapp_Users_Sessions_management(
                     ),
                 }
             )
+
         total = await collection.count_documents({})
         total_pages = (total + page_size - 1) // page_size
         has_next = page < total_pages
         has_prev = page > 1
+
         return {
             "page": page,
             "page_size": page_size,
