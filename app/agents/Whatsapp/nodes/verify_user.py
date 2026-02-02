@@ -1,4 +1,4 @@
-from app.config import config
+from app.config.credentials_config import config
 from app.db.connection import get_db
 from app.utils.helpers import normalize_phone
 
