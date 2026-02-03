@@ -1,5 +1,6 @@
 from enum import Enum
-from typing import Dict, Literal, Optional, List, TypedDict
+from typing import Dict, Literal, Optional, List
+from typing_extensions import TypedDict
 
 
 class NextAction(str, Enum):
