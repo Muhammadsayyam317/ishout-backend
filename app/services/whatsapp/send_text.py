@@ -39,45 +39,53 @@ async def send_whatsapp_text_message(to: str, text: str):
 
 async def send_message_from_ishout_to_user(text: str, user_id: str):
     print("Entering into send_message_from_ishout_to_user")
+    print("--------------------------------")
 
-    db = get_db()
-    users_collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_USERS)
-    user = await users_collection.find_one({"_id": ObjectId(user_id)})
+    try:
+        db = get_db()
+        users_collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_USERS)
+        user = await users_collection.find_one({"_id": ObjectId(user_id)})
 
-    phone = user.get("phone")
-    if not phone:
-        raise InternalServerErrorException(message="User phone number not found")
+        phone = user.get("phone")
+        if not phone:
+            raise InternalServerErrorException(message="User phone number not found")
+        to = normalize_phone(phone)
+        headers = {
+            "Authorization": f"Bearer {config.META_WHATSAPP_ACCESSSTOKEN}",
+            "Content-Type": "application/json",
+        }
 
-    to = normalize_phone(phone)
+        payload = {
+            "messaging_product": "whatsapp",
+            "to": to,
+            "type": "text",
+            "text": {
+                "body": text,
+            },
+        }
 
-    headers = {
-        "Authorization": f"Bearer {config.META_WHATSAPP_ACCESSSTOKEN}",
-        "Content-Type": "application/json",
-    }
+        print("Using PHONE_NUMBER_ID:", config.WHATSAPP_PHONE_NUMBER)
+        print("Payload:", payload)
+        print("--------------------------------")
 
-    payload = {
-        "messaging_product": "whatsapp",
-        "to": to,
-        "type": "text",
-        "text": {
-            "body": text,
-        },
-    }
-
-    print("Using Phone Number ID: 967002123161751")
-    print("Payload:", payload)
-
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        response = await client.post(
-            "https://graph.facebook.com/v22.0/967002123161751/messages",
-            headers=headers,
-            json=payload,
-        )
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                f"https://graph.facebook.com/"
+                f"{config.WHATSAPP_GRAPH_API_VERSION}/"
+                f"{config.WHATSAPP_PHONE_NUMBER_ID}/messages",
+                headers=headers,
+                json=payload,
+            )
 
         print("Status:", response.status_code)
         print("Response:", response.text)
 
         if response.status_code != 200:
-            raise InternalServerErrorException(
-                message=f"Error: {response.status_code}, {response.text}"
-            )
+            print("WhatsApp API error:", response.text)
+
+    except Exception as e:
+        print("Error sending message from ishout to user")
+        print("--------------------------------")
+        print(e)
+        print("--------------------------------")
+        return
