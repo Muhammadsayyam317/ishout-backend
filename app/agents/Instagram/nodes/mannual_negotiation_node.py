@@ -1,5 +1,4 @@
 from app.Schemas.instagram.negotiation_schema import InstagramConversationState
-from app.config.credentials_config import config
 from app.db.connection import get_db
 import logging
 

@@ -11,6 +11,7 @@ async def save_conversation_message(
     agent_paused: bool = False,
     human_takeover: bool = False,
 ):
+    print("Entering into save_conversation_message")
     try:
         payload = {
             "thread_id": thread_id,
@@ -25,9 +26,17 @@ async def save_conversation_message(
         db = get_db()
         collection = db.get_collection("whatsapp_messages")
         await collection.insert_one(payload)
+        print("Conversation message saved")
+        print("--------------------------------")
+        print(payload)
+        print("--------------------------------")
         return payload
 
     except Exception as e:
+        print("Error in saving conversation message")
+        print("--------------------------------")
+        print(e)
+        print("--------------------------------")
         raise InternalServerErrorException(
             message=f"Error in saving conversation message: {str(e)}"
         ) from e
