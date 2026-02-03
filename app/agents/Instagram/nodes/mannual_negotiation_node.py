@@ -19,7 +19,7 @@ async def manual_negotiation_required(state: InstagramConversationState):
         return state
 
     db = get_db()
-    collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS)
+    collection = db.get_collection("campaign_influencers")
     await collection.update_one(
         {"campaign_id": state["campaign_id"], "influencer_id": state["influencer_id"]},
         {"$set": {"manual_negotiation_required": True, "negotiation_stage": "MANUAL"}},

@@ -18,7 +18,7 @@ async def store_influencer_details(state: InstagramConversationState):
         return state
 
     db = get_db()
-    collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS)
+    collection = db.get_collection("campaign_influencers")
 
     update_data = influencer_details.model_dump()
     update_data["updated_at"] = datetime.now(timezone.utc)
