@@ -37,10 +37,6 @@ async def handle_whatsapp_events(request: Request):
             first_message.get("type") == "interactive"
             and first_message.get("interactive", {}).get("type") == "button_reply"
         ):
-            print("Entering into handle_button_reply")
-            print("--------------------------------")
-            print(first_message)
-            print("--------------------------------")
             await handle_button_reply(first_message)
             return {"status": "ok"}
 
@@ -65,30 +61,18 @@ async def handle_whatsapp_events(request: Request):
                 status_code=503,
                 detail="WhatsApp agent not initialized",
             )
-        print("WhatsApp agent initialized")
-        print("--------------------------------")
         stored_state = await get_user_state(thread_id)
-        print("Stored state")
-        print("--------------------------------")
         state = stored_state or {}
-        print("State")
-        print("--------------------------------")
 
         conversation_round = await get_conversation_round(thread_id)
         if not conversation_round:
             conversation_round = 1
-        print("Conversation round")
-        print("--------------------------------")
-        print(conversation_round)
-        print("--------------------------------")
         if state.get("done") and state.get("acknowledged"):
             conversation_round = await increment_conversation_round(thread_id)
             if conversation_round > 1:
                 await cleanup_old_checkpoints(thread_id, conversation_round)
             state = await reset_user_state(thread_id)
         checkpoint_thread_id = f"{thread_id}-r{conversation_round}"
-        print("Checkpoint thread id")
-        print("--------------------------------")
         state.update(
             {
                 "user_message": msg_text,
@@ -98,8 +82,6 @@ async def handle_whatsapp_events(request: Request):
                 "name": profile_name or state.get("name"),
             }
         )
-        print("State updated")
-        print("--------------------------------")
         await save_conversation_message(
             thread_id=thread_id,
             username=profile_name,
@@ -117,6 +99,8 @@ async def handle_whatsapp_events(request: Request):
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             },
         )
+        print("Invoking WhatsApp agent")
+        print("--------------------------------")
         final_state = await whatsapp_agent.ainvoke(
             state,
             config={"configurable": {"thread_id": checkpoint_thread_id}},
@@ -132,5 +116,5 @@ async def handle_whatsapp_events(request: Request):
         print(e)
         print("--------------------------------")
         raise HTTPException(
-            status_code=500, detail=f"Webhook processing failed: {str(e)}"
+            status_code=500, message=f"Webhook processing failed: {str(e)}"
         ) from e
