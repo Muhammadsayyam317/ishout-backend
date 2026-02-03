@@ -20,15 +20,13 @@ async def save_conversation_message(
             "message": message,
             "agent_paused": agent_paused,
             "human_takeover": human_takeover,
-            "timestamp": datetime.now(timezone.utc),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
         db = get_db()
         collection = db.get_collection("whatsapp_messages")
         await collection.insert_one(payload)
-        print("Conversation message saved")
-        print("--------------------------------")
-        print(payload)
+        print("Whatsapp Conversation message saved")
         print("--------------------------------")
         return payload
 

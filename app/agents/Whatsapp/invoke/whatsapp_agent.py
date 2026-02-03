@@ -17,8 +17,6 @@ from app.utils.Enums.user_enum import SenderType
 async def handle_whatsapp_events(request: Request):
     print("Entering into handle_whatsapp_events")
     print("--------------------------------")
-    print(request)
-    print("--------------------------------")
     try:
         event = await request.json()
         entry = event.get("entry")
@@ -69,17 +67,11 @@ async def handle_whatsapp_events(request: Request):
             )
         print("WhatsApp agent initialized")
         print("--------------------------------")
-        print(whatsapp_agent)
-        print("--------------------------------")
         stored_state = await get_user_state(thread_id)
         print("Stored state")
         print("--------------------------------")
-        print(stored_state)
-        print("--------------------------------")
         state = stored_state or {}
         print("State")
-        print("--------------------------------")
-        print(state)
         print("--------------------------------")
 
         conversation_round = await get_conversation_round(thread_id)
@@ -97,8 +89,6 @@ async def handle_whatsapp_events(request: Request):
         checkpoint_thread_id = f"{thread_id}-r{conversation_round}"
         print("Checkpoint thread id")
         print("--------------------------------")
-        print(checkpoint_thread_id)
-        print("--------------------------------")
         state.update(
             {
                 "user_message": msg_text,
@@ -110,8 +100,6 @@ async def handle_whatsapp_events(request: Request):
         )
         print("State updated")
         print("--------------------------------")
-        print(state)
-        print("--------------------------------")
         await save_conversation_message(
             thread_id=thread_id,
             username=profile_name,
@@ -120,15 +108,13 @@ async def handle_whatsapp_events(request: Request):
         )
         print("Conversation message saved")
         print("--------------------------------")
-        print(state)
-        print("--------------------------------")
         await ws_manager.broadcast_event(
             "whatsapp.message",
             {
                 "thread_id": thread_id,
                 "sender": "USER",
                 "message": state.get("user_message"),
-                "timestamp": datetime.now(timezone.utc),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             },
         )
         final_state = await whatsapp_agent.ainvoke(
@@ -137,12 +123,14 @@ async def handle_whatsapp_events(request: Request):
         )
         print("Final state")
         print("--------------------------------")
-        print(final_state)
-        print("--------------------------------")
         if final_state:
             await update_user_state(thread_id, final_state)
         return {"status": "ok"}
     except Exception as e:
+        print("Error in handle_whatsapp_events")
+        print("--------------------------------")
+        print(e)
+        print("--------------------------------")
         raise HTTPException(
             status_code=500, detail=f"Webhook processing failed: {str(e)}"
         ) from e
