@@ -30,7 +30,6 @@ async def ask_missing_info(state: InstagramConversationState):
         print("Interest is missing")
         state["next_action"] = NextAction.ASK_INTEREST.value
         return state
-
     if not responses.get("availability"):
         print("Availability is missing")
         state["next_action"] = NextAction.ASK_AVAILABILITY.value
