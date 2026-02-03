@@ -6,20 +6,36 @@ redis_client = redis.from_url(config.REDIS_URL, decode_responses=True)
 
 
 async def get_conversation_round(sender_id):
+    print("Entering into get_conversation_round")
+    print("--------------------------------")
+    print(sender_id)
+    print("--------------------------------")
     session_collection = get_session_collection()
     state = await session_collection.find_one({"sender_id": sender_id})
     if state:
         return state.get("conversation_round", 0)
+    print("Conversation round not found")
+    print("--------------------------------")
+    print(0)
+    print("--------------------------------")
     return 0
 
 
 async def increment_conversation_round(sender_id):
+    print("Entering into increment_conversation_round")
+    print("--------------------------------")
+    print(sender_id)
+    print("--------------------------------")
     session_collection = get_session_collection()
     result = await session_collection.find_one_and_update(
         {"sender_id": sender_id},
         {"$inc": {"conversation_round": 1}},
         upsert=True,
     )
+    print("Conversation round incremented")
+    print("--------------------------------")
+    print(result.get("conversation_round", 0) + 1 if result else 1)
+    print("--------------------------------")
     return result.get("conversation_round", 0) + 1 if result else 1
 
 

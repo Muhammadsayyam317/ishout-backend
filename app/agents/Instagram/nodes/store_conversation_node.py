@@ -54,17 +54,6 @@ async def store_conversation(state: InstagramConversationState):
             {"$set": update_payload},
             upsert=True,
         )
-    # Optional confirmation reply
-    # if not state.get("final_reply"):
-    #     confirmation = (
-    #         "Thanks for sharing the details! "
-    #         "I'll review this and get back to you shortly."
-    #     )
-    #     await Send_Insta_Message(
-    #         message=confirmation,
-    #         recipient_id=state["thread_id"],
-    #     )
-    #     state["final_reply"] = confirmation
 
     logger.info(
         "Conversation stored | thread=%s influencer=%s campaign=%s",

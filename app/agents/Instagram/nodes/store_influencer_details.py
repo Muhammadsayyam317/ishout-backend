@@ -1,7 +1,6 @@
 from app.Schemas.instagram.negotiation_schema import InstagramConversationState
 from app.services.instagram.send_instagram_message import Send_Insta_Message
 from app.db.connection import get_db
-from app.config.credentials_config import config
 from datetime import datetime, timezone
 
 
