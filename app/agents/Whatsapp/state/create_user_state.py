@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+import time
 from app.db.mongo_session import get_session_collection
 
 
@@ -19,7 +19,7 @@ async def create_new_state(sender_id):
         "user_message": None,
         "reply": None,
         "name": None,
-        "last_active": datetime.now(timezone.utc),
+        "last_active": time.time(),
         "done": False,
         "reply_sent": False,
         "campaign_id": None,
