@@ -14,31 +14,36 @@ from app.agents.Instagram.nodes.store_conversation_node import store_conversatio
 from app.agents.Instagram.nodes.fetch_influencer_price_node import fetch_pricing_rules
 from app.agents.Instagram.nodes.pricing_negotiation_node import pricing_negotiation
 from app.agents.Instagram.nodes.Send_reply_node import send_reply
+from app.utils.custom_logging import insta_debug_before, insta_debug_after
 
 graph = StateGraph(InstagramConversationState)
 
-graph.set_entry_point("normalize_state")
+# Add debug nodes
+graph.add_node("debug_before", insta_debug_before)
+graph.add_node("debug_after", insta_debug_after)
 
-# Nodes
+# Add your actual nodes
 graph.add_node("normalize_state", normalize_state)
 graph.add_node("store_conversation", store_conversation)
 graph.add_node("analyze_intent", analyze_intent)
 graph.add_node("determine_next_action", determine_next_action)
-
 graph.add_node("handle_rejection", handle_rejection)
-
 graph.add_node("fetch_pricing_rules", fetch_pricing_rules)
 graph.add_node("pricing_negotiation", pricing_negotiation)
 graph.add_node("manual_negotiation_required", manual_negotiation_required)
 graph.add_node("finalize_negotiation", finalize_negotiation)
-
 graph.add_node("generate_ai_reply", generate_ai_reply)
 graph.add_node("send_reply", send_reply)
 
+# Entry point
+graph.set_entry_point("insta_debug_before")
 
+# Flow edges
+graph.add_edge("insta_debug_before", "normalize_state")
 graph.add_edge("normalize_state", "store_conversation")
 graph.add_edge("store_conversation", "analyze_intent")
 graph.add_edge("analyze_intent", "determine_next_action")
+
 graph.add_conditional_edges(
     "determine_next_action",
     route_next_step,
@@ -48,13 +53,15 @@ graph.add_conditional_edges(
         "fetch_pricing_rules": "fetch_pricing_rules",
     },
 )
+
 graph.add_edge("handle_rejection", "generate_ai_reply")
 graph.add_edge("fetch_pricing_rules", "pricing_negotiation")
 graph.add_edge("pricing_negotiation", "manual_negotiation_required")
 graph.add_edge("manual_negotiation_required", "finalize_negotiation")
 graph.add_edge("finalize_negotiation", "generate_ai_reply")
-graph.add_edge("generate_ai_reply", "send_reply")
+
+# Debug after node before sending reply
+graph.add_edge("generate_ai_reply", "debug_after")
+graph.add_edge("debug_after", "send_reply")
+
 graph.add_edge("send_reply", END)
-
-
-instagram_graph = graph.compile()
