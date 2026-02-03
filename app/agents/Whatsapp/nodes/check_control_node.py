@@ -23,7 +23,7 @@ async def node_check_agent_control(state):
             state["blocked"] = True
             state["block_reason"] = "AGENT_PAUSED"
             state["reply"] = (
-                "⏸️ Our agent is currently paused.\n" "A human will respond shortly."
+                "⏸️ Our agent is currently paused.\n" "A human will respond you shortly."
             )
             state["reply_sent"] = False
             state["done"] = False
