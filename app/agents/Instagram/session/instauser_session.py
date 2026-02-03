@@ -1,5 +1,4 @@
-from datetime import datetime
-from time import timezone
+from datetime import datetime, timezone
 from app.Schemas.instagram.negotiation_schema import (
     InstagramConversationState,
     InfluencerDetails,
@@ -16,6 +15,7 @@ async def instauser_session(state: InstagramConversationState):
     try:
         db = get_db()
         collection = db.get_collection("instagram_sessions")
+
         influencer_details = InfluencerDetails(
             influencer_id=state.get("influencer_id"),
             campaign_id=state.get("campaign_id"),
