@@ -106,8 +106,17 @@ class InstagramConversationState(TypedDict):
 
     pricing_rules: PricingRules
     negotiation_status: Literal["pending", "agreed", "rejected", "escalated"]
-
     next_action: NextAction
     final_reply: str
 
     history: List[dict]
+
+
+class InfluencerDetails(TypedDict):
+    Rate: float
+    Availability: str
+    Deliverables: str
+    Timeline: str
+    Exclusivity: str
+    direct_approval: bool
+    RevisionsNeeded: bool
