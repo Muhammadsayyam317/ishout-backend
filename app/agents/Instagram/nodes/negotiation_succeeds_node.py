@@ -22,9 +22,7 @@ async def negotiation_succeeds(
         final_rate = state.analysis.budget_amount
 
         db = get_db()
-        campaigns_collection = db.get_collection(
-            config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS
-        )
+        campaigns_collection = db.get_collection("campaign_influencers")
 
         result = await campaigns_collection.update_one(
             {"campaign_id": state.campaign_id, "influencer_id": state.influencer_id},

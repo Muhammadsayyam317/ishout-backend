@@ -14,7 +14,7 @@ async def finalize_negotiation(state: InstagramConversationState):
     print(state)
     print("--------------------------------")
     db = get_db()
-    collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS)
+    collection = db.get_collection("campaign_influencers")
 
     if state["negotiation_status"] == "agreed":
         final_rate = state["influencer_response"].get("rate")
