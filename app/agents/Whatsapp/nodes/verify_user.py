@@ -4,11 +4,15 @@ from app.utils.helpers import normalize_phone
 
 
 async def node_verify_user(state):
+    print("Entering into node_verify_user")
+    print("--------------------------------")
     try:
         sender_id = state.get("sender_id")
         if not sender_id:
             raise ValueError("sender_id missing in state")
         user_phoneNumber = normalize_phone(sender_id)
+        print("User phone number: ", user_phoneNumber)
+        print("--------------------------------")
         db = get_db()
         users_collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_USERS)
         user = await users_collection.find_one({"phone": user_phoneNumber})
@@ -23,6 +27,8 @@ async def node_verify_user(state):
             )
             state["reply_sent"] = False
             state["done"] = True
+            print("Exiting from node_verify_user")
+            print("--------------------------------")
             return state
 
         # Existing user
@@ -33,6 +39,8 @@ async def node_verify_user(state):
             "Tell us what kind of influencers you’re looking for."
         )
         state["reply_sent"] = False
+        print("Exiting from node_verify_user")
+        print("--------------------------------")
         return state
 
     except Exception:

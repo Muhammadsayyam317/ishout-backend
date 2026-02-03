@@ -8,6 +8,8 @@ async def send_whatsapp_interactive_message(
     message_text: str,
     influencer: dict,
 ) -> bool:
+    print("Entering into send_whatsapp_interactive_message")
+    print("--------------------------------")
     access_token = config.META_WHATSAPP_ACCESSSTOKEN
 
     headers = {
@@ -62,12 +64,16 @@ async def send_whatsapp_interactive_message(
         "interactive": interactive,
     }
 
+    print("Interactive message Payload: ", payload)
+    print("--------------------------------")
+
     async with httpx.AsyncClient(timeout=15.0) as client:
         response = await client.post(
             f"https://graph.facebook.com/{config.WHATSAPP_GRAPH_API_VERSION}/{config.WHATSAPP_PHONE_NUMBER}/messages",
             headers=headers,
             json=payload,
         )
+        print("Response: ", response.json())
         if response.status_code != 200:
             return False
         return True

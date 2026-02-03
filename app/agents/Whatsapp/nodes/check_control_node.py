@@ -3,6 +3,8 @@ from app.db.connection import get_db
 
 
 async def node_check_agent_control(state):
+    print("Entering into node_check_agent_control")
+    print("--------------------------------")
     db = get_db()
     control: AgentControl = await db.get_collection("agent_controls").find_one(
         {"thread_id": state["sender_id"]}
@@ -30,4 +32,6 @@ async def node_check_agent_control(state):
             return state
 
     state["blocked"] = False
+    print("Exiting from node_check_agent_control")
+    print("--------------------------------")
     return state

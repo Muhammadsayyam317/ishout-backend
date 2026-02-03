@@ -13,8 +13,6 @@ async def update_user_state(sender_id, new_data: dict):
     )
     updated = await session_collection.find_one({"sender_id": sender_id})
     updated.pop("_id", None)
-    print("Updated state")
-    print("--------------------------------")
-    print(updated)
+    print("Exiting from update_user_state")
     print("--------------------------------")
     return updated

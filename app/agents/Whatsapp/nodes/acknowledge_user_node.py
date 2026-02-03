@@ -1,4 +1,6 @@
 async def node_acknowledge_user(state):
+    print("Entering into node_acknowledge_user")
+    print("--------------------------------")
     try:
         if state.get("acknowledged"):
             return state
@@ -20,4 +22,6 @@ async def node_acknowledge_user(state):
 
     except Exception:
         state["done"] = True
+        print("Exiting from node_acknowledge_user")
+        print("--------------------------------")
         return state

@@ -3,6 +3,8 @@ from app.services.whatsapp.onboarding_message import send_whatsapp_message
 
 
 async def node_notify_admin_campaign_created(campaign, user):
+    print("Entering into node_notify_admin_campaign_created")
+    print("--------------------------------")
     try:
         message = (
             "🚨 *New Campaign Created*\n\n"
@@ -20,6 +22,10 @@ async def node_notify_admin_campaign_created(campaign, user):
         success = await send_whatsapp_message(config.ADMIN_PHONE, message)
         if not success:
             raise Exception("Failed to send message to admin")
+        print("Exiting from node_notify_admin_campaign_created")
+        print("--------------------------------")
         return True
     except Exception:
+        print("Exiting from node_notify_admin_campaign_created")
+        print("--------------------------------")
         return False
