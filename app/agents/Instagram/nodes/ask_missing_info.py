@@ -44,3 +44,24 @@ async def ask_missing_info(state: InstagramConversationState):
     print("Pricing check")
     print("Exiting from Node Ask Missing Info")
     return state
+
+
+# --- Define Conditional Functions ---
+def ask_missing_info_next(state: InstagramConversationState):
+    action = state.get("next_action")
+    if action == "fetch_pricing_rules":
+        return "fetch_pricing_rules"
+    elif action == "generate_ai_reply":
+        return "generate_ai_reply"
+    elif action == "reject_negotiation":
+        return "handle_rejection"
+    return "generate_ai_reply"  # default
+
+
+def pricing_negotiation_next(state: InstagramConversationState):
+    status = state.get("negotiation_status")
+    if status == "CONFIRMED":
+        return "finalize_negotiation"
+    elif status == "MANUAL_REQUIRED":
+        return "manual_negotiation_required"
+    return "finalize_negotiation"

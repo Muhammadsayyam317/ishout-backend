@@ -13,8 +13,7 @@ async def finalize_negotiation(state: InstagramConversationState):
 
     db = get_db()
     collection = db.get_collection("campaign_influencers")
-
-    status = state["negotiation_status"].upper()  # Normalize for consistency
+    status = state["negotiation_status"].upper()
 
     if status == "CONFIRMED":
         final_rate = state.get("final_rate") or state["influencer_response"].get("rate")
