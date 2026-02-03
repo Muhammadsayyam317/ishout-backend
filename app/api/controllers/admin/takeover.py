@@ -166,9 +166,10 @@ async def send_human_message(thread_id: str, payload: HumanMessageRequest):
                 "thread_id": thread_id,
                 "sender": "ADMIN",
                 "message": payload.message,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(timezone.utc),
             },
         )
+        print("ws_manager.broadcast_event payload", payload)
         return {"success": True, "message": "Message sent successfully"}
     except Exception as e:
         raise InternalServerErrorException(message=str(e)) from e
