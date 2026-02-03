@@ -86,6 +86,7 @@ async def toggle_human_takeover(thread_id: str, payload: HumanTakeoverRequest):
                 "🤖 *AI agent resumed*\n\n"
                 "The ishout agent is now handling this conversation again."
             )
+            await send_whatsapp_text_message(to=thread_id, text=system_message)
             await save_conversation_message(
                 thread_id=thread_id,
                 sender="SYSTEM",
