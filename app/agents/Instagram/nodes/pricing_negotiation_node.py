@@ -1,42 +1,26 @@
 from app.Schemas.instagram.negotiation_schema import (
     InstagramConversationState,
     NextAction,
-    NegotiationStrategy,
 )
 
 
 def pricing_negotiation(state: InstagramConversationState):
-    print("Entering Pricing Negotiation Node")
-    print("--------------------------------")
-    print(state)
-    print("--------------------------------")
-    response = state["influencer_response"]
-    pricing = state["pricing_rules"]
+    state.setdefault("negotiation_status", "PENDING")
 
-    rate = response.get("rate")
-    min_price = pricing.get("minPrice", 0)
-    max_price = pricing.get("maxPrice", float("inf"))
+    rate = state["influencer_response"].get("rate")
+    min_price = state["pricing_rules"]["minPrice"]
+    max_price = state["pricing_rules"]["maxPrice"]
 
-    # Rate not provided yet
     if rate is None:
-        state["next_action"] = NextAction.CONFIRM_PRICING
-        state["strategy"] = NegotiationStrategy.SOFT
+        state["next_action"] = NextAction.ASK_RATE
         return state
 
-    # Rate outside allowed range
-    if rate < min_price or rate > max_price:
-        state["negotiation_status"] = "escalated"
-        state["next_action"] = NextAction.CONFIRM_PRICING
-        state["strategy"] = NegotiationStrategy.VALUE_BASED
-        return state
+    if min_price <= rate <= max_price:
+        state["negotiation_status"] = "CONFIRMED"
+        state["final_rate"] = rate
+        state["next_action"] = NextAction.ACCEPT_NEGOTIATION
+    else:
+        state["negotiation_status"] = "MANUAL_REQUIRED"
+        state["next_action"] = NextAction.ESCALATE_NEGOTIATION
 
-    # Accept deal
-    state["negotiation_status"] = "agreed"
-    state["next_action"] = NextAction.ACCEPT_NEGOTIATION
-    state["strategy"] = NegotiationStrategy.SOFT
-
-    print("Exiting Pricing Negotiation Node")
-    print("--------------------------------")
-    print(state)
-    print("--------------------------------")
     return state

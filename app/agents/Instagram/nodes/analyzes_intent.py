@@ -1,6 +1,7 @@
 from app.Schemas.instagram.negotiation_schema import (
     InstagramConversationState,
     AnalyzeMessageOutput,
+    NextAction,
 )
 from agents import Agent, Runner
 from app.Guardails.input_guardrails import InstagramInputGuardrail
@@ -43,8 +44,7 @@ async def analyze_intent(state: InstagramConversationState):
 
     # -------- Next Action --------
     state["next_action"] = analysis.get(
-        "recommended_next_action",
-        "wait_or_acknowledge",
+        "recommended_next_action", NextAction.WAIT_OR_ACKNOWLEDGE
     )
 
     logger.debug(

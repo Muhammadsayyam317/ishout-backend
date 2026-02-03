@@ -74,8 +74,6 @@ class PricingRules(TypedDict, total=False):
 
 class AskedQuestions(TypedDict, total=False):
     rate: bool
-    availability: bool
-    interest: bool
 
 
 class InfluencerResponse(TypedDict, total=False):
@@ -105,7 +103,12 @@ class InstagramConversationState(TypedDict):
     influencer_response: Dict[str, Optional[str | float | bool]]
 
     pricing_rules: PricingRules
-    negotiation_status: Literal["pending", "agreed", "rejected", "escalated"]
+    negotiation_status: Literal[
+        "pending",
+        "agreed",
+        "rejected",
+        "escalated",
+    ]
     next_action: NextAction
     final_reply: str
 
@@ -113,10 +116,9 @@ class InstagramConversationState(TypedDict):
 
 
 class InfluencerDetails(TypedDict):
-    Rate: float
-    Availability: str
-    Deliverables: str
-    Timeline: str
-    Exclusivity: str
-    direct_approval: bool
-    RevisionsNeeded: bool
+    requested_rate: float
+    system_min: float
+    system_max: float
+    final_rate: Optional[float]
+    negotiation_status: str
+    manual_notes: Optional[str]

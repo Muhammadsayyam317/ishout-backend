@@ -25,17 +25,11 @@ def normalize_state(state: dict) -> InstagramConversationState:
             "asked_questions",
             {
                 "rate": False,
-                "availability": False,
-                "interest": False,
             },
         ),
         "influencer_response": state.get(
             "influencer_response",
-            {
-                "rate": None,
-                "availability": None,
-                "interest": None,
-            },
+            {"rate": None, "interest": False, "availability": None},
         ),
         "pricing_rules": state.get(
             "pricing_rules",
