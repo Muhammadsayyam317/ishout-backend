@@ -238,7 +238,7 @@ async def Whatsapp_messages_management(
                     username=message["username"],
                     sender=message["sender"],
                     message=message["message"],
-                    timestamp=message["timestamp"].isoformat(),
+                    timestamp=message["timestamp"],
                 )
                 for message in messages
             ],
