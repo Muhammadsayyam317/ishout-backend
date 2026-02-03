@@ -19,7 +19,7 @@ async def node_verify_user(state):
             state["reply"] = (
                 "You are not registered with iShout.\n\n"
                 "Please create an account to continue:\n"
-                f"{config.REGISTER_URL}"
+                "https://app.ishout.ae/auth/register"
             )
             state["reply_sent"] = False
             state["done"] = True
