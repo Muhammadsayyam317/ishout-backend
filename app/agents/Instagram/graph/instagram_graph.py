@@ -1,7 +1,7 @@
 from langgraph.graph import StateGraph, END
 from app.Schemas.instagram.negotiation_schema import InstagramConversationState
 from app.agents.Instagram.nodes.normalize_state import normalize_state
-from app.agents.Instagram.nodes.pricing_router import pricing_route
+from app.agents.Instagram.nodes.pricing_route import pricing_route
 from app.agents.Instagram.nodes.store_conversation_node import store_conversation
 from app.agents.Instagram.nodes.analyzes_intent import analyze_intent
 from app.agents.Instagram.nodes.ask_missing_info import ask_missing_info
@@ -43,7 +43,6 @@ graph.add_edge("insta_debug_before", "store_conversation")
 graph.add_edge("store_conversation", "analyze_intent")
 graph.add_edge("analyze_intent", "ask_missing_info")
 
-# Conditional routing from ask_missing_info
 graph.add_conditional_edges(
     "ask_missing_info",
     route_next_step,

@@ -12,6 +12,4 @@ def route_pricing_outcome(state: InstagramConversationState):
 
     if status == "MANUAL_REQUIRED":
         return "manual_negotiation_required"
-
-    # safety fallback
     return "generate_ai_reply"
