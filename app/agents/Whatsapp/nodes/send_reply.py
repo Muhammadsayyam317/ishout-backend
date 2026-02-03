@@ -36,7 +36,6 @@ async def node_send_reply(state):
         await reset_user_state(sender_id)
         # Cleanup Redis checkpoints
         await cleanup_old_checkpoints(thread_id=sender_id, keep_round=new_round)
-        # Minimal state preservation
         state.clear()
         state["sender_id"] = sender_id
     return state
