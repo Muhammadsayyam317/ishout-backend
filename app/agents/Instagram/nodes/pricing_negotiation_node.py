@@ -22,7 +22,5 @@ def pricing_negotiation(state: InstagramConversationState):
     else:
         state["negotiation_status"] = "MANUAL_REQUIRED"
         state["next_action"] = NextAction.ESCALATE_NEGOTIATION
-        return state
 
-    state["negotiation_status"] = "MANUAL_REQUIRED"
     return state
