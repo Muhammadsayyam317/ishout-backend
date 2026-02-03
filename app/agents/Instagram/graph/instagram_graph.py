@@ -19,8 +19,8 @@ from app.utils.custom_logging import insta_debug_before, insta_debug_after
 graph = StateGraph(InstagramConversationState)
 
 # Add debug nodes
-graph.add_node("debug_before", insta_debug_before)
-graph.add_node("debug_after", insta_debug_after)
+graph.add_node("insta_debug_before", insta_debug_before)
+graph.add_node("insta_debug_after", insta_debug_after)
 
 # Add your actual nodes
 graph.add_node("normalize_state", normalize_state)
@@ -61,7 +61,9 @@ graph.add_edge("manual_negotiation_required", "finalize_negotiation")
 graph.add_edge("finalize_negotiation", "generate_ai_reply")
 
 # Debug after node before sending reply
-graph.add_edge("generate_ai_reply", "debug_after")
-graph.add_edge("debug_after", "send_reply")
+graph.add_edge("generate_ai_reply", "insta_debug_after")
+graph.add_edge("insta_debug_after", "send_reply")
 
 graph.add_edge("send_reply", END)
+
+instagram_graph = graph.compile()

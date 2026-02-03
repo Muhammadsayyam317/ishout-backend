@@ -1,5 +1,5 @@
 from app.Schemas.instagram.negotiation_schema import InstagramConversationState
-from app.agents.Instagram.graph import instagram_graph
+from app.agents.Instagram.graph.instagram_graph import instagram_graph
 
 
 async def instagram_negotiation_agent(payload: dict) -> str:
