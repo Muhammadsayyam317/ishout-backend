@@ -1,5 +1,4 @@
 from app.Schemas.instagram.negotiation_schema import InstagramConversationState
-from app.config.credentials_config import config
 from app.db.connection import get_db
 
 
@@ -9,7 +8,7 @@ async def fetch_pricing_rules(state: InstagramConversationState):
     print(state)
     print("--------------------------------")
     db = get_db()
-    collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS)
+    collection = db.get_collection("campaign_influencers")
     doc = await collection.find_one(
         {
             "campaign_id": state["campaign_id"],
