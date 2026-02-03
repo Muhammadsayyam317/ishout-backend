@@ -34,12 +34,22 @@ async def node_send_reply(state):
         print("♻️ Resetting full conversation state")
         # Increment conversation round
         new_round = await increment_conversation_round(sender_id)
+        print("New round: ", new_round)
+        print("--------------------------------")
         # Reset Mongo session
         await reset_user_state(sender_id)
+        print("Reset user state")
+        print("--------------------------------")
         # Cleanup Redis checkpoints
         await cleanup_old_checkpoints(thread_id=sender_id, keep_round=new_round)
+        print("Cleanup old checkpoints")
+        print("--------------------------------")
         state.clear()
+        print("Clear state")
+        print("--------------------------------")
         state["sender_id"] = sender_id
+        print("Set sender id")
+        print("--------------------------------")
     print("Exiting from node_send_reply")
     print("--------------------------------")
     return state

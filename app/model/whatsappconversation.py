@@ -26,6 +26,7 @@ class ConversationState(TypedDict, total=False):
     ready_for_campaign: Annotated[Optional[bool], take_second]
     acknowledged: Annotated[Optional[bool], take_second]
     done: Annotated[Optional[bool], take_second]
+    reset_after_reply: Annotated[Optional[bool], take_second]
     name: Annotated[Optional[str], take_first]
     last_active: Annotated[Optional[float], take_first]
     thread_id: Annotated[Optional[str], take_first]
