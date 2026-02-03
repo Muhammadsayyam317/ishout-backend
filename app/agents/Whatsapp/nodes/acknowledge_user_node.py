@@ -18,6 +18,11 @@ async def node_acknowledge_user(state):
         state["reply_sent"] = False
         state["acknowledged"] = True
         state["done"] = True
+        state["reset_after_reply"] = True
+        print("Exiting from node_acknowledge_user")
+        print("--------------------------------")
+        print("State: ", state)
+        print("--------------------------------")
         return state
 
     except Exception:

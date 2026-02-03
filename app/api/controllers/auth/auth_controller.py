@@ -1,5 +1,4 @@
 from typing import Dict, Any
-from app.config.credentials_config import config
 from app.core.exception import (
     UnauthorizedException,
 )
