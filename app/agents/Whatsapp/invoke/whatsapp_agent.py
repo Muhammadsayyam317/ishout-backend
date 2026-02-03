@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import Request, HTTPException
 from app.agents.Whatsapp.nodes.state import (
     cleanup_old_checkpoints,
@@ -12,7 +12,6 @@ from app.services.websocket_manager import ws_manager
 from app.services.whatsapp.reply_button import handle_button_reply
 from app.services.whatsapp.save_message import save_conversation_message
 from app.utils.Enums.user_enum import SenderType
-import pytz
 
 
 async def handle_whatsapp_events(request: Request):
@@ -90,14 +89,13 @@ async def handle_whatsapp_events(request: Request):
             sender=SenderType.USER.value,
             message=state.get("user_message"),
         )
-        UAE_TZ = pytz.timezone("Asia/Dubai")
         await ws_manager.broadcast_event(
             "whatsapp.message",
             {
                 "thread_id": thread_id,
                 "sender": "USER",
                 "message": state.get("user_message"),
-                "timestamp": datetime.now(UAE_TZ),
+                "timestamp": datetime.now(timezone.utc),
             },
         )
         final_state = await whatsapp_agent.ainvoke(
