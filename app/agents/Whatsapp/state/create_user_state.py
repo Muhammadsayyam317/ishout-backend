@@ -3,6 +3,8 @@ from app.db.mongo_session import get_session_collection
 
 
 async def create_new_state(sender_id):
+    print("Entering into create_new_state")
+    print("--------------------------------")
     session_collection = get_session_collection()
     existing_state = await session_collection.find_one({"sender_id": sender_id})
     conversation_round = (
@@ -31,4 +33,6 @@ async def create_new_state(sender_id):
     await session_collection.update_one(
         {"sender_id": sender_id}, {"$set": new_state}, upsert=True
     )
+    print("Exiting from create_new_state")
+    print("--------------------------------")
     return new_state
