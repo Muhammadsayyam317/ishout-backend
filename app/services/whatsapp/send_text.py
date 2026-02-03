@@ -22,7 +22,7 @@ async def send_whatsapp_text_message(to: str, text: str):
     async with httpx.AsyncClient(timeout=10.0) as client:
         try:
             response = await client.post(
-                f"https://graph.facebook.com/{config.WHATSAPP_GRAPH_API_VERSION}/{config.WHATSAPP_PHONE_NUMBER}/messages",
+                "https://graph.facebook.com/v22.0/967002123161751/messages",
                 headers=headers,
                 json=payload,
             )
@@ -70,9 +70,7 @@ async def send_message_from_ishout_to_user(text: str, user_id: str):
 
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.post(
-                f"https://graph.facebook.com/"
-                f"{config.WHATSAPP_GRAPH_API_VERSION}/"
-                f"{config.WHATSAPP_PHONE_NUMBER_ID}/messages",
+                "https://graph.facebook.com/v22.0/967002123161751/messages",
                 headers=headers,
                 json=payload,
             )
