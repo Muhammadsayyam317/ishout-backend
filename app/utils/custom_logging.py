@@ -1,4 +1,5 @@
 import time
+from app.Schemas.instagram.negotiation_schema import InstagramConversationState
 from app.model.whatsappconversation import ConversationState
 import json
 import logging
@@ -22,6 +23,22 @@ async def node_debug_after(state: ConversationState):
     logging.info(
         "\n\n===== 🟢 DEBUG AFTER =====\n%s",
         json.dumps(state, indent=2, default=str),
+    )
+    return state
+
+    # For Instagram
+
+
+async def insta_debug_before(state: InstagramConversationState):
+    logging.info(
+        "\n\n===== 🟡 DEBUG BEFORE =====\n%s", json.dumps(state, indent=2, default=str)
+    )
+    return state
+
+
+async def insta_debug_after(state: InstagramConversationState):
+    logging.info(
+        "\n\n===== 🟢 DEBUG AFTER =====\n%s", json.dumps(state, indent=2, default=str)
     )
     return state
 

@@ -3,7 +3,6 @@ import logging
 
 from app.Schemas.instagram.negotiation_schema import InstagramConversationState
 from app.db.connection import get_db
-from app.config.credentials_config import config
 
 logger = logging.getLogger(__name__)
 
@@ -14,10 +13,8 @@ async def store_conversation(state: InstagramConversationState):
     print(state)
     print("--------------------------------")
     db = get_db()
-    conv_collection = db.get_collection(config.INSTAGRAM_MESSAGE_COLLECTION)
-    campaign_collection = db.get_collection(
-        config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS
-    )
+    conv_collection = db.get_collection("instagram_messages")
+    campaign_collection = db.get_collection("campaign_influencers")
     print("Collection Names: ", conv_collection, campaign_collection)
     now = datetime.now(timezone.utc)
 

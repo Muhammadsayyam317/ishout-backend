@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from fastapi import Request, HTTPException
 from app.agents.Whatsapp.nodes.state import (
     cleanup_old_checkpoints,
