@@ -16,9 +16,6 @@ from app.core.exception import (
     UnauthorizedException,
 )
 from datetime import datetime, timezone
-from fastapi import BackgroundTasks
-
-from app.services.whatsapp.send_text import send_whatsapp_text_message
 
 
 class AuthService:
@@ -64,7 +61,6 @@ class AuthService:
     @staticmethod
     async def register_company(
         request_data: CompanyRegistrationRequest,
-        background_tasks: BackgroundTasks,
     ) -> Dict[str, Any]:
 
         existing_user = await UserModel.find_by_email(request_data.email)
@@ -104,13 +100,6 @@ class AuthService:
             created_at=now,
             updated_at=now,
         )
-
-        background_tasks.add_task(
-            send_whatsapp_text_message,
-            [request_data.phone],
-            WELCOME_WHATSAPP_MESSAGE,
-        )
-
         return {
             "message": "Company registered successfully",
             "access_token": access_token,
