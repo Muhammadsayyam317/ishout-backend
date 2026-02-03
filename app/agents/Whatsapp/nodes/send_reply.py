@@ -10,6 +10,8 @@ from app.db.connection import get_db
 
 
 async def node_send_reply(state):
+    print("Entering into node_send_reply")
+    print("--------------------------------")
     sender_id = state.get("sender_id")
     reply = state.get("reply")
     if not sender_id or not reply:
@@ -38,4 +40,6 @@ async def node_send_reply(state):
         await cleanup_old_checkpoints(thread_id=sender_id, keep_round=new_round)
         state.clear()
         state["sender_id"] = sender_id
+    print("Exiting from node_send_reply")
+    print("--------------------------------")
     return state

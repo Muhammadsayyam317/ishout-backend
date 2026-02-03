@@ -12,6 +12,8 @@ async def send_whatsapp_text_message(to: str, text: str):
         "Authorization": f"Bearer {config.META_WHATSAPP_ACCESSSTOKEN}",
         "Content-Type": "application/json",
     }
+    print("Entering into send_whatsapp_text_message")
+    print("--------------------------------")
     payload = {
         "messaging_product": "whatsapp",
         "to": to,
@@ -26,6 +28,7 @@ async def send_whatsapp_text_message(to: str, text: str):
                 headers=headers,
                 json=payload,
             )
+            print("Response: ", response.json())
             if response.status_code != 200:
                 raise InternalServerErrorException(
                     message=f"Error: {response.status_code}, {response.text}"

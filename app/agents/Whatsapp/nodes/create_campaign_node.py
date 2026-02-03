@@ -3,6 +3,8 @@ from app.services.whatsapp.create_campaign import create_whatsapp_campaign
 
 
 async def node_create_campaign(state: ConversationState):
+    print("Entering into node_create_campaign")
+    print("--------------------------------")
     try:
         if state.get("campaign_created"):
             return state
@@ -29,4 +31,6 @@ async def node_create_campaign(state: ConversationState):
         )
         state["reply_sent"] = False
         state["done"] = True
+        print("Exiting from node_create_campaign")
+        print("--------------------------------")
         return state
