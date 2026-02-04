@@ -87,4 +87,8 @@ async def instauser_session(state: InstagramConversationState):
         return state
 
     except Exception as e:
+        print("Error in Instagram User Session")
+        print("--------------------------------")
+        print("Error: ", e)
+        print("--------------------------------")
         raise InternalServerErrorException(f"Error in instauser_session: {e}") from e
