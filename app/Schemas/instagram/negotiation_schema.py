@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 from typing import Dict, Literal, Optional, List
 from typing_extensions import TypedDict
@@ -113,12 +114,16 @@ class InstagramConversationState(TypedDict):
     final_reply: str
 
     history: List[dict]
+    manual_negotiation: bool
+    final_rate: Optional[float]
 
 
 class InfluencerDetails(TypedDict):
     requested_rate: float
-    system_min: float
-    system_max: float
+    min_price: float
+    max_price: float
     final_rate: Optional[float]
-    negotiation_status: str
-    manual_notes: Optional[str]
+    last_updated: datetime
+    agreed_rate: Literal["system", "manual"]
+    negotiation_status: Literal["confirmed", "manual required", "replaced"]
+    human_escalation_required: bool
