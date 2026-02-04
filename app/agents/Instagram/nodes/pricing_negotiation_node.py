@@ -5,6 +5,10 @@ from app.Schemas.instagram.negotiation_schema import (
 
 
 def pricing_negotiation(state: InstagramConversationState):
+    print("Entering Pricing Negotiation Node")
+    print("--------------------------------")
+    print("State: ", state)
+    print("--------------------------------")
     state.setdefault("negotiation_status", "PENDING")
 
     rate = state["influencer_response"].get("rate")
@@ -21,6 +25,11 @@ def pricing_negotiation(state: InstagramConversationState):
         state["next_action"] = NextAction.ACCEPT_NEGOTIATION
     else:
         state["negotiation_status"] = "MANUAL_REQUIRED"
+        state["final_rate"] = rate
         state["next_action"] = NextAction.ESCALATE_NEGOTIATION
 
+    print("Exiting Pricing Negotiation Node")
+    print("--------------------------------")
+    print("State: ", state)
+    print("--------------------------------")
     return state

@@ -7,6 +7,8 @@ logger = logging.getLogger(__name__)
 
 
 async def manual_negotiation_required(state: InstagramConversationState):
+    print("Entering into Node Manual Negotiation Required")
+    print("--------------------------------")
     db = get_db()
     collection = db.get_collection("campaign_influencers")
 
@@ -27,4 +29,6 @@ async def manual_negotiation_required(state: InstagramConversationState):
         upsert=True,
     )
 
+    print("Exiting from Node Manual Negotiation Required")
+    print("--------------------------------")
     return state

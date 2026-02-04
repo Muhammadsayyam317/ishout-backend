@@ -10,8 +10,6 @@ logger = logging.getLogger(__name__)
 async def store_conversation(state: InstagramConversationState):
     print("Entering into Node Store Conversation")
     print("--------------------------------")
-    print(state)
-    print("--------------------------------")
     db = get_db()
     conv_collection = db.get_collection("instagram_messages")
     campaign_collection = db.get_collection("campaign_influencers")
@@ -62,7 +60,5 @@ async def store_conversation(state: InstagramConversationState):
         state["campaign_id"],
     )
     print("Exiting from Node Store Conversation")
-    print("--------------------------------")
-    print(state)
     print("--------------------------------")
     return state
