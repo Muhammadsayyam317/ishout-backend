@@ -12,13 +12,18 @@ from app.utils.message_context import build_message_context
 
 
 async def generate_ai_reply(state: InstagramConversationState):
-    print("Entering into Node Generate AI Reply")
-    print("--------------------------------")
-    print(state)
-    print("--------------------------------")
+    min_price = state.get("pricing_rules", {}).get("minPrice")
+    max_price = state.get("pricing_rules", {}).get("maxPrice")
 
-    min_price = state["pricing_rules"].get("minPrice", 0)
-    max_price = state["pricing_rules"].get("maxPrice", 0)
+    if min_price is None or max_price is None:
+        reply_text = (
+            "Thanks for sharing your rate. Our team will review it and follow up."
+        )
+        state["negotiation_mode"] = "manual"
+        state["manual_reason"] = "Pricing rules missing"
+        state["final_reply"] = reply_text
+        state["history"].append({"role": "assistant", "message": reply_text})
+        return state
 
     prompt = NEGOTIATE_INFLUENCER_DM_PROMPT.format(
         min_price=min_price,
@@ -40,29 +45,16 @@ async def generate_ai_reply(state: InstagramConversationState):
             ),
         )
 
-        reply_text = result.final_output.get(
-            "final_reply",
-            "Got it — will update you shortly.",
-        )
-
+        reply_text = result.final_output["final_reply"]
         state["negotiation_mode"] = "automatic"
 
     except InputGuardrailTripwireTriggered as e:
-        guardrail_result = e.result
-
-        reply_text = guardrail_result.fallback
+        reply_text = (
+            e.fallback or "Thanks for sharing your rate. Our team will follow up."
+        )
         state["negotiation_mode"] = "manual"
-        state["manual_reason"] = guardrail_result.reason
-
-        print("Guardrail triggered → switching to MANUAL negotiation")
-        print("Reason:", guardrail_result.reason)
+        state["manual_reason"] = e.reason
 
     state["final_reply"] = reply_text
     state["history"].append({"role": "assistant", "message": reply_text})
-
-    print("Exiting from Node Generate AI Reply")
-    print("--------------------------------")
-    print(state)
-    print("--------------------------------")
-
     return state
