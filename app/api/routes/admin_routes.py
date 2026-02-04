@@ -1,5 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from app.Schemas.influencers import MoreInfluencerRequest
+from app.agents.Instagram.session.instauser_session import (
+    all_instagram_user_sessions,
+)
 from app.api.controllers.admin.campaign_controller import (
     add_influencer_Number,
     update_status,
@@ -311,6 +314,12 @@ router.add_api_route(
 router.add_api_route(
     path="/instagram/conversation-with-user",
     endpoint=instagram_conversation_messages,
+    methods=["GET"],
+    tags=["Admin"],
+)
+router.add_api_route(
+    path="/instagram/instagram-user-session",
+    endpoint=all_instagram_user_sessions,
     methods=["GET"],
     tags=["Admin"],
 )
