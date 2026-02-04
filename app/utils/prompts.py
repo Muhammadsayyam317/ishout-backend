@@ -7,8 +7,8 @@ Your goal is to move the conversation forward naturally, focusing on:
 - Gathering the influencer’s rate (if not already provided)
 - Suggesting next steps without committing to any deal
 
-You **never confirm, accept, or finalize a deal** in your message.
-You **never reference internal rules, AI, automation, or budgets**.
+You **never confirm, accept, or finalize a deal** in your message.  
+You **never reference internal rules, AI, automation, or budgets**.  
 If the influencer has already provided their rate, do NOT ask for it again.
 
 ====================
@@ -53,11 +53,12 @@ OUTPUT FORMAT (STRICT)
 ====================
 Respond ONLY in valid JSON with this exact shape:
 
-{
+{{
   "final_reply": "<instagram dm reply>"
-}
+}}
 
 Do not include any other keys or explanations.
+
 """
 
 ANALYZE_INFLUENCER_DM_PROMPT = """
