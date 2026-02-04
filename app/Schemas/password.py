@@ -8,7 +8,6 @@ class VerifyOtpRequest(BaseModel):
 
 class ResetPasswordSchema(BaseModel):
     email: EmailStr
-    otp: str
     new_password: str
     confirm_password: str
     token: str
