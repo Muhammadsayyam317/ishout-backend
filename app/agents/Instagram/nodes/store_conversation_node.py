@@ -61,6 +61,4 @@ async def store_conversation(state: InstagramConversationState):
     )
     print("Exiting from Node Store Conversation")
     print("--------------------------------")
-    print(state)
-    print("--------------------------------")
     return state

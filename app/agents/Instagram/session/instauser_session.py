@@ -8,6 +8,10 @@ from app.db.connection import get_db
 
 
 async def instauser_session(state: InstagramConversationState):
+    print("Entering Instagram User Session")
+    print("--------------------------------")
+    print("State: ", state)
+    print("--------------------------------")
     try:
         db = get_db()
         collection = db.get_collection("instagram_sessions")
@@ -15,19 +19,16 @@ async def instauser_session(state: InstagramConversationState):
         requested_rate = state.get("influencer_response", {}).get("rate", 0)
         min_price = state.get("pricing_rules", {}).get("minPrice", 0)
         max_price = state.get("pricing_rules", {}).get("maxPrice", 0)
-        final_rate = state.get("final_rate")
+        final_rate = state.get("final_rate") or requested_rate
 
-        if requested_rate and final_rate is None:
-            final_rate = requested_rate
+        if min_price <= final_rate <= max_price:
+            agreed_rate = "system"
+            negotiation_status = "confirmed"
+            human_escalation_required = False
+        else:
             agreed_rate = "manual"
             negotiation_status = "manual required"
             human_escalation_required = True
-        else:
-            agreed_rate = (
-                "system" if state.get("negotiation_status") == "confirmed" else "manual"
-            )
-            negotiation_status = state.get("negotiation_status", "manual required")
-            human_escalation_required = negotiation_status == "manual required"
 
         influencer_details: InfluencerDetails = {
             "requested_rate": requested_rate,
@@ -47,7 +48,15 @@ async def instauser_session(state: InstagramConversationState):
         )
 
         print(f"Instagram user session updated for thread_id: {state['thread_id']}")
+        print("Exiting Instagram User Session")
+        print("--------------------------------")
+        print("State: ", state)
+        print("--------------------------------")
         return state
 
     except Exception as e:
+        print("Error in Instagram User Session")
+        print("--------------------------------")
+        print("Error: ", e)
+        print("--------------------------------")
         raise InternalServerErrorException(f"Error in instauser_session: {e}") from e
