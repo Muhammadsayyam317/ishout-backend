@@ -3,6 +3,7 @@ import random
 from bson import ObjectId
 from fastapi import BackgroundTasks
 from typing import Dict, Any
+from app.Schemas.password import ResetPasswordSchema
 from app.agents.Whatsapp.nodes.state import redis_client
 from app.core.exception import (
     AccountNotActiveException,
@@ -146,36 +147,45 @@ async def change_password(
         raise InternalServerErrorException(message=str(e)) from e
 
 
-async def reset_password(
-    email: str, otp: str, new_password: str, confirm_password: str, token: str
-):
-    if new_password != confirm_password:
-        raise HTTPException(400, "Passwords do not match")
+async def reset_password(payload: ResetPasswordSchema):
+    try:
+        email = payload.email
+        otp = payload.otp
+        new_password = payload.new_password
+        confirm_password = payload.confirm_password
+        token = payload.token
 
-    # Check OTP
-    otp_key = f"reset_otp:{email}"
-    stored_otp = await redis_client.get(otp_key)
-    if not stored_otp or stored_otp != otp:
-        raise OTPExpiredException("Invalid or expired OTP")
+        if new_password != confirm_password:
+            raise HTTPException(status_code=400, detail="Passwords do not match")
 
-    # Check token
-    decoded_email = decode_reset_password_token(token)
-    if decoded_email != email:
-        raise OTPExpiredException("Invalid or expired token")
+        # Check OTP
+        otp_key = f"reset_otp:{email}"
+        stored_otp = await redis_client.get(otp_key)
 
-    # Update password
-    db = get_db()
-    users = db.get_collection(config.MONGODB_ATLAS_COLLECTION_USERS)
-    await users.update_one(
-        {"email": email},
-        {
-            "$set": {
-                "password": hash_password(new_password),
-                "updated_at": datetime.now(timezone.utc),
-            }
-        },
-    )
+        if not stored_otp or stored_otp != otp:
+            raise OTPExpiredException("Invalid or expired OTP")
 
-    # Delete OTP after use
-    await redis_client.delete(otp_key)
-    return {"message": "Password reset successful"}
+        # Check token
+        decoded_email = decode_reset_password_token(token)
+        if decoded_email != email:
+            raise OTPExpiredException("Invalid or expired token")
+
+        # Update password
+        db = get_db()
+        users = db.get_collection(config.MONGODB_ATLAS_COLLECTION_USERS)
+        await users.update_one(
+            {"email": email},
+            {
+                "$set": {
+                    "password": hash_password(new_password),
+                    "updated_at": datetime.now(timezone.utc),
+                }
+            },
+        )
+
+        # Delete OTP after successful reset
+        await redis_client.delete(otp_key)
+        return {"status_code": 200, "message": "Password reset successful"}
+
+    except Exception as e:
+        raise InternalServerErrorException(message=str(e)) from e
