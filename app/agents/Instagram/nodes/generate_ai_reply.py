@@ -1,4 +1,6 @@
 from agents import Runner, Agent
+from agents.exceptions import InputGuardrailTripwireTriggered
+
 from app.Guardails.input_guardrails import InstagramInputGuardrail
 from app.Guardails.output_guardrails import InstagramOutputGuardrail
 from app.Schemas.instagram.negotiation_schema import (
@@ -23,24 +25,37 @@ async def generate_ai_reply(state: InstagramConversationState):
         max_price=max_price,
     )
 
-    result = await Runner.run(
-        Agent(
-            name="generate_reply",
-            instructions=prompt,
-            input_guardrails=[InstagramInputGuardrail],
-            output_guardrails=[InstagramOutputGuardrail],
-            output_type=GenerateReplyOutput,
-        ),
-        input=build_message_context(
-            state["history"],
-            state["user_message"],
-        ),
-    )
+    try:
+        result = await Runner.run(
+            Agent(
+                name="generate_reply",
+                instructions=prompt,
+                input_guardrails=[InstagramInputGuardrail],
+                output_guardrails=[InstagramOutputGuardrail],
+                output_type=GenerateReplyOutput,
+            ),
+            input=build_message_context(
+                state["history"],
+                state["user_message"],
+            ),
+        )
 
-    reply_text = result.final_output.get(
-        "final_reply",
-        "Got it — will update you shortly.",
-    )
+        reply_text = result.final_output.get(
+            "final_reply",
+            "Got it — will update you shortly.",
+        )
+
+        state["negotiation_mode"] = "automatic"
+
+    except InputGuardrailTripwireTriggered as e:
+        guardrail_result = e.result
+
+        reply_text = guardrail_result.fallback
+        state["negotiation_mode"] = "manual"
+        state["manual_reason"] = guardrail_result.reason
+
+        print("Guardrail triggered → switching to MANUAL negotiation")
+        print("Reason:", guardrail_result.reason)
 
     state["final_reply"] = reply_text
     state["history"].append({"role": "assistant", "message": reply_text})
@@ -49,4 +64,5 @@ async def generate_ai_reply(state: InstagramConversationState):
     print("--------------------------------")
     print(state)
     print("--------------------------------")
+
     return state
