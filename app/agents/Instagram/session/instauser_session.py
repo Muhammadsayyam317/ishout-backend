@@ -1,4 +1,6 @@
 from datetime import datetime, timezone
+
+from bson import ObjectId
 from app.Schemas.instagram.negotiation_schema import (
     InfluencerDetails,
     InstagramConversationState,
@@ -92,3 +94,55 @@ async def instauser_session(state: InstagramConversationState):
         print("Error: ", e)
         print("--------------------------------")
         raise InternalServerErrorException(f"Error in instauser_session: {e}") from e
+
+
+async def all_instagram_user_sessions(page: int = 1, page_size: int = 20):
+    try:
+        db = get_db()
+        session_collection = db.get_collection("instagram_sessions")
+        skip = (page - 1) * page_size
+
+        sessions = (
+            await session_collection.find()
+            .sort("last_updated", -1)
+            .skip(skip)
+            .limit(page_size)
+            .to_list(length=page_size)
+        )
+        for session in sessions:
+            if "_id" in session and isinstance(session["_id"], ObjectId):
+                session["_id"] = str(session["_id"])
+            if "thread_id" in session and isinstance(session["thread_id"], ObjectId):
+                session["thread_id"] = str(session["thread_id"])
+
+        return sessions
+
+    except Exception as e:
+        raise InternalServerErrorException(
+            f"Error in all_instagram_user_sessions: {e}"
+        ) from e
+
+
+async def get_instagram_user_session(thread_id: str):
+    print("Entering into Get Instagram User Session")
+    print("--------------------------------")
+    print("Thread ID: ", thread_id)
+    print("--------------------------------")
+    try:
+        db = get_db()
+        session_collection = db.get_collection("instagram_sessions")
+        session = await session_collection.find_one({"thread_id": thread_id})
+        return session
+    except Exception as e:
+        print("Error in Get Instagram User Session")
+
+
+def convert_objectid_to_str(obj):
+    if isinstance(obj, list):
+        return [convert_objectid_to_str(i) for i in obj]
+    elif isinstance(obj, dict):
+        return {k: convert_objectid_to_str(v) for k, v in obj.items()}
+    elif isinstance(obj, ObjectId):
+        return str(obj)
+    else:
+        return obj
