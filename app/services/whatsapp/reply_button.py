@@ -9,8 +9,6 @@ from app.services.whatsapp.send_text import send_whatsapp_text_message
 async def handle_button_reply(message: dict):
     print("Entering into handle_button_reply")
     print("--------------------------------")
-    print(message)
-    print("--------------------------------")
     interactive = message.get("interactive", {})
     button_reply = interactive.get("button_reply", {})
 
