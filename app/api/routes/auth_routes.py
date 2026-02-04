@@ -24,10 +24,9 @@ router = APIRouter()
 @router.post("/register", tags=["Auth"])
 async def register_route(
     request_data: CompanyRegistrationRequest,
-    background_tasks: BackgroundTasks,
 ):
     try:
-        return await register_company(request_data, background_tasks)
+        return await register_company(request_data)
     except Exception as e:
         raise InternalServerErrorException(message=str(e)) from e
 
