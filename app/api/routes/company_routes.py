@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from app.api.controllers.admin.approved_campaign import (
     companyApprovedSingleInfluencer,
 )
-from app.api.controllers.auth.password_controller import change_password
+from app.api.controllers.auth.password_controller import change_password, reset_password
 from app.api.controllers.company.all_campaign import (
     CompaignwithAdminApprovedInfluencersById,
     all_campaigns,
@@ -114,6 +114,12 @@ router.add_api_route(
 router.add_api_route(
     path="/change-password",
     endpoint=change_password,
+    methods=["PUT"],
+    tags=["User"],
+)
+router.add_api_route(
+    path="/reset-password",
+    endpoint=reset_password,
     methods=["PUT"],
     tags=["User"],
 )
