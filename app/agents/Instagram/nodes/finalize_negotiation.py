@@ -8,8 +8,6 @@ from app.db.connection import get_db
 async def finalize_negotiation(state: InstagramConversationState):
     print("Entering Node: Finalize Negotiation")
     print("--------------------------------")
-    print(state)
-    print("--------------------------------")
 
     db = get_db()
     collection = db.get_collection("campaign_influencers")
@@ -63,7 +61,5 @@ async def finalize_negotiation(state: InstagramConversationState):
         state["next_action"] = NextAction.WAIT_OR_ACKNOWLEDGE
 
     print("Exiting Node: Finalize Negotiation")
-    print("--------------------------------")
-    print(state)
     print("--------------------------------")
     return state

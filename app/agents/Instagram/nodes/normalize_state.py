@@ -5,8 +5,6 @@ from app.Schemas.instagram.negotiation_schema import MessageIntent, NextAction
 def normalize_state(state: dict) -> InstagramConversationState:
     print("Entering into Node Normalize State")
     print("--------------------------------")
-    print(state)
-    print("--------------------------------")
     return {
         # identifiers
         "thread_id": state.get("thread_id"),
