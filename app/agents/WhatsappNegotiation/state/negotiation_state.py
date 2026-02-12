@@ -25,7 +25,7 @@ async def get_negotiation_state(thread_id: str):
 
     try:
         doc = await collection.find_one({"thread_id": thread_id})
-        return doc or {}
+        return doc
     except Exception as e:
         print(f"[get_negotiation_state] Failed for {thread_id}: {e}")
-        return {}
+        return None

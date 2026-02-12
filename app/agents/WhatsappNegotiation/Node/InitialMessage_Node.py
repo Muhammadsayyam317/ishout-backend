@@ -5,6 +5,10 @@ from app.db.connection import get_db
 from app.services.whatsapp.save_negotiation_message import save_negotiation_message
 from app.utils.Enums.user_enum import SenderType
 from bson.errors import InvalidId
+from datetime import datetime, timezone
+from app.agents.WhatsappNegotiation.state.negotiation_state import (
+    update_negotiation_state,
+)
 
 
 async def NegotiationInitialMessage(influencer_id: str):
@@ -81,5 +85,25 @@ async def NegotiationInitialMessage(influencer_id: str):
         agent_paused=False,
         human_takeover=False,
         conversation_mode="NEGOTIATION",
+        created_at=datetime.now(timezone.utc),
     )
-    return {"status": "success"}
+    # Create Negotiation Control Record
+    await update_negotiation_state(
+        thread_id=phone_number,
+        data={
+            "thread_id": phone_number,
+            "conversation_mode": "NEGOTIATION",
+            "agent_paused": False,
+            "human_takeover": False,
+            "created_at": datetime.now(timezone.utc),
+        },
+    )
+
+    print(
+        "Negotiation Initial Message sent successfully and Negotiation Control Record created successfully"
+    )
+    print("--------------------------------")
+    return {
+        "status": "success",
+        "message": "Negotiation Initial Message sent successfully",
+    }
