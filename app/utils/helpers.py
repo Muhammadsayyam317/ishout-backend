@@ -205,6 +205,17 @@ def convert_objectid(doc):
     return doc
 
 
+def mongo_to_json(data):
+    if isinstance(data, dict):
+        return {k: mongo_to_json(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [mongo_to_json(item) for item in data]
+    elif isinstance(data, ObjectId):
+        return str(data)
+    else:
+        return data
+
+
 def convert_to_number(v: str):
     v = v.lower().replace(" ", "")
     if "k" in v:

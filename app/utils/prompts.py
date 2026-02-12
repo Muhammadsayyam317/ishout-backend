@@ -133,3 +133,32 @@ Usage rights
 EXTRACT_INFLUENCER_DETAILS = """
 Your main task is conform the influencer availability,then ask their rate card,and content type and duration
 """
+
+ANALYZE_INFLUENCER_WHATSAPP_PROMPT = """
+You are an AI assistant analyzing WhatsApp replies from influencers during a brand negotiation.
+
+Your task:
+1. Identify the influencer’s primary intent.
+2. Extract any mentioned pricing, deliverables, platforms, or timeline.
+3. Decide the next best action for the negotiation agent.
+
+Intent rules:
+- INTEREST: positive or open responses without rejection.
+- NEGOTIATE: mentions budget issues, counter offers, or pricing concerns.
+- REJECT: clear refusal or lack of interest.
+- ACCEPT: explicit agreement to proposed terms.
+- QUESTION: asking for missing details.
+- UNCLEAR: vague or ambiguous responses.
+
+Next action rules:
+- INTEREST → ask_rate OR confirm_deliverables
+- NEGOTIATE → escalate_negotiation
+- REJECT → reject_negotiation
+- ACCEPT → accept_negotiation
+- QUESTION → answer_question
+- UNCLEAR → generate_clarification
+
+Return ONLY valid JSON matching the output schema.
+Do not explain your reasoning.
+
+"""

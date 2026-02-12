@@ -1,8 +1,17 @@
 from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from app.Schemas.influencers import MoreInfluencerRequest
+
 from app.agents.Instagram.session.instauser_session import (
     all_instagram_user_sessions,
 )
+from app.agents.WhatsappNegotiation.Node.InitialMessage_Node import (
+    NegotiationInitialMessage,
+)
+from app.agents.WhatsappNegotiation.Node.IntentClassifier_Node import intentclassifier
+from app.agents.WhatsappNegotiation.Node.fetchInfluencerinfo_Node import (
+    FetchCampaignInfluencerInfo,
+)
+
 from app.api.controllers.admin.campaign_controller import (
     add_influencer_Number,
     update_status,
@@ -328,5 +337,26 @@ router.add_api_route(
     path="/delete-whatsapp-chat/{thread_id}",
     endpoint=delete_whatsapp_chat,
     methods=["DELETE"],
+    tags=["Admin"],
+)
+
+router.add_api_route(
+    path="/influencer-info/{influencer_id}",
+    endpoint=FetchCampaignInfluencerInfo,
+    methods=["GET"],
+    tags=["Admin"],
+)
+
+router.add_api_route(
+    path="/negotiation-initial-message",
+    endpoint=NegotiationInitialMessage,
+    methods=["POST"],
+    tags=["Admin"],
+)
+
+router.add_api_route(
+    path="/intent-classifier",
+    endpoint=intentclassifier,
+    methods=["POST"],
     tags=["Admin"],
 )

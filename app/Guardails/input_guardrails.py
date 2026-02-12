@@ -47,3 +47,15 @@ You must block the message if it contains any of the following:
         output_info=None,
         tripwire_triggered=False,
     )
+
+
+@input_guardrail(name="WhatsappInputGuardrail")
+async def WhatsappInputGuardrail(
+    context: RunContextWrapper[None],
+    agent: Agent,
+    message: str | list[TResponseInputItem],
+) -> GuardrailFunctionOutput:
+    return GuardrailFunctionOutput(
+        output_info=None,
+        tripwire_triggered=False,
+    )
