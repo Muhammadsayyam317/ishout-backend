@@ -3,10 +3,6 @@ from app.db.connection import get_db
 
 
 async def update_negotiation_state(thread_id: str, data: dict):
-    """
-    Updates the negotiation state in MongoDB.
-    Adds a timestamp for tracking last update.
-    """
     db = get_db()
     collection = db.get_collection("negotiation_agent_controls")
 
@@ -24,10 +20,6 @@ async def update_negotiation_state(thread_id: str, data: dict):
 
 
 async def get_negotiation_state(thread_id: str):
-    """
-    Retrieves the negotiation state from MongoDB.
-    Returns an empty dict if no state exists.
-    """
     db = get_db()
     collection = db.get_collection("negotiation_agent_controls")
 
