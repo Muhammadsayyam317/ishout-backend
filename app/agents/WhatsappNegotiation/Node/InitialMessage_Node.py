@@ -8,6 +8,10 @@ from bson.errors import InvalidId
 
 
 async def NegotiationInitialMessage(influencer_id: str):
+    print("Entering into NegotiationInitialMessage")
+    print("--------------------------------")
+    print("Influencer ID: ", influencer_id)
+    print("--------------------------------")
     db = get_db()
     collection = db.get_collection("campaign_influencers")
 
@@ -51,6 +55,8 @@ async def NegotiationInitialMessage(influencer_id: str):
     }
     print("Payload Meta: ", payload_meta)
     print("--------------------------------")
+    print("Sending WhatsApp message to: ", phone_number)
+    print("--------------------------------")
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.post(
@@ -60,6 +66,8 @@ async def NegotiationInitialMessage(influencer_id: str):
             )
         print("--------------------------------")
         print("Response: ", response.json())
+        print("--------------------------------")
+        print("WhatsApp message sent successfully")
         print("--------------------------------")
     except Exception as e:
         print(f"[NegotiationInitialMessage] Error sending WhatsApp message: {e}")
