@@ -1,5 +1,6 @@
 from app.core.redis import Initialize_redis
-from app.core.scheduler import shutdown_scheduler, start_scheduler
+
+# from app.core.scheduler import shutdown_scheduler, start_scheduler
 from app.db.connection import connect, close
 import uvicorn
 from fastapi import FastAPI
@@ -32,8 +33,8 @@ async def lifespan(app: FastAPI):
     # start_scheduler()
     # print("⏰ Scheduler started")
     yield
-    shutdown_scheduler()
-    print("⏰ Scheduler stopped")
+    # shutdown_scheduler()
+    # print("⏰ Scheduler stopped")
     await close()
     print("🧹closed")
 
