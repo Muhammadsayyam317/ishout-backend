@@ -1,22 +1,31 @@
 import httpx
+from pymongo.collection import ObjectId
 from app.config.credentials_config import config
-from fastapi import Body
+from app.db.connection import get_db
 from app.services.whatsapp.save_negotiation_message import save_negotiation_message
 from app.utils.Enums.user_enum import SenderType
+from bson.errors import InvalidId
 
 
-async def NegotiationInitialMessage(payload: dict = Body(...)):
-    to = payload["to"]
-    influencer_name = payload["influencer_name"]
-    if not to or not influencer_name:
-        print("[NegotiationInitialMessage] Missing 'to' or 'influencer_name'")
-        return {"status": "error", "message": "Missing 'to' or 'influencer_name'"}
-    # campaign_name = payload["campaign_name"]
-    print("Payload: ", payload)
-    print("To: ", to)
-    print("Influencer Name: ", influencer_name)
-    # print("Campaign Name: ", campaign_name)
-    print("--------------------------------")
+async def NegotiationInitialMessage(influencer_id: str):
+    db = get_db()
+    collection = db.get_collection("campaign_influencers")
+
+    try:
+        influencer_object_id = ObjectId(influencer_id)
+    except InvalidId:
+        return {"status": "error", "message": "Invalid influencer_id"}
+
+    influencer = await collection.find_one({"_id": influencer_object_id})
+
+    if not influencer:
+        return {"status": "error", "message": "Influencer not found"}
+
+    influencer_name = influencer.get("username")
+    phone_number = influencer.get("phone_number")
+
+    if not phone_number:
+        return {"status": "error", "message": "Influencer has no phone number"}
 
     headers = {
         "Authorization": f"Bearer {config.META_WHATSAPP_ACCESSSTOKEN}",
@@ -25,7 +34,7 @@ async def NegotiationInitialMessage(payload: dict = Body(...)):
 
     payload_meta = {
         "messaging_product": "whatsapp",
-        "to": to,
+        "to": phone_number,
         "type": "template",
         "template": {
             "name": "negotiation",
@@ -57,7 +66,7 @@ async def NegotiationInitialMessage(payload: dict = Body(...)):
         return {"status": "error", "message": f"Error sending WhatsApp message: {e}"}
 
     await save_negotiation_message(
-        thread_id=to,
+        thread_id=phone_number,
         username=influencer_name,
         sender=SenderType.AI.value,
         message="""Hi this is the collaboration team from iShout.\n\nWe’d love to work with you on an upcoming campaign that matches your profile.\n\nJust reply 'interested,' and we will share the campaign brief and next steps.""",
