@@ -85,7 +85,6 @@ async def NegotiationInitialMessage(influencer_id: str):
         agent_paused=False,
         human_takeover=False,
         conversation_mode="NEGOTIATION",
-        created_at=datetime.now(timezone.utc),
     )
     # Create Negotiation Control Record
     await update_negotiation_state(
@@ -95,7 +94,7 @@ async def NegotiationInitialMessage(influencer_id: str):
             "conversation_mode": "NEGOTIATION",
             "agent_paused": False,
             "human_takeover": False,
-            "created_at": datetime.now(timezone.utc),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         },
     )
 
