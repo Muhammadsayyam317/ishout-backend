@@ -29,8 +29,8 @@ async def lifespan(app: FastAPI):
     await connect()
     print("connected successfully")
     await Initialize_redis(app)
-    start_scheduler()
-    print("⏰ Scheduler started")
+    # start_scheduler()
+    # print("⏰ Scheduler started")
     yield
     shutdown_scheduler()
     print("⏰ Scheduler stopped")
