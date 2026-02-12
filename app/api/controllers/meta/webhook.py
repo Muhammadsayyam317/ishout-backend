@@ -7,7 +7,6 @@ from fastapi.responses import JSONResponse, Response
 from app.services.websocket_manager import ws_manager
 from app.config import config
 
-# Profile cache to avoid repeated API calls
 PROFILE_CACHE: Dict[str, Dict] = {}
 PROFILE_TTL_SEC = 3600
 
