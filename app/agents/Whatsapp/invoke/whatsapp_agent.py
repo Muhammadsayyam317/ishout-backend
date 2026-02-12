@@ -87,7 +87,10 @@ async def handle_whatsapp_events(request: Request):
         # 1️⃣ CHECK NEGOTIATION STATE FIRST
         # =====================================================
 
+        print("Checking Negotiaition State for Incoming thread_id:", thread_id)
         negotiation_state = await get_negotiation_state(thread_id)
+        print("Negotiation state found:", negotiation_state)
+        print("--------------------------------")
 
         if (
             negotiation_state
