@@ -22,7 +22,7 @@ class WhatsappNegotiationInitialMessageRequest(TypedDict):
 
 class WhatsappNegotiationState(TypedDict):
     thread_id: str
-    influencer_id: str
+    _id: str
     user_message: str
 
     intent: WhatsappMessageIntent

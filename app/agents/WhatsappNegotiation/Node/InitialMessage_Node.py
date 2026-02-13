@@ -14,8 +14,6 @@ from app.agents.WhatsappNegotiation.state.negotiation_state import (
 async def NegotiationInitialMessage(influencer_id: str):
     print("Entering into NegotiationInitialMessage")
     print("--------------------------------")
-    print("Influencer ID: ", influencer_id)
-    print("--------------------------------")
     db = get_db()
     collection = db.get_collection("campaign_influencers")
 
@@ -91,6 +89,7 @@ async def NegotiationInitialMessage(influencer_id: str):
         thread_id=phone_number,
         data={
             "thread_id": phone_number,
+            "_id": influencer_id,
             "conversation_mode": "NEGOTIATION",
             "agent_paused": False,
             "human_takeover": False,
