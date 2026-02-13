@@ -10,6 +10,7 @@ from app.Schemas.whatsapp.negotiation_schema import (
     WhatsappMessageIntent,
     WhatsappNegotiationState,
 )
+from app.utils.printcolors import Colors
 from app.utils.prompts import (
     ANALYZE_INFLUENCER_WHATSAPP_PROMPT,
 )
@@ -17,7 +18,7 @@ from app.utils.prompts import (
 
 async def intentclassifier(state: WhatsappNegotiationState):
     try:
-        print("Entering Intent Classifier")
+        print(f"{Colors.GREEN}Entering Intent Classifier")
 
         result = await Runner.run(
             Agent(
@@ -43,6 +44,7 @@ async def intentclassifier(state: WhatsappNegotiationState):
 
         print(f"Intent: {state['intent']}")
         print(f"Next Action: {state['next_action']}")
+        print("f{Colors.RED} Exiting from intent Classifier")
 
     except Exception as e:
         print("Error in intentclassifier:", e)
