@@ -5,11 +5,10 @@ from app.utils.helpers import mongo_to_json
 from bson import ObjectId
 
 
-async def FetchCampaignInfluencerInfo(influencer_id: str):
+async def FetchCampaignInfluencerInfo(_id: str):
     db = get_db()
     collection = db.get_collection("campaign_influencers")
     projection = {
-        "_id": 1,
         "username": 1,
         "campaign_id": 1,
         "platform": 1,
@@ -19,16 +18,14 @@ async def FetchCampaignInfluencerInfo(influencer_id: str):
         "min_price": 1,
     }
 
-    data = await collection.find_one({"_id": ObjectId(influencer_id)}, projection)
+    data = await collection.find_one({"_id": ObjectId(_id)}, projection)
     if not data:
-        raise NotFoundException(
-            message=f"Campaign Influencer not found: {influencer_id}"
-        )
+        raise NotFoundException(message=f"Campaign Influencer not found: {_id}")
     return mongo_to_json(data)
 
 
 async def fetch_pricing_node(state: WhatsappNegotiationState):
-    influencer = await FetchCampaignInfluencerInfo(state["influencer_id"])
+    influencer = await FetchCampaignInfluencerInfo(state["_id"])
 
     state["min_price"] = influencer["min_price"]
     state["max_price"] = influencer["max_price"]

@@ -4,14 +4,13 @@ from app.db.connection import get_db
 
 
 async def admin_takeover_node(state: WhatsappNegotiationState):
-    influencer_id = state.get("influencer_id", "Unknown")
+    _id = state.get("_id")
     thread_id = state.get("thread_id")
     if not thread_id:
         print("[admin_takeover_node] Missing thread_id, cannot update DB")
         return state
-
     print(
-        f"[admin_takeover_node] Admin takeover triggered for influencer {influencer_id}"
+        f"[admin_takeover_node] Admin takeover triggered for campaign influencer {_id}"
     )
 
     db = get_db()

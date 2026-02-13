@@ -28,10 +28,7 @@ graph.add_node("send_message", send_whatsapp_reply_node)
 
 
 graph.set_entry_point("intentclassifier")
-
-
 graph.add_edge("intentclassifier", "fetch_pricing")
-
 
 graph.add_conditional_edges(
     "fetch_pricing",
