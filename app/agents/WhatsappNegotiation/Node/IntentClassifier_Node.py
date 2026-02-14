@@ -31,7 +31,6 @@ async def intentclassifier(state: WhatsappNegotiationState):
         )
 
         analysis: AnalyzeMessageOutput = result.final_output or {}
-        print("Intent Classifier Result:", analysis)
         intent = analysis.get("intent", WhatsappMessageIntent.UNCLEAR)
         if intent not in WhatsappMessageIntent.__members__.values():
             intent = WhatsappMessageIntent.UNCLEAR

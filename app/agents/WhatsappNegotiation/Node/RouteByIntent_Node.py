@@ -17,7 +17,10 @@ def route_by_intent(state: WhatsappNegotiationState):
         WhatsappMessageIntent.INTEREST,
         WhatsappMessageIntent.NEGOTIATE,
         WhatsappMessageIntent.QUESTION,
+        WhatsappMessageIntent.ACCEPT,
     ):
+        print(f"{Colors.CYAN}Fetching pricing for campaign influencer: {state['_id']}")
+        print("--------------------------------")
         return "fetch_pricing"
 
     print(f"{Colors.CYAN}Exiting from route_by_intent")
