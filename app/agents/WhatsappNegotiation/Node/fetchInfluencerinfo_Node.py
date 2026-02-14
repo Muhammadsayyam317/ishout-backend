@@ -1,4 +1,3 @@
-import json
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
 from app.core.exception import NotFoundException
 from app.db.connection import get_db
@@ -10,6 +9,8 @@ from app.utils.printcolors import Colors
 
 async def FetchCampaignInfluencerInfo(_id: str):
     print(f"{Colors.GREEN}Entering into FetchCampaignInfluencerInfo")
+    print("--------------------------------")
+    print(f"{Colors.CYAN}Fetching campaign influencer info for: {_id}")
     print("--------------------------------")
     try:
         db = get_db()
@@ -23,9 +24,7 @@ async def FetchCampaignInfluencerInfo(_id: str):
         }
 
         data = await collection.find_one({"_id": ObjectId(_id)}, projection)
-        print(
-            f"{Colors.BOLD}{Colors.ITALIC}{Colors.CYAN}Campaign Influencer data: {json.dumps(data, indent=4)}{Colors.RESET}"
-        )
+        print(f"{Colors.CYAN}Campaign Influencer data: {data}")
         print("--------------------------------")
         if not data:
             raise NotFoundException(message=f"Campaign Influencer not found: {_id}")
