@@ -19,7 +19,7 @@ from app.utils.prompts import (
 async def intentclassifier(state: WhatsappNegotiationState):
     try:
         print(f"{Colors.GREEN}Entering Intent Classifier")
-
+        print("--------------------------------")
         result = await Runner.run(
             Agent(
                 name="analyze_whatsapp_message",
@@ -44,10 +44,11 @@ async def intentclassifier(state: WhatsappNegotiationState):
 
         print(f"Intent: {state['intent']}")
         print(f"Next Action: {state['next_action']}")
-        print("f{Colors.RED} Exiting from intent Classifier")
+        print(f"{Colors.CYAN} Exiting from intent Classifier")
+        print("--------------------------------")
 
     except Exception as e:
-        print("Error in intentclassifier:", e)
+        print(f"{Colors.RED} Error in intentclassifier: {e}")
         state["intent"] = WhatsappMessageIntent.UNCLEAR
         state["next_action"] = NextAction.GENERATE_CLARIFICATION
         state["analysis"] = {}

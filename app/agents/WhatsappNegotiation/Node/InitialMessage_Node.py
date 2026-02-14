@@ -9,10 +9,11 @@ from datetime import datetime, timezone
 from app.agents.WhatsappNegotiation.state.negotiation_state import (
     update_negotiation_state,
 )
+from app.utils.printcolors import Colors
 
 
 async def NegotiationInitialMessage(influencer_id: str):
-    print("Entering into NegotiationInitialMessage")
+    print(f"{Colors.GREEN}Entering into NegotiationInitialMessage")
     print("--------------------------------")
     db = get_db()
     collection = db.get_collection("campaign_influencers")
@@ -55,24 +56,19 @@ async def NegotiationInitialMessage(influencer_id: str):
             ],
         },
     }
-    print("Payload Meta: ", payload_meta)
-    print("--------------------------------")
-    print("Sending WhatsApp message to: ", phone_number)
+    print(f"{Colors.CYAN}Sending WhatsApp message to: {phone_number}")
     print("--------------------------------")
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.post(
+            await client.post(
                 "https://graph.facebook.com/v22.0/967002123161751/messages",
                 headers=headers,
                 json=payload_meta,
             )
-        print("--------------------------------")
-        print("Response: ", response.json())
-        print("--------------------------------")
-        print("WhatsApp message sent successfully")
+        print(f"{Colors.GREEN}WhatsApp message sent successfully")
         print("--------------------------------")
     except Exception as e:
-        print(f"[NegotiationInitialMessage] Error sending WhatsApp message: {e}")
+        print(f"{Colors.RED} Error sending WhatsApp message: {e}")
         return {"status": "error", "message": f"Error sending WhatsApp message: {e}"}
 
     await save_negotiation_message(
@@ -98,7 +94,7 @@ async def NegotiationInitialMessage(influencer_id: str):
     )
 
     print(
-        "Negotiation Initial Message sent successfully and Negotiation Control Record created successfully"
+        f"{Colors.GREEN}Negotiation Initial Message sent successfully and Negotiation Control Record created successfully"
     )
     print("--------------------------------")
     return {
