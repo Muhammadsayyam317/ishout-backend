@@ -3,9 +3,12 @@ from app.config.credentials_config import config
 import httpx
 from app.services.whatsapp.save_message import save_conversation_message
 from app.utils.Enums.user_enum import SenderType
+from app.utils.printcolors import Colors
 
 
 async def send_whatsapp_reply_node(state: WhatsappNegotiationState):
+    print(f"{Colors.GREEN}Entering into send_whatsapp_reply_node")
+    print("--------------------------------")
     final_reply = state.get("final_reply")
     thread_id = state.get("thread_id")
     if not final_reply or not thread_id:
@@ -29,9 +32,6 @@ async def send_whatsapp_reply_node(state: WhatsappNegotiationState):
                 headers=headers,
                 json=payload,
             )
-        print("[send_whatsapp_reply_node] Response:", response.json())
-    except Exception as e:
-        print(f"[send_whatsapp_reply_node] Error sending WhatsApp message: {e}")
 
         await save_conversation_message(
             thread_id=state["thread_id"],
@@ -40,4 +40,11 @@ async def send_whatsapp_reply_node(state: WhatsappNegotiationState):
             message=final_reply,
         )
 
+        print("[send_whatsapp_reply_node] Response:", response.json())
+        print(f"{Colors.CYAN} Exiting from send_whatsapp_reply_node")
+        print("--------------------------------")
+    except Exception as e:
+        print(
+            f"{Colors.RED}[send_whatsapp_reply_node] Error sending WhatsApp message: {e}"
+        )
     return state

@@ -1,7 +1,10 @@
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
+from app.utils.printcolors import Colors
 
 
 def price_escalation_node(state: WhatsappNegotiationState):
+    print(f"{Colors.GREEN}Entering into price_escalation_node")
+    print("--------------------------------")
     last_price = state.get("last_offered_price") or state.get("min_price") or 0
     max_price = state.get("max_price") or 0
     negotiation_round = state.get("negotiation_round", 0)
@@ -30,4 +33,6 @@ def price_escalation_node(state: WhatsappNegotiationState):
     print(
         f"[price_escalation_node] Offer escalated to {next_price}, round {state['negotiation_round']}"
     )
+    print(f"{Colors.CYAN} Exiting from price_escalation_node")
+    print("--------------------------------")
     return state

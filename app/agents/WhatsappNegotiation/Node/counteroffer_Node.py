@@ -2,9 +2,12 @@ from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
 from app.agents.WhatsappNegotiation.Node.PriceEscalation_Node import (
     price_escalation_node,
 )
+from app.utils.printcolors import Colors
 
 
 def counter_offer_node(state: WhatsappNegotiationState):
+    print(f"{Colors.GREEN}Entering into counter_offer_node")
+    print("--------------------------------")
     offered = state.get("analysis", {}).get("budget_amount")
     max_price = state.get("max_price") or 0
 
@@ -25,4 +28,6 @@ def counter_offer_node(state: WhatsappNegotiationState):
     print(
         f"[counter_offer_node] Offer {offered} exceeds max {max_price}, escalating..."
     )
+    print(f"{Colors.CYAN} Escalating price for campaign influencer: {state['_id']}")
+    print("--------------------------------")
     return price_escalation_node(state)

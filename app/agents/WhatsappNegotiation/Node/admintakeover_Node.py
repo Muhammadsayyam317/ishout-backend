@@ -1,9 +1,13 @@
 from datetime import datetime, timezone
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
+from app.core.exception import InternalServerErrorException, NotFoundException
 from app.db.connection import get_db
+from app.utils.printcolors import Colors
 
 
 async def admin_takeover_node(state: WhatsappNegotiationState):
+    print(f"{Colors.GREEN}Entering into admin_takeover_node")
+    print("--------------------------------")
     _id = state.get("_id")
     thread_id = state.get("thread_id")
     if not thread_id:
@@ -31,7 +35,10 @@ async def admin_takeover_node(state: WhatsappNegotiationState):
         )
         state["admin_takeover"] = True
         print(f"[admin_takeover_node] DB updated successfully for thread {thread_id}")
+        print(f"{Colors.CYAN} Exiting from admin_takeover_node")
+        print("--------------------------------")
     except Exception as e:
-        print(f"[admin_takeover_node] Error updating DB: {e}")
-
+        print(f"{Colors.RED}Error updating DB: {e}")
+        print("--------------------------------")
+        raise InternalServerErrorException(message=f"Admin takeover failed: {e}")
     return state

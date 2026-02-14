@@ -2,9 +2,12 @@ from app.Schemas.whatsapp.negotiation_schema import (
     WhatsappMessageIntent,
     WhatsappNegotiationState,
 )
+from app.utils.printcolors import Colors
 
 
 def generate_reply_node(state: WhatsappNegotiationState):
+    print(f"{Colors.GREEN}Entering into generate_reply_node")
+    print("--------------------------------")
     intent = state.get("intent")
     min_price = state.get("min_price") or 0
 
@@ -40,4 +43,6 @@ def generate_reply_node(state: WhatsappNegotiationState):
         )
 
     print(f"[generate_reply_node] Intent: {intent}, Reply: {state['final_reply']}")
+    print(f"{Colors.CYAN} Exiting from generate_reply_node")
+    print("--------------------------------")
     return state
