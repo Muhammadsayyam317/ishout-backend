@@ -12,6 +12,9 @@ from app.agents.WhatsappNegotiation.Node.counteroffer_Node import counter_offer_
 from app.agents.WhatsappNegotiation.Node.fetchInfluencerinfo_Node import (
     fetch_pricing_node,
 )
+from app.agents.WhatsappNegotiation.Node.routeafterpricing_Node import (
+    route_after_pricing,
+)
 from app.agents.WhatsappNegotiation.Node.send_reply_Node import send_whatsapp_reply_node
 from langgraph.graph import StateGraph, END
 
@@ -39,7 +42,7 @@ graph.add_conditional_edges(
 
 graph.add_conditional_edges(
     "fetch_pricing",
-    route_by_intent,
+    route_after_pricing,
     {
         "counter_offer": "counter_offer",
         "price_escalation": "price_escalation",
