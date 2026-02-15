@@ -48,7 +48,9 @@ def generate_reply_node(state: WhatsappNegotiationState):
             "Could you please clarify your expectations so we can proceed?"
         )
 
-    print(f"[generate_reply_node] Intent: {intent}, Reply: {state['final_reply']}")
-    print(f"{Colors.CYAN} Exiting from generate_reply_node")
+    print(
+        f"{Colors.CYAN} [generate_reply_node] Intent: {intent}, Reply: {state['final_reply']}"
+    )
+    print(f"{Colors.YELLOW} Exiting from generate_reply_node")
     print("--------------------------------")
     return state

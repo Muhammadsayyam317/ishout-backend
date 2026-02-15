@@ -23,6 +23,6 @@ def route_by_intent(state: WhatsappNegotiationState):
     ):
         return "fetch_pricing"
 
-    print(f"{Colors.CYAN}Exiting from route_after_pricing")
+    print(f"{Colors.YELLOW}Exiting from route_after_pricing")
     print("--------------------------------")
     return "generate_reply"

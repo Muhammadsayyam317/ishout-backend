@@ -10,7 +10,6 @@ def price_escalation_node(state: WhatsappNegotiationState):
     negotiation_round = state.get("negotiation_round", 0)
 
     next_price = round(last_price * 1.2, 2)
-
     if next_price >= max_price:
         state["admin_takeover"] = True
         state["final_reply"] = (
@@ -18,21 +17,19 @@ def price_escalation_node(state: WhatsappNegotiationState):
             "Let me loop in our team to discuss this further."
         )
         print(
-            f"[price_escalation_node] Max price reached, escalating to admin. Next price: {next_price}"
+            f"{Colors.CYAN} [price_escalation_node] Max price reached, escalating to admin. Next price: {next_price}"
         )
         return state
-
     state["last_offered_price"] = next_price
     state["negotiation_round"] = negotiation_round + 1
-
     state["final_reply"] = (
         f"We can improve the offer to ${next_price:.2f}. "
         "Let us know if this works for you."
     )
 
     print(
-        f"[price_escalation_node] Offer escalated to {next_price}, round {state['negotiation_round']}"
+        f"{Colors.CYAN} [price_escalation_node] Offer escalated to {next_price}, round {state['negotiation_round']}"
     )
-    print(f"{Colors.CYAN} Exiting from price_escalation_node")
+    print(f"{Colors.YELLOW} Exiting from price_escalation_node")
     print("--------------------------------")
     return state

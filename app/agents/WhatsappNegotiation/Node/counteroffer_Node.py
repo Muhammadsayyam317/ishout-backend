@@ -26,7 +26,7 @@ def counter_offer_node(state: WhatsappNegotiationState):
         return state
 
     print(
-        f"[counter_offer_node] Offer {offered} exceeds max {max_price}, escalating..."
+        f"{Colors.CYAN} [counter_offer_node] Offer {offered} exceeds max {max_price}, escalating..."
     )
     print(f"{Colors.YELLOW} Escalating price for campaign influencer: {state['_id']}")
     print("--------------------------------")
