@@ -33,29 +33,35 @@ async def extract_message_info(first_message: dict, value: dict):
     return thread_id, msg_text, profile_name
 
 
-async def process_negotiation_agent(
-    thread_id: str, msg_text: str, profile_name: str, app
-):
-    negotiation_state = await get_negotiation_state(thread_id)
+async def process_negotiation_agent(state: dict, app):
+    negotiation_state = await get_negotiation_state(state.get("thread_id"))
     if (
         negotiation_state
         and negotiation_state.get("conversation_mode") == "NEGOTIATION"
         and not negotiation_state.get("agent_paused")
     ):
-        print(f"{Colors.GREEN}Routing to Negotiation Agent for thread {thread_id}")
+        print(
+            f"{Colors.GREEN}Routing to Negotiation Agent for thread {state.get('thread_id')}"
+        )
         negotiation_state.update(
             {
-                "user_message": msg_text,
-                "thread_id": thread_id,
-                "sender_id": thread_id,
-                "name": profile_name,
+                "user_message": state.get("user_message"),
+                "thread_id": state.get("thread_id"),
+                "sender_id": state.get("sender_id"),
+                "name": state.get("name"),
             }
         )
         final_state = await Negotiation_invoke(
-            negotiation_state, app, config={"configurable": {"thread_id": thread_id}}
+            negotiation_state,
+            app,
+            config={"configurable": {"thread_id": state.get("thread_id")}},
         )
         if final_state:
-            await update_negotiation_state(thread_id, final_state)
+            await update_negotiation_state(state.get("thread_id"), final_state)
+            print(
+                f"{Colors.GREEN}Negotiation agent completed for thread {state.get('thread_id')}"
+            )
+            print("--------------------------------")
         return True
     return False
 
@@ -94,34 +100,42 @@ async def process_default_agent(
         await update_user_state(thread_id, final_state)
 
 
-async def handle_whatsapp_events(request: Request):
-    print(f"{Colors.GREEN}Entering handle_whatsapp_events")
+async def whatsapp_events_with_state(request: Request):
+    print(f"{Colors.GREEN}Entering whatsapp_events_with_state")
     print("--------------------------------")
     try:
         event = await request.json()
         entry = event.get("entry", [])
         if not entry:
             return {"status": "ok"}
-
         changes = entry[0].get("changes", [])
         if not changes:
             return {"status": "ok"}
-
         value = changes[0].get("value", {})
         messages = value.get("messages", [])
         if not messages:
             return {"status": "ok"}
-
         first_message = messages[0]
+        return first_message, value
+    except Exception as e:
+        print(f"{Colors.RED}Error in handle_whatsapp_events_with_state: {e}")
+        print("--------------------------------")
+        raise HTTPException(
+            status_code=500, detail=f"Webhook processing failed: {str(e)}"
+        ) from e
 
-        # Handle interactive button replies
+
+async def handle_whatsapp_events(request: Request):
+    print(f"{Colors.GREEN}Entering handle_whatsapp_events")
+    print("--------------------------------")
+    try:
+        first_message, value = await whatsapp_events_with_state(request)
         if (
             first_message.get("type") == "interactive"
             and first_message.get("interactive", {}).get("type") == "button_reply"
         ):
             await handle_button_reply(first_message)
             return {"status": "ok"}
-
         # Extract message info
         thread_id, msg_text, profile_name = await extract_message_info(
             first_message, value
@@ -146,7 +160,13 @@ async def handle_whatsapp_events(request: Request):
         )
 
         routed = await process_negotiation_agent(
-            {}, thread_id, msg_text, profile_name, request.app
+            {
+                "user_message": msg_text,
+                "thread_id": thread_id,
+                "sender_id": thread_id,
+                "name": profile_name,
+            },
+            request.app,
         )
         if routed:
             return {"status": "ok"}

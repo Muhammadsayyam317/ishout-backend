@@ -40,3 +40,11 @@ router.add_api_route(
     tags=["Meta"],
     name="handle_whatsapp_events",
 )
+
+# router.add_api_route(
+#     path="",
+#     endpoint=instagram_callback,
+#     methods=["GET"],
+#     tags=["Meta"],
+#     name="instagram_callback",
+# )
