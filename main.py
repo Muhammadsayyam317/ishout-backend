@@ -1,4 +1,4 @@
-from app.core.redis import Initialize_redis
+from app.core.redis import Initialize_redis, initialize_negotiation_redis
 
 # from app.core.scheduler import shutdown_scheduler, start_scheduler
 from app.db.connection import connect, close
@@ -30,6 +30,8 @@ async def lifespan(app: FastAPI):
     await connect()
     print("connected successfully")
     await Initialize_redis(app)
+    await initialize_negotiation_redis(app)
+    print("whatsapp redis initialized successfully")
     # start_scheduler()
     # print("⏰ Scheduler started")
     yield
