@@ -33,29 +33,35 @@ async def extract_message_info(first_message: dict, value: dict):
     return thread_id, msg_text, profile_name
 
 
-async def process_negotiation_agent(
-    thread_id: str, msg_text: str, profile_name: str, app
-):
-    negotiation_state = await get_negotiation_state(thread_id)
+async def process_negotiation_agent(state: dict, app):
+    negotiation_state = await get_negotiation_state(state.get("thread_id"))
     if (
         negotiation_state
         and negotiation_state.get("conversation_mode") == "NEGOTIATION"
         and not negotiation_state.get("agent_paused")
     ):
-        print(f"{Colors.GREEN}Routing to Negotiation Agent for thread {thread_id}")
+        print(
+            f"{Colors.GREEN}Routing to Negotiation Agent for thread {state.get('thread_id')}"
+        )
         negotiation_state.update(
             {
-                "user_message": msg_text,
-                "thread_id": thread_id,
-                "sender_id": thread_id,
-                "name": profile_name,
+                "user_message": state.get("user_message"),
+                "thread_id": state.get("thread_id"),
+                "sender_id": state.get("sender_id"),
+                "name": state.get("name"),
             }
         )
         final_state = await Negotiation_invoke(
-            negotiation_state, app, config={"configurable": {"thread_id": thread_id}}
+            negotiation_state,
+            app,
+            config={"configurable": {"thread_id": state.get("thread_id")}},
         )
         if final_state:
-            await update_negotiation_state(thread_id, final_state)
+            await update_negotiation_state(state.get("thread_id"), final_state)
+            print(
+                f"{Colors.GREEN}Negotiation agent completed for thread {state.get('thread_id')}"
+            )
+            print("--------------------------------")
         return True
     return False
 
@@ -146,7 +152,13 @@ async def handle_whatsapp_events(request: Request):
         )
 
         routed = await process_negotiation_agent(
-            {}, thread_id, msg_text, profile_name, request.app
+            {
+                "user_message": msg_text,
+                "thread_id": thread_id,
+                "sender_id": thread_id,
+                "name": profile_name,
+            },
+            request.app,
         )
         if routed:
             return {"status": "ok"}
