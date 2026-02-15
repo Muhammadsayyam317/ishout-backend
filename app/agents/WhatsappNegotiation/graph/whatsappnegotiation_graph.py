@@ -29,11 +29,11 @@ from app.agents.WhatsappNegotiation.Node.send_reply_Node import send_whatsapp_re
 from app.agents.WhatsappNegotiation.Node.completeNegotiation_Node import (
     complete_negotiation_node,
 )
-from langgraph.graph import StateGraph, END
+from langgraph.graph import StateGraph, START, END
 
 negotiation_graph = StateGraph(WhatsappNegotiationState)
 
-
+negotiation_graph.add_edge(START, "intentclassifier")
 negotiation_graph.add_node("intentclassifier", intentclassifier)
 negotiation_graph.add_node("fetch_pricing", fetch_pricing_node)
 negotiation_graph.add_node("generate_reply", generate_reply_node)
@@ -47,8 +47,6 @@ negotiation_graph.add_node("close_conversation", close_conversation_node)
 negotiation_graph.add_node("confirm_details", confirm_details_node)
 negotiation_graph.add_node("complete_negotiation", complete_negotiation_node)
 
-negotiation_graph.set_entry_point("debug_before")
-negotiation_graph.add_edge("debug_before", "intentclassifier")
 
 negotiation_graph.add_conditional_edges(
     "intentclassifier",
