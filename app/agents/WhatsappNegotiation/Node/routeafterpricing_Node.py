@@ -52,7 +52,9 @@ def route_after_pricing(state: WhatsappNegotiationState):
         if next_action == NextAction.WAIT_OR_ACKNOWLEDGE:
             return "generate_reply"
 
-        print(f"{Colors.RED}Unknown NextAction → Fallback to generate_reply")
+        print(
+            f"{Colors.RED} [route_after_pricing] Unknown NextAction → Fallback to generate_reply"
+        )
         print("--------------------------------")
         print(f"{Colors.YELLOW} Exiting from route_after_pricing")
         return "generate_reply"

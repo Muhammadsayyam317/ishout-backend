@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
-from app.core.exception import InternalServerErrorException, NotFoundException
+from app.core.exception import InternalServerErrorException
 from app.db.connection import get_db
 from app.utils.printcolors import Colors
 

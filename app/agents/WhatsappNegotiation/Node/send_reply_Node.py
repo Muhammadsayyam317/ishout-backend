@@ -41,7 +41,7 @@ async def send_whatsapp_reply_node(state: WhatsappNegotiationState):
         )
 
         print("[send_whatsapp_reply_node] Response:", response.json())
-        print(f"{Colors.CYAN} Exiting from send_whatsapp_reply_node")
+        print(f"{Colors.YELLOW} Exiting from send_whatsapp_reply_node")
         print("--------------------------------")
     except Exception as e:
         print(

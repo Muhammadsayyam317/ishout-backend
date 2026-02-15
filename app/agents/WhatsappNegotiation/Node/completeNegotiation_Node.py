@@ -18,6 +18,8 @@ async def complete_negotiation_node(state):
             "negotiation_completed": True,
         },
     )
+    print(f"{Colors.CYAN} [complete_negotiation_node] Negotiation state updated")
+    print("--------------------------------")
 
     await send_message_from_ishout_to_user(
         user_id=state["thread_id"],
