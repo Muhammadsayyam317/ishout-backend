@@ -108,10 +108,11 @@ async def handle_whatsapp_events(request: Request):
                     "name": profile_name,
                 }
             )
-
+            app = request.app
+            agent = app.state.whatsapp_negotiation_agent
             final_state = await Negotiation_invoke(
+                agent,
                 negotiation_state,
-                request.app,
                 config={"configurable": {"thread_id": thread_id}},
             )
 
