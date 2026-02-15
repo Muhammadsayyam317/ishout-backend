@@ -69,7 +69,7 @@ graph.add_conditional_edges(
     route_after_pricing,
     {
         "counter_offer": "counter_offer",
-        "price_escalation_node": "price_escalation",
+        "price_escalation": "price_escalation",
         "generate_reply": "generate_reply",
         "admin_takeover": "admin_takeover",
         "accept_negotiation": "accept_negotiation",
