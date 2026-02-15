@@ -14,7 +14,7 @@ def generate_reply_node(state: WhatsappNegotiationState):
     if intent == WhatsappMessageIntent.INTEREST:
         state["final_reply"] = (
             f"Great to hear that 😊\n"
-            f"Our minimum budget for this campaign starts at ${min_price:.2f}. "
+            f"Our budget for this campaign is ${min_price:.2f}."
             "Let us know if that works for you."
         )
 
@@ -33,8 +33,14 @@ def generate_reply_node(state: WhatsappNegotiationState):
 
     elif intent == WhatsappMessageIntent.QUESTION:
         state["final_reply"] = (
-            f"Our minimum budget is ${min_price:.2f}. "
+            f"Our budget for this campaign is ${min_price:.2f}. "
             "Happy to discuss deliverables and timelines as well."
+        )
+    elif intent == WhatsappMessageIntent.ACCEPT:
+        state["final_reply"] = (
+            "Great to hear that 😊"
+            f"We can start from ${min_price:.2f}. "
+            "Would that be workable for you?"
         )
 
     else:
