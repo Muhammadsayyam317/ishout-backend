@@ -94,7 +94,7 @@ async def NegotiationInitialMessage(influencer_id: str):
     )
 
     print(
-        f"{Colors.GREEN}Negotiation Initial Message sent successfully and Negotiation Control Record created successfully"
+        f"{Colors.YELLOW}Negotiation Initial Message sent successfully and Negotiation Control Record created successfully"
     )
     print("--------------------------------")
     return {

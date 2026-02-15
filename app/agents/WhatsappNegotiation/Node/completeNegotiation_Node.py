@@ -27,7 +27,7 @@ async def complete_negotiation_node(state):
         ),
         sender=SenderType.AI.value,
     )
-    print(f"{Colors.CYAN} Exiting from complete_negotiation_node")
+    print(f"{Colors.YELLOW} Exiting from complete_negotiation_node")
     print("--------------------------------")
 
     return state
