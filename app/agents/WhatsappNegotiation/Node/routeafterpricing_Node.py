@@ -6,59 +6,37 @@ from app.Schemas.instagram.negotiation_schema import NextAction
 
 
 def route_after_pricing(state: WhatsappNegotiationState):
-    try:
-        print(f"{Colors.GREEN}Entering into route_after_pricing")
-        print("--------------------------------")
-        print(f"Intent: {state.get('intent')}")
-        print(f"Next Action: {state.get('next_action')}")
-        print("--------------------------------")
+    print(f"{Colors.GREEN}Entering into route_after_pricing")
+    print("--------------------------------")
+    next_action = state.get("next_action")
+    negotiation_status = state.get("negotiation_status", "pending")
 
-        next_action = state.get("next_action")
-        if next_action == NextAction.ESCALATE_NEGOTIATION:
-            return "price_escalation"
-
-        if next_action == NextAction.ACCEPT_NEGOTIATION:
-            return "accept_negotiation"
-
-        if next_action == NextAction.REJECT_NEGOTIATION:
-            return "reject_negotiation"
-
-        if next_action == NextAction.ANSWER_QUESTION:
-            return "generate_reply"
-
-        if next_action in [
-            NextAction.ASK_INTEREST,
-            NextAction.ASK_RATE,
-            NextAction.ASK_AVAILABILITY,
-        ]:
-            return "generate_reply"
-
-        if next_action in [
-            NextAction.CONFIRM_PRICING,
-            NextAction.CONFIRM_DELIVERABLES,
-            NextAction.CONFIRM_TIMELINE,
-        ]:
-            return "confirm_details"
-
-        if next_action == NextAction.GENERATE_REJECTION:
-            return "generate_reply"
-
-        if next_action == NextAction.GENERATE_CLARIFICATION:
-            return "generate_reply"
-
-        if next_action == NextAction.CLOSE_CONVERSATION:
-            return "close_conversation"
-
-        if next_action == NextAction.WAIT_OR_ACKNOWLEDGE:
-            return "generate_reply"
-
+    # Multi-round negotiation routing
+    if next_action == NextAction.ASK_RATE and negotiation_status in [
+        "pending",
+        "escalated",
+    ]:
+        print(f"{Colors.CYAN} [route_after_pricing] NextAction: {next_action}")
+        return "price_escalation"
+    mapping = {
+        NextAction.ESCALATE_NEGOTIATION: "price_escalation",
+        NextAction.ACCEPT_NEGOTIATION: "accept_negotiation",
+        NextAction.REJECT_NEGOTIATION: "reject_negotiation",
+        NextAction.ANSWER_QUESTION: "generate_reply",
+        NextAction.CONFIRM_PRICING: "confirm_details",
+        NextAction.CONFIRM_DELIVERABLES: "confirm_details",
+        NextAction.CONFIRM_TIMELINE: "confirm_details",
+        NextAction.CLOSE_CONVERSATION: "close_conversation",
+    }
+    print(f"{Colors.CYAN} [route_after_pricing] Mapping: {mapping}")
+    if next_action in mapping:
         print(
-            f"{Colors.RED} [route_after_pricing] Unknown NextAction → Fallback to generate_reply"
+            f"{Colors.CYAN} [route_after_pricing] NextAction in mapping: {next_action}"
         )
-        print("--------------------------------")
-        print(f"{Colors.YELLOW} Exiting from route_after_pricing")
-        return "generate_reply"
-    except Exception as e:
-        print(f"{Colors.RED} Error in route_after_pricing: {e}")
-        print("--------------------------------")
-        return "generate_reply"
+        return mapping[next_action]
+    print(
+        f"{Colors.RED} [route_after_pricing] Unknown NextAction → Fallback to generate_reply"
+    )
+    print(f"{Colors.YELLOW} Exiting from route_after_pricing")
+    print("--------------------------------")
+    return "generate_reply"

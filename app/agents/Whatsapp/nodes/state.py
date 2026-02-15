@@ -1,6 +1,7 @@
 from app.db.mongo_session import get_session_collection
 import redis.asyncio as redis
 from app.config.credentials_config import config
+from app.utils.printcolors import Colors
 
 redis_client = redis.from_url(config.REDIS_URL, decode_responses=True)
 
@@ -53,7 +54,10 @@ async def rate_limit(redis, sender_id, limit=10, window=60):
 
 
 async def cleanup_old_checkpoints(thread_id: str, keep_round: int):
-    print(f"Cleaning up old checkpoints for {thread_id} with keep_round {keep_round}")
+    print(
+        f"{Colors.GREEN}Cleaning up old checkpoints for {thread_id} with keep_round {keep_round}"
+    )
+    print("--------------------------------")
     pattern = f"langgraph:checkpoint:{thread_id}-r*"
     keys = await redis_client.keys(pattern)
 

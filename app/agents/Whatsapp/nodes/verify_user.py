@@ -1,10 +1,11 @@
 from app.config.credentials_config import config
 from app.db.connection import get_db
 from app.utils.helpers import normalize_phone
+from app.utils.printcolors import Colors
 
 
 async def node_verify_user(state):
-    print("Entering into node_verify_user")
+    print(f"{Colors.GREEN}Entering into node_verify_user")
     print("--------------------------------")
     try:
         sender_id = state.get("sender_id")
@@ -27,7 +28,7 @@ async def node_verify_user(state):
             )
             state["reply_sent"] = False
             state["done"] = True
-            print("Exiting from node_verify_user")
+            print(f"{Colors.YELLOW}Exiting from node_verify_user")
             print("--------------------------------")
             return state
 
@@ -39,7 +40,7 @@ async def node_verify_user(state):
             "Tell us what kind of influencers you’re looking for."
         )
         state["reply_sent"] = False
-        print("Exiting from node_verify_user")
+        print(f"{Colors.YELLOW}Exiting from node_verify_user")
         print("--------------------------------")
         return state
 

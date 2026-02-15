@@ -24,14 +24,15 @@ class WhatsappNegotiationState(TypedDict):
     thread_id: str
     _id: str
     user_message: str
-
     intent: WhatsappMessageIntent
     next_action: NextAction
     analysis: dict
-
     min_price: Optional[float]
     max_price: Optional[float]
-
+    last_offered_price: Optional[float]  # Track the last price offered by agent
+    negotiation_round: Optional[int]  # Track how many rounds of escalation happened
+    negotiation_status: Optional[str]  # "pending", "escalated", "agreed", "rejected"
+    manual_negotiation: Optional[bool]  # Flag if admin takeover is required
     final_reply: Optional[str]
 
 
