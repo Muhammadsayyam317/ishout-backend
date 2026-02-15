@@ -100,34 +100,42 @@ async def process_default_agent(
         await update_user_state(thread_id, final_state)
 
 
-async def handle_whatsapp_events(request: Request):
-    print(f"{Colors.GREEN}Entering handle_whatsapp_events")
+async def whatsapp_events_with_state(request: Request):
+    print(f"{Colors.GREEN}Entering whatsapp_events_with_state")
     print("--------------------------------")
     try:
         event = await request.json()
         entry = event.get("entry", [])
         if not entry:
             return {"status": "ok"}
-
         changes = entry[0].get("changes", [])
         if not changes:
             return {"status": "ok"}
-
         value = changes[0].get("value", {})
         messages = value.get("messages", [])
         if not messages:
             return {"status": "ok"}
-
         first_message = messages[0]
+        return first_message, value
+    except Exception as e:
+        print(f"{Colors.RED}Error in handle_whatsapp_events_with_state: {e}")
+        print("--------------------------------")
+        raise HTTPException(
+            status_code=500, detail=f"Webhook processing failed: {str(e)}"
+        ) from e
 
-        # Handle interactive button replies
+
+async def handle_whatsapp_events(request: Request):
+    print(f"{Colors.GREEN}Entering handle_whatsapp_events")
+    print("--------------------------------")
+    try:
+        first_message, value = await whatsapp_events_with_state(request)
         if (
             first_message.get("type") == "interactive"
             and first_message.get("interactive", {}).get("type") == "button_reply"
         ):
             await handle_button_reply(first_message)
             return {"status": "ok"}
-
         # Extract message info
         thread_id, msg_text, profile_name = await extract_message_info(
             first_message, value
