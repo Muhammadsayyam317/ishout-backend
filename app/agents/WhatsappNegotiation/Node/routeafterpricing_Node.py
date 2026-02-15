@@ -38,7 +38,7 @@ def route_after_pricing(state: WhatsappNegotiationState):
             NextAction.CONFIRM_DELIVERABLES,
             NextAction.CONFIRM_TIMELINE,
         ]:
-            return "generate_reply"
+            return "confirm_details"
 
         if next_action == NextAction.GENERATE_REJECTION:
             return "generate_reply"
