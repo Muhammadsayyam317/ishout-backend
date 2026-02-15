@@ -20,7 +20,6 @@ async def intentclassifier(state: WhatsappNegotiationState):
     try:
         print(f"{Colors.GREEN}Entering Intent Classifier")
         print("--------------------------------")
-
         result = await Runner.run(
             Agent(
                 name="analyze_whatsapp_message",
@@ -31,24 +30,23 @@ async def intentclassifier(state: WhatsappNegotiationState):
             input=state.get("user_message", ""),
         )
 
-        analysis: AnalyzeMessageOutput = result.final_output
+        analysis: AnalyzeMessageOutput = result.final_output or {}
+        print("Intent Classifier Result:", analysis)
+        intent = analysis.get("intent", WhatsappMessageIntent.UNCLEAR)
 
-        try:
-            intent = WhatsappMessageIntent[analysis.intent]
-        except Exception:
-            intent = WhatsappMessageIntent.UNCLEAR
-
-        state["analysis"] = analysis.dict()
+        state["analysis"] = analysis
         state["intent"] = intent
-        state["next_action"] = analysis.next_action
+        state["next_action"] = analysis.get(
+            "next_action", NextAction.GENERATE_CLARIFICATION
+        )
 
         print(f"Intent: {state['intent']}")
         print(f"Next Action: {state['next_action']}")
-        print(f"{Colors.CYAN}Exiting from Intent Classifier")
+        print(f"{Colors.CYAN} Exiting from intent Classifier")
         print("--------------------------------")
 
     except Exception as e:
-        print(f"{Colors.RED}Error in intentclassifier: {e}")
+        print(f"{Colors.RED} Error in intentclassifier: {e}")
         state["intent"] = WhatsappMessageIntent.UNCLEAR
         state["next_action"] = NextAction.GENERATE_CLARIFICATION
         state["analysis"] = {}
