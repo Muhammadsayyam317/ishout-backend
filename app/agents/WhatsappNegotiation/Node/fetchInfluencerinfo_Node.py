@@ -27,8 +27,10 @@ async def FetchCampaignInfluencerInfo(_id: str):
         print(f"{Colors.CYAN}Campaign Influencer data: {data}")
         print("--------------------------------")
         if not data:
+            print(f"{Colors.RED}Campaign Influencer not found: {_id}")
+            print("--------------------------------")
             raise NotFoundException(message=f"Campaign Influencer not found: {_id}")
-        print(f"{Colors.CYAN}Campaign Influencer found: {_id}")
+        print(f"{Colors.YELLOW} Exiting from FetchCampaignInfluencerInfo")
         print("--------------------------------")
         return mongo_to_json(data)
     except Exception as e:

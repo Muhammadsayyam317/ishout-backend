@@ -31,7 +31,7 @@ async def intentclassifier(state: WhatsappNegotiationState):
         )
 
         analysis: AnalyzeMessageOutput = result.final_output or {}
-        print("Intent Classifier Result:", analysis)
+        print(f"{Colors.CYAN}Intent Classifier Result: {analysis}")
         intent = analysis.get("intent", WhatsappMessageIntent.UNCLEAR)
 
         state["analysis"] = analysis
@@ -42,7 +42,7 @@ async def intentclassifier(state: WhatsappNegotiationState):
 
         print(f"Intent: {state['intent']}")
         print(f"Next Action: {state['next_action']}")
-        print(f"{Colors.CYAN} Exiting from intent Classifier")
+        print(f"{Colors.YELLOW} Exiting from intent Classifier")
         print("--------------------------------")
 
     except Exception as e:
