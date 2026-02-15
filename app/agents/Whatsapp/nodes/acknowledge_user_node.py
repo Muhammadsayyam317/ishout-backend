@@ -1,5 +1,8 @@
+from app.utils.printcolors import Colors
+
+
 async def node_acknowledge_user(state):
-    print("Entering into node_acknowledge_user")
+    print(f"{Colors.GREEN}Entering into node_acknowledge_user")
     print("--------------------------------")
     try:
         if state.get("acknowledged"):
@@ -19,14 +22,16 @@ async def node_acknowledge_user(state):
         state["acknowledged"] = True
         state["done"] = True
         state["reset_after_reply"] = True
-        print("Exiting from node_acknowledge_user")
+        print(f"{Colors.YELLOW}Exiting from node_acknowledge_user")
         print("--------------------------------")
-        print("State: ", state)
+        print(f"{Colors.CYAN}State: {state}")
         print("--------------------------------")
         return state
 
-    except Exception:
+    except Exception as e:
         state["done"] = True
-        print("Exiting from node_acknowledge_user")
+        print("Error in node_acknowledge_user")
+        print("--------------------------------")
+        print(f"{Colors.RED}Error in node_acknowledge_user: {e}")
         print("--------------------------------")
         return state

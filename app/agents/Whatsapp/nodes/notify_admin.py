@@ -1,9 +1,10 @@
 from app.config.credentials_config import config
 from app.services.whatsapp.onboarding_message import send_whatsapp_message
+from app.utils.printcolors import Colors
 
 
 async def node_notify_admin_campaign_created(campaign, user):
-    print("Entering into node_notify_admin_campaign_created")
+    print(f"{Colors.GREEN}Entering into node_notify_admin_campaign_created")
     print("--------------------------------")
     try:
         message = (
@@ -22,10 +23,12 @@ async def node_notify_admin_campaign_created(campaign, user):
         success = await send_whatsapp_message(config.ADMIN_PHONE, message)
         if not success:
             raise Exception("Failed to send message to admin")
-        print("Exiting from node_notify_admin_campaign_created")
+        print(f"{Colors.YELLOW}Exiting from node_notify_admin_campaign_created")
         print("--------------------------------")
         return True
-    except Exception:
-        print("Exiting from node_notify_admin_campaign_created")
+    except Exception as e:
+        print(f"{Colors.RED}Exiting from node_notify_admin_campaign_created")
+        print("--------------------------------")
+        print(f"{Colors.CYAN}Error: {e}")
         print("--------------------------------")
         return False

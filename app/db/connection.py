@@ -13,9 +13,7 @@ pymongo_db = None
 
 
 async def connect():
-    """Connect to MongoDB asynchronously and store globally."""
     global client, db, pymongo_client, pymongo_db
-
     if client and db:
         return
 
@@ -28,7 +26,6 @@ async def connect():
             serverSelectionTimeoutMS=5000,
         )
         db = client[config.MONGODB_ATLAS_DB_NAME]
-
         # PyMongo client for langchain vector search (synchronous)
         pymongo_client = MongoClient(
             config.MONGODB_ATLAS_URI,
@@ -62,14 +59,12 @@ async def close():
 
 
 def get_db():
-    """Return the current MongoDB database instance (Motor - async)."""
     if db is None:
         raise RuntimeError("Error: MongoDB database not initialized.")
     return db
 
 
 def get_pymongo_db():
-    """Return the PyMongo database instance for langchain vector search (synchronous)."""
     if pymongo_db is None:
         raise RuntimeError("Error: PyMongo database not initialized.")
     return pymongo_db

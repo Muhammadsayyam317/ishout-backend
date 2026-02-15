@@ -1,9 +1,10 @@
 from app.model.whatsappconversation import ConversationState
 from app.services.whatsapp.create_campaign import create_whatsapp_campaign
+from app.utils.printcolors import Colors
 
 
 async def node_create_campaign(state: ConversationState):
-    print("Entering into node_create_campaign")
+    print(f"{Colors.GREEN}Entering into node_create_campaign")
     print("--------------------------------")
     try:
         if state.get("campaign_created"):

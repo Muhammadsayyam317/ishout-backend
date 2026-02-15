@@ -8,9 +8,11 @@ from app.utils.extract_feilds import (
 )
 import traceback
 
+from app.utils.printcolors import Colors
+
 
 async def node_requirements(state):
-    print("Entering into node_requirements")
+    print(f"{Colors.GREEN}Entering into node_requirements")
     print("--------------------------------")
     try:
         msg = state.get("user_message", "")
@@ -140,13 +142,17 @@ async def node_requirements(state):
             return state
         state["reply"] = None
         state["ready_for_campaign"] = True
-        print("Exiting from node_requirements")
+        print(f"{Colors.YELLOW}Exiting from node_requirements")
+        print("--------------------------------")
+        print(f"{Colors.CYAN}State: {state}")
         print("--------------------------------")
         return state
 
-    except Exception:
+    except Exception as e:
         traceback.print_exc()
-        print("Exiting from node_requirements")
+        print(f"{Colors.RED}Exiting from node_requirements")
+        print("--------------------------------")
+        print(f"{Colors.CYAN}Error: {e}")
         print("--------------------------------")
         state["reply"] = (
             "⚠️ Sorry, something went wrong while processing your message.\n"

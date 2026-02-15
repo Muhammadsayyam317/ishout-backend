@@ -7,10 +7,11 @@ from app.services.whatsapp.onboarding_message import send_whatsapp_message
 from app.services.whatsapp.save_message import save_conversation_message
 from app.utils.Enums.user_enum import SenderType
 from app.db.connection import get_db
+from app.utils.printcolors import Colors
 
 
 async def node_send_reply(state):
-    print("Entering into node_send_reply")
+    print(f"{Colors.GREEN}Entering into node_send_reply")
     print("--------------------------------")
     sender_id = state.get("sender_id")
     reply = state.get("reply")
@@ -31,10 +32,10 @@ async def node_send_reply(state):
     )
     state["reply_sent"] = True
     if state.get("reset_after_reply"):
-        print("♻️ Resetting full conversation state")
+        print(f"{Colors.GREEN}♻️ Resetting full conversation state")
         # Increment conversation round
         new_round = await increment_conversation_round(sender_id)
-        print("New round: ", new_round)
+        print(f"{Colors.CYAN}New round: {new_round}")
         print("--------------------------------")
         # Reset Mongo session
         await reset_user_state(sender_id)
@@ -45,11 +46,13 @@ async def node_send_reply(state):
         print("Cleanup old checkpoints")
         print("--------------------------------")
         state.clear()
-        print("Clear state")
+        print(f"{Colors.CYAN}Clear state")
         print("--------------------------------")
         state["sender_id"] = sender_id
         print("Set sender id")
         print("--------------------------------")
-    print("Exiting from node_send_reply")
+    print(f"{Colors.YELLOW}Exiting from node_send_reply")
+    print("--------------------------------")
+    print(f"{Colors.CYAN}State: {state}")
     print("--------------------------------")
     return state
