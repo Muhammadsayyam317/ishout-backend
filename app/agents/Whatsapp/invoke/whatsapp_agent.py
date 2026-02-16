@@ -121,7 +121,7 @@ async def handle_whatsapp_events(request: Request):
             return {"status": "ok"}
 
         # =====================================================
-        # OTHERWISE → DEFAULT AGENT
+        #  DEFAULT AGENT
         # =====================================================
 
         print("Routing to Default WhatsApp Agent")
