@@ -20,14 +20,13 @@ def price_escalation_node(state: WhatsappNegotiationState):
         state["negotiation_status"] = "escalated"
         state["last_offered_price"] = max_price
         state["negotiation_round"] = negotiation_round + 1
-        state["next_action"] = NextAction.ACCEPT_NEGOTIATION  # admin handles next
+        state["next_action"] = NextAction.ACCEPT_NEGOTIATION
         state["manual_negotiation"] = True
         print(
             f"{Colors.CYAN} [price_escalation_node] Max price reached, escalating to admin. Next price: {next_price}"
         )
         return state
 
-    # Continue escalation
     state["last_offered_price"] = next_price
     state["negotiation_round"] = negotiation_round + 1
     state["negotiation_status"] = "pending"
