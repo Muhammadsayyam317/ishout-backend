@@ -13,7 +13,6 @@ def route_after_pricing(state: WhatsappNegotiationState):
     intent = state.get("intent")
     next_action = state.get("next_action")
 
-    # Reset immediately BEFORE anything else
     if intent == WhatsappMessageIntent.INTEREST:
         state["negotiation_round"] = 0
         state["last_offered_price"] = None
@@ -21,8 +20,6 @@ def route_after_pricing(state: WhatsappNegotiationState):
         state["negotiation_status"] = "pending"
 
     print(f"{Colors.CYAN}Intent: {intent} | NextAction: {next_action}")
-
-    # Any negotiation-related action -> single engine
     negotiation_actions = {
         NextAction.ASK_RATE,
         NextAction.ESCALATE_NEGOTIATION,
