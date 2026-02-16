@@ -1,0 +1,72 @@
+from app.Schemas.instagram.negotiation_schema import NextAction
+from app.Schemas.whatsapp.negotiation_schema import WhatsappMessageIntent
+
+
+def negotiation_engine_node(state):
+    intent = state.get("intent")
+    min_price = state.get("min_price")
+    max_price = state.get("max_price")
+    last_price = state.get("last_offered_price")
+    user_offer = state.get("user_offer")
+
+    # 🔥 Reset on fresh interest
+    if intent == WhatsappMessageIntent.INTEREST:
+        state["negotiation_round"] = 0
+        state["last_offered_price"] = None
+        state["negotiation_status"] = "pending"
+        state["user_offer"] = None
+        last_price = None
+
+    # 🟢 First offer
+    if last_price is None:
+        state["last_offered_price"] = min_price
+        state["negotiation_round"] = 1
+        state["final_reply"] = (
+            f"Our offer for this campaign is ${min_price:.2f}. "
+            "Let us know your thoughts."
+        )
+        return state
+
+    # 🟡 Handle counter-offer
+    if user_offer is not None:
+
+        # Accept only if meets current offer
+        if user_offer >= last_price:
+            state["negotiation_status"] = "agreed"
+            state["last_offered_price"] = user_offer
+            state["final_reply"] = (
+                f"Great! We confirm the collaboration at ${user_offer:.2f}."
+            )
+            state["next_action"] = NextAction.ACCEPT_NEGOTIATION
+            state["user_offer"] = None
+            return state
+
+        # Escalate 20%
+        next_price = round(last_price * 1.2, 2)
+
+        if next_price >= max_price:
+            state["last_offered_price"] = max_price
+            state["negotiation_status"] = "escalated"
+            state["manual_negotiation"] = True
+            state["next_action"] = NextAction.ESCALATE_NEGOTIATION
+            state["final_reply"] = (
+                "We've reached our maximum budget. " "Let me connect you with our team."
+            )
+            state["user_offer"] = None
+            return state
+
+        state["last_offered_price"] = next_price
+        state["negotiation_round"] += 1
+        state["final_reply"] = (
+            f"We can revise the offer to ${next_price:.2f}. "
+            "Let us know if this works for you."
+        )
+        state["user_offer"] = None
+        return state
+
+    # 🔵 Generic fallback
+    state["final_reply"] = (
+        "Thanks for your interest! " "Let us know if you have a budget in mind."
+    )
+
+    return state
