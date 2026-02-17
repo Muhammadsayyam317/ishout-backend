@@ -7,7 +7,7 @@ from app.utils.printcolors import Colors
 
 
 async def FetchCampaignInfluencerInfo(_id: str):
-    print(f"{Colors.GREEN}Entering FetchCampaignInfluencerInfo for ID: {_id}")
+    print(f"{Colors.GREEN}Entering Fetch Campaign Influencer Info Node for ID: {_id}")
     print("--------------------------------")
     try:
         db = get_db()
