@@ -1,6 +1,7 @@
 from app.Schemas.instagram.negotiation_schema import (
     InstagramConversationState,
     AnalyzeMessageOutput,
+    MessageIntent,
     NextAction,
 )
 from agents import Agent, Runner
@@ -23,11 +24,10 @@ async def analyze_intent(state: InstagramConversationState):
         ),
         input=state["user_message"],
     )
-
     analysis: AnalyzeMessageOutput = result.final_output
 
     state["analysis"] = analysis
-    state["intent"] = analysis.get("intent", "unclear")
+    state["intent"] = analysis.get("intent", MessageIntent.UNCLEAR)
 
     state.setdefault("influencer_response", {})
 
