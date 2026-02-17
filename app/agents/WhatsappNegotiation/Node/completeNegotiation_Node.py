@@ -13,34 +13,38 @@ async def complete_negotiation_node(state: WhatsappNegotiationState):
         print(f"{Colors.GREEN}Entering complete_negotiation_node")
         print("--------------------------------")
 
+        campaign_id = state.get("campaign_id")
+
         await update_negotiation_state(
             thread_id=state["thread_id"],
             data={
                 "conversation_mode": "DEFAULT",
                 "human_takeover": False,
-                "campaign_id": state["campaign_id"],
+                "campaign_id": campaign_id,
                 "negotiation_completed": True,
                 "negotiation_status": "agreed",
             },
         )
+
         print(
             f"{Colors.CYAN}[complete_negotiation_node] Negotiation state updated successfully"
         )
         print("--------------------------------")
+
+        message_text = (
+            "Thanks for sharing the details 🙌\n\n"
+            "Our collaboration team will now discuss pricing and next steps with you."
+        )
+
         await send_message_from_ishout_to_user(
             user_id=state["thread_id"],
-            text=(
-                "Thanks for sharing the details 🙌\n\n"
-                "Our collaboration team will now discuss pricing and next steps with you."
-            ),
+            text=message_text,
             sender=SenderType.AI.value,
         )
 
-        state["final_reply"] = (
-            "Thanks for sharing the details 🙌\n"
-            "Our collaboration team will now discuss pricing and next steps with you."
-        )
+        state["final_reply"] = message_text
         state["next_action"] = None
+
         print(f"{Colors.YELLOW}Exiting from complete_negotiation_node")
         print("--------------------------------")
 
