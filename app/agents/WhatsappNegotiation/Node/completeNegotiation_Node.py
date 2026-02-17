@@ -1,9 +1,8 @@
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
+from app.agents.WhatsappNegotiation.Node.send_reply_Node import send_whatsapp_reply_node
 from app.agents.WhatsappNegotiation.state.negotiation_state import (
     update_negotiation_state,
 )
-from app.services.whatsapp.send_text import send_message_from_ishout_to_user
-from app.utils.Enums.user_enum import SenderType
 from app.utils.printcolors import Colors
 from app.core.exception import InternalServerErrorException
 
@@ -32,12 +31,14 @@ async def complete_negotiation_node(state: WhatsappNegotiationState):
             "Thanks for sharing the details 🙌\n\n"
             "Our collaboration team will now discuss pricing and next steps with you."
         )
+        state["final_reply"] = message_text
+        await send_whatsapp_reply_node(state)
 
-        await send_message_from_ishout_to_user(
-            user_id=state["thread_id"],
-            text=message_text,
-            sender=SenderType.AI.value,
-        )
+        # await send_message_from_ishout_to_user(
+        #     user_id=state["thread_id"],
+        #     text=message_text,
+        #     sender=SenderType.AI.value,
+        # )
 
         state["final_reply"] = message_text
         state["next_action"] = None
