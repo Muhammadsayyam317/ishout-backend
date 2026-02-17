@@ -44,34 +44,23 @@ negotiation_graph.add_node("complete_negotiation", complete_negotiation_node)
 # Start
 # ----------------------
 negotiation_graph.add_edge(START, "intentclassifier")
-
-# ----------------------
-# Conditional routing from intent classifier
-# ----------------------
 negotiation_graph.add_conditional_edges(
     "intentclassifier",
     route_by_intent,
     {
         "fetch_pricing": "fetch_pricing",
-        "generate_reply": "generate_reply",
-    },
-)
-
-# ----------------------
-# Conditional routing after pricing
-# ----------------------
-negotiation_graph.add_conditional_edges(
-    "fetch_pricing",
-    route_by_intent,
-    {
         "counter_offer": "counter_offer",
-        "accept_negotiation": "accept_negotiation",
         "generate_reply": "generate_reply",
-        "admin_takeover": "admin_takeover",
+        "accept_negotiation": "accept_negotiation",
         "reject_negotiation": "reject_negotiation",
         "close_conversation": "close_conversation",
         "confirm_details": "confirm_details",
+        "admin_takeover": "admin_takeover",
     },
+)
+
+negotiation_graph.add_conditional_edges(
+    "fetch_pricing", lambda state: "counter_offer", {"counter_offer": "counter_offer"}
 )
 
 # ----------------------
