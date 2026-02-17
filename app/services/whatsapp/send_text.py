@@ -3,11 +3,14 @@ import httpx
 from app.config.credentials_config import config
 from app.core.exception import InternalServerErrorException
 from app.db.connection import get_db
+from app.utils.Enums.user_enum import SenderType
 from app.utils.helpers import normalize_phone
+from app.utils.printcolors import Colors
 
 
 async def send_whatsapp_text_message(to: str, text: str):
-    print("Entering into send_whatsapp_text_message")
+    print(f"{Colors.GREEN}Entering into send_whatsapp_text_message")
+    print("--------------------------------")
     headers = {
         "Authorization": f"Bearer {config.META_WHATSAPP_ACCESSSTOKEN}",
         "Content-Type": "application/json",
@@ -40,8 +43,8 @@ async def send_whatsapp_text_message(to: str, text: str):
             ) from e
 
 
-async def send_message_from_ishout_to_user(text: str, user_id: str):
-    print("Entering into send_message_from_ishout_to_user")
+async def send_message_from_ishout_to_user(text: str, user_id: str, sender: SenderType):
+    print(f"{Colors.GREEN}Entering into send_message_from_ishout_to_user")
     print("--------------------------------")
 
     try:
@@ -67,8 +70,8 @@ async def send_message_from_ishout_to_user(text: str, user_id: str):
             },
         }
 
-        print("Using PHONE_NUMBER_ID:", config.WHATSAPP_PHONE_NUMBER)
-        print("Payload:", payload)
+        print(f"{Colors.CYAN}Using PHONE_NUMBER_ID: {config.WHATSAPP_PHONE_NUMBER}")
+        print(f"{Colors.CYAN}Payload: {payload}")
         print("--------------------------------")
 
         async with httpx.AsyncClient(timeout=10.0) as client:
@@ -78,14 +81,17 @@ async def send_message_from_ishout_to_user(text: str, user_id: str):
                 json=payload,
             )
 
-        print("Status:", response.status_code)
-        print("Response:", response.text)
+        print(f"{Colors.CYAN}Status: {response.status_code}")
+        print(f"{Colors.CYAN}Response: {response.text}")
+        print("--------------------------------")
+        print(f"{Colors.YELLOW}Exiting from send_message_from_ishout_to_user")
 
         if response.status_code != 200:
-            print("WhatsApp API error:", response.text)
+            print(f"{Colors.RED}WhatsApp API error: {response.text}")
+            print("--------------------------------")
 
     except Exception as e:
-        print("Error sending message from ishout to user")
+        print(f"{Colors.RED}Error sending message from ishout to user: {e}")
         print("--------------------------------")
         print(e)
         print("--------------------------------")

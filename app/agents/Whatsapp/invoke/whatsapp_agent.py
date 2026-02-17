@@ -78,7 +78,7 @@ async def handle_negotiation_agent(request, thread_id, msg_text, profile_name):
     negotiation_state = await get_negotiation_state(thread_id)
 
     if not negotiation_state or negotiation_state.get("agent_paused"):
-        return False  # Not negotiation thread
+        return False
 
     print(f"{Colors.CYAN}Routing to Negotiation Agent")
     print("--------------------------------")
@@ -93,7 +93,6 @@ async def handle_negotiation_agent(request, thread_id, msg_text, profile_name):
     )
 
     agent = request.app.state.whatsapp_negotiation_agent
-
     final_state = await Negotiation_invoke(
         agent,
         negotiation_state,
@@ -102,35 +101,26 @@ async def handle_negotiation_agent(request, thread_id, msg_text, profile_name):
 
     if final_state:
         await update_negotiation_state(thread_id, final_state)
-
     return True
 
 
 async def handle_default_agent(request, thread_id, msg_text, profile_name, value):
     print("Routing to Default WhatsApp Agent")
-
     whatsapp_agent = getattr(request.app.state, "whatsapp_agent", None)
     if not whatsapp_agent:
         raise HTTPException(
             status_code=503,
             detail="WhatsApp agent not initialized",
         )
-
     stored_state = await get_user_state(thread_id)
     state = stored_state or {}
-
     conversation_round = await get_conversation_round(thread_id) or 1
-
     if state.get("done") and state.get("acknowledged"):
         conversation_round = await increment_conversation_round(thread_id)
-
         if conversation_round > 1:
             await cleanup_old_checkpoints(thread_id, conversation_round)
-
         state = await reset_user_state(thread_id)
-
     checkpoint_thread_id = f"{thread_id}-r{conversation_round}"
-
     state.update(
         {
             "user_message": msg_text,
@@ -140,12 +130,10 @@ async def handle_default_agent(request, thread_id, msg_text, profile_name, value
             "name": profile_name or state.get("name"),
         }
     )
-
     final_state = await whatsapp_agent.ainvoke(
         state,
         config={"configurable": {"thread_id": checkpoint_thread_id}},
     )
-
     if final_state:
         await update_user_state(thread_id, final_state)
 
@@ -156,15 +144,11 @@ async def handle_whatsapp_events(request: Request):
 
     try:
         event = await request.json()
-
         first_message, thread_id, msg_text, profile_name, value = (
             extract_whatsapp_message(event)
         )
-
         if not first_message or not thread_id:
             return {"status": "ok"}
-
-        # Handle interactive button replies
         if (
             first_message.get("type") == "interactive"
             and first_message.get("interactive", {}).get("type") == "button_reply"

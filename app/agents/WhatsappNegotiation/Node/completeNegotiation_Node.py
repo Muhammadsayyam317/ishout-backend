@@ -9,12 +9,10 @@ from app.core.exception import InternalServerErrorException
 
 
 async def complete_negotiation_node(state: WhatsappNegotiationState):
+    print(f"{Colors.GREEN}Entering complete_negotiation_node")
+    print("--------------------------------")
     try:
-        print(f"{Colors.GREEN}Entering complete_negotiation_node")
-        print("--------------------------------")
-
         campaign_id = state.get("campaign_id")
-
         await update_negotiation_state(
             thread_id=state["thread_id"],
             data={
@@ -25,7 +23,6 @@ async def complete_negotiation_node(state: WhatsappNegotiationState):
                 "negotiation_status": "agreed",
             },
         )
-
         print(
             f"{Colors.CYAN}[complete_negotiation_node] Negotiation state updated successfully"
         )
