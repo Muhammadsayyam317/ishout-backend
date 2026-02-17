@@ -1,18 +1,19 @@
 from app.Schemas.whatsapp.negotiation_schema import (
-    WhatsappMessageIntent,
     WhatsappNegotiationState,
+    WhatsappMessageIntent,
 )
 from app.utils.printcolors import Colors
 
 
 def route_by_intent(state: WhatsappNegotiationState):
-    print("Routing after pricing...")
-    print(f"{Colors.GREEN}Entering into route_after_pricing")
-    print("--------------------------------")
-    print(f"{Colors.CYAN}Routing after pricing: {state['intent']}")
+    print(f"{Colors.GREEN}Entering route_by_intent")
     print("--------------------------------")
 
-    if state["intent"] == WhatsappMessageIntent.REJECT:
+    intent = state.get("intent", WhatsappMessageIntent.UNCLEAR)
+    print(f"{Colors.CYAN}Routing based on intent: {intent}")
+
+    if intent == WhatsappMessageIntent.REJECT:
+        print(f"{Colors.YELLOW}Intent is REJECT → generate_reply")
         return "generate_reply"
 
     if state["intent"] in (
@@ -21,8 +22,7 @@ def route_by_intent(state: WhatsappNegotiationState):
         WhatsappMessageIntent.QUESTION,
         WhatsappMessageIntent.ACCEPT,
     ):
+        print(f"{Colors.YELLOW}Intent requires pricing → fetch_pricing")
         return "fetch_pricing"
-
-    print(f"{Colors.YELLOW}Exiting from route_after_pricing")
-    print("--------------------------------")
+    print(f"{Colors.RED}Intent unclear → generate_reply")
     return "generate_reply"

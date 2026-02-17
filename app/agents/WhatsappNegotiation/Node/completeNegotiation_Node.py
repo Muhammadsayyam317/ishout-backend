@@ -1,3 +1,4 @@
+from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
 from app.agents.WhatsappNegotiation.state.negotiation_state import (
     update_negotiation_state,
 )
@@ -7,10 +8,11 @@ from app.utils.printcolors import Colors
 from app.core.exception import InternalServerErrorException
 
 
-async def complete_negotiation_node(state):
+async def complete_negotiation_node(state: WhatsappNegotiationState):
     try:
-        print(f"{Colors.GREEN}Entering into complete_negotiation_node")
+        print(f"{Colors.GREEN}Entering complete_negotiation_node")
         print("--------------------------------")
+
         await update_negotiation_state(
             thread_id=state["thread_id"],
             data={
@@ -18,11 +20,13 @@ async def complete_negotiation_node(state):
                 "human_takeover": False,
                 "campaign_id": state["campaign_id"],
                 "negotiation_completed": True,
+                "negotiation_status": "agreed",
             },
         )
-        print(f"{Colors.CYAN} [complete_negotiation_node] Negotiation state updated")
+        print(
+            f"{Colors.CYAN}[complete_negotiation_node] Negotiation state updated successfully"
+        )
         print("--------------------------------")
-
         await send_message_from_ishout_to_user(
             user_id=state["thread_id"],
             text=(
@@ -31,12 +35,19 @@ async def complete_negotiation_node(state):
             ),
             sender=SenderType.AI.value,
         )
-        print(f"{Colors.YELLOW} Exiting from complete_negotiation_node")
+
+        state["final_reply"] = (
+            "Thanks for sharing the details 🙌\n"
+            "Our collaboration team will now discuss pricing and next steps with you."
+        )
+        state["next_action"] = None
+        print(f"{Colors.YELLOW}Exiting from complete_negotiation_node")
         print("--------------------------------")
+
     except Exception as e:
-        print(f"{Colors.RED}Error in complete_negotiation_node: {e}")
-        print("--------------------------------")
+        print(f"{Colors.RED}[complete_negotiation_node] Error: {e}")
         raise InternalServerErrorException(
             message=f"Error in complete_negotiation_node: {str(e)}"
         ) from e
+
     return state

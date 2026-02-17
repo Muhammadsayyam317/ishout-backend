@@ -34,6 +34,7 @@ class WhatsappNegotiationState(TypedDict):
     negotiation_status: Optional[str]
     manual_negotiation: Optional[bool]
     final_reply: Optional[str]
+    user_offer: Optional[float]
 
 
 class InfluencersNegotiation(TypedDict):

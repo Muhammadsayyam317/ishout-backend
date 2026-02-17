@@ -1,35 +1,34 @@
 from app.Schemas.whatsapp.negotiation_schema import (
-    WhatsappMessageIntent,
     WhatsappNegotiationState,
+    WhatsappMessageIntent,
 )
-from app.utils.printcolors import Colors
 from app.Schemas.instagram.negotiation_schema import NextAction
+from app.utils.printcolors import Colors
 
 
 def route_after_pricing(state: WhatsappNegotiationState):
     print(f"{Colors.GREEN}Entering route_after_pricing")
     print("--------------------------------")
-
     intent = state.get("intent")
     next_action = state.get("next_action")
+    print(f"{Colors.CYAN}Intent: {intent} | NextAction: {next_action}")
 
     if intent == WhatsappMessageIntent.INTEREST:
         state["negotiation_round"] = 0
         state["last_offered_price"] = None
         state["user_offer"] = None
         state["negotiation_status"] = "pending"
+        print(f"{Colors.CYAN}Resetting negotiation state for INTEREST")
 
-    print(f"{Colors.CYAN}Intent: {intent} | NextAction: {next_action}")
-    negotiation_actions = {
-        NextAction.ASK_RATE,
-        NextAction.ESCALATE_NEGOTIATION,
-        NextAction.ACCEPT_NEGOTIATION,
-    }
-
-    if next_action in negotiation_actions:
-        print(f"{Colors.YELLOW}Routing to negotiation_engine")
-        return "negotiation_engine"
-
+    if next_action == NextAction.ASK_RATE:
+        return "counter_offer"
+    print(f"{Colors.YELLOW}Routing to counter_offer")
+    if next_action == NextAction.ESCALATE_NEGOTIATION:
+        return "price_escalation"
+    print(f"{Colors.YELLOW}Routing to price_escalation")
+    if next_action == NextAction.ACCEPT_NEGOTIATION:
+        return "accept_negotiation"
+    print(f"{Colors.YELLOW}Routing to accept_negotiation")
     mapping = {
         NextAction.ANSWER_QUESTION: "generate_reply",
         NextAction.CONFIRM_PRICING: "confirm_details",
@@ -39,9 +38,7 @@ def route_after_pricing(state: WhatsappNegotiationState):
         NextAction.CLOSE_CONVERSATION: "close_conversation",
     }
 
-    if next_action in mapping:
-        print(f"{Colors.CYAN}Routed to: {mapping[next_action]}")
-        return mapping[next_action]
-
-    print(f"{Colors.RED}Fallback → generate_reply")
-    return "generate_reply"
+    print(f"{Colors.CYAN}Routing to: {mapping.get(next_action, 'generate_reply')}")
+    print(f"{Colors.YELLOW}Exiting route_after_pricing")
+    print("--------------------------------")
+    return mapping.get(next_action, "generate_reply")

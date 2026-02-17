@@ -33,7 +33,6 @@ from langgraph.graph import StateGraph, START, END
 
 negotiation_graph = StateGraph(WhatsappNegotiationState)
 
-negotiation_graph.add_edge(START, "intentclassifier")
 negotiation_graph.add_node("intentclassifier", intentclassifier)
 negotiation_graph.add_node("fetch_pricing", fetch_pricing_node)
 negotiation_graph.add_node("generate_reply", generate_reply_node)
@@ -48,6 +47,11 @@ negotiation_graph.add_node("confirm_details", confirm_details_node)
 negotiation_graph.add_node("complete_negotiation", complete_negotiation_node)
 
 
+negotiation_graph.add_edge(START, "intentclassifier")
+
+# ----------------------
+# Conditional routing from intent classifier
+# ----------------------
 negotiation_graph.add_conditional_edges(
     "intentclassifier",
     route_by_intent,
@@ -57,22 +61,27 @@ negotiation_graph.add_conditional_edges(
     },
 )
 
+# ----------------------
+# Conditional routing after pricing
+# ----------------------
 negotiation_graph.add_conditional_edges(
     "fetch_pricing",
     route_after_pricing,
     {
         "counter_offer": "counter_offer",
         "price_escalation": "price_escalation",
+        "accept_negotiation": "accept_negotiation",
         "generate_reply": "generate_reply",
         "admin_takeover": "admin_takeover",
-        "accept_negotiation": "accept_negotiation",
         "reject_negotiation": "reject_negotiation",
         "close_conversation": "close_conversation",
         "confirm_details": "confirm_details",
     },
 )
 
-negotiation_graph.add_edge("counter_offer", "price_escalation")
+negotiation_graph.add_edge(
+    "counter_offer", "price_escalation"
+)  # escalate after counter-offer
 negotiation_graph.add_edge("price_escalation", "send_message")
 negotiation_graph.add_edge("generate_reply", "send_message")
 negotiation_graph.add_edge("confirm_details", "send_message")
@@ -80,6 +89,9 @@ negotiation_graph.add_edge("accept_negotiation", "complete_negotiation")
 negotiation_graph.add_edge("reject_negotiation", "send_message")
 negotiation_graph.add_edge("close_conversation", "send_message")
 
+# ----------------------
+# Admin takeover or end nodes
+# ----------------------
 negotiation_graph.add_edge("admin_takeover", END)
 negotiation_graph.add_edge("send_message", END)
 negotiation_graph.add_edge("complete_negotiation", END)
