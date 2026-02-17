@@ -98,7 +98,7 @@ class InstagramConversationState(TypedDict):
     last_message: str
 
     intent: MessageIntent
-    analysis: AnalyzeMessageOutput
+    # analysis: AnalyzeMessageOutput
 
     asked_questions: Dict[str, bool]
     influencer_response: Dict[str, Optional[str | float | bool]]

@@ -75,9 +75,20 @@ async def process_incoming_message(thread_id, profile_name, msg_text):
 
 
 async def handle_negotiation_agent(request, thread_id, msg_text, profile_name):
+    print(f"{Colors.GREEN}Entering into handle_negotiation_agent")
+    print("--------------------------------")
     negotiation_state = await get_negotiation_state(thread_id)
-
-    if not negotiation_state or negotiation_state.get("agent_paused"):
+    print(f"{Colors.CYAN}Negotiation state: {negotiation_state}")
+    print("--------------------------------")
+    if (
+        not negotiation_state
+        or negotiation_state.get("agent_paused")
+        or negotiation_state.get("negotiation_completed")
+    ):
+        print(f"{Colors.RED}No active negotiation state or agent paused/completed")
+        print("--------------------------------")
+        print(f"{Colors.YELLOW}Exiting from handle_negotiation_agent")
+        print("--------------------------------")
         return False
 
     print(f"{Colors.CYAN}Routing to Negotiation Agent")

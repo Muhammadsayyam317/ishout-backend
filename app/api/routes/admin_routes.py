@@ -62,6 +62,7 @@ from app.services.instagram.list_on_conversations import (
     instagram_conversation_messages,
     instagram_conversations_list,
 )
+from app.services.negotiation.negotiation import get_all_negotiation_controls
 from app.tools.regenerate_influencer import reject_and_regenerate
 
 router = APIRouter()
@@ -353,9 +354,13 @@ router.add_api_route(
     tags=["Admin"],
 )
 
-router.add_api_route(
-    path="/intent-classifier",
-    endpoint=intentclassifier,
-    methods=["POST"],
-    tags=["Admin"],
-)
+
+@router.get("/negotiation-controls", tags=["Admin"])
+async def negotiation_controls_route(
+    page: int = 1,
+    page_size: int = 10,
+):
+    try:
+        return await get_all_negotiation_controls(page, page_size)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
