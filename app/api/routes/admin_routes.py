@@ -8,10 +8,9 @@ from app.agents.WhatsappNegotiation.Node.InitialMessage_Node import (
     NegotiationInitialMessage,
 )
 from app.agents.WhatsappNegotiation.Node.IntentClassifier_Node import intentclassifier
-from app.agents.WhatsappNegotiation.Node.fetchInfluencerinfo_Node import (
+from app.agents.WhatsappNegotiation.Node.fetchPricing_Node import (
     FetchCampaignInfluencerInfo,
 )
-
 from app.api.controllers.admin.campaign_controller import (
     add_influencer_Number,
     update_status,
