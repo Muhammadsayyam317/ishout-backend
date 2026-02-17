@@ -12,6 +12,19 @@ def counter_offer_node(state: WhatsappNegotiationState):
     last_price = state.get("last_offered_price")
     user_offer = state.get("user_offer")
 
+    if user_offer is not None and user_offer <= max_price:
+        state["negotiation_status"] = "agreed"
+        state["last_offered_price"] = user_offer
+        state["final_reply"] = (
+            f"Great! We confirm the collaboration at ${user_offer:.2f}."
+        )
+        state["next_action"] = NextAction.ACCEPT_NEGOTIATION
+        print(f"{Colors.CYAN}Influencer offer accepted: {user_offer}")
+        state["user_offer"] = None
+        print(f"{Colors.YELLOW}Exiting counter_offer_node (accepted)")
+        print("--------------------------------")
+        return state
+
     if last_price is None:
         next_price = min_price
         state["negotiation_round"] = 1
@@ -36,16 +49,8 @@ def counter_offer_node(state: WhatsappNegotiationState):
             f"We can revise the offer to ${next_price:.2f}. Does this work for you?"
         )
         print(f"{Colors.CYAN}Offer adjusted to: {next_price}")
-    if user_offer is not None and user_offer <= next_price:
-        state["negotiation_status"] = "agreed"
-        state["last_offered_price"] = user_offer
-        state["final_reply"] = (
-            f"Great! We confirm the collaboration at ${user_offer:.2f}."
-        )
-        state["next_action"] = NextAction.ACCEPT_NEGOTIATION
-        print(f"{Colors.CYAN}Influencer offer accepted: {user_offer}")
-    else:
-        state["last_offered_price"] = next_price
+
+    state["last_offered_price"] = next_price
     state["user_offer"] = None
 
     print(f"{Colors.YELLOW}Exiting counter_offer_node")
