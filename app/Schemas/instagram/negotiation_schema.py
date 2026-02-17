@@ -32,26 +32,26 @@ class MessageIntent(str, Enum):
     UNCLEAR = "unclear"
 
 
-class AnalyzeMessageOutput(TypedDict):
-    intent: MessageIntent
-    pricing_mentioned: bool
-    budget_amount: Optional[float]
-    currency: Optional[str]
+# class AnalyzeMessageOutput(TypedDict):
+#     intent: MessageIntent
+#     pricing_mentioned: bool
+#     budget_amount: Optional[float]
+#     currency: Optional[str]
 
-    deliverables_mentioned: bool
-    deliverables: Optional[str]
+#     deliverables_mentioned: bool
+#     deliverables: Optional[str]
 
-    timeline_mentioned: bool
-    timeline: Optional[str]
+#     timeline_mentioned: bool
+#     timeline: Optional[str]
 
-    platforms_mentioned: bool
-    platforms: Optional[List[str]]
+#     platforms_mentioned: bool
+#     platforms: Optional[List[str]]
 
-    usage_rights_mentioned: bool
-    exclusivity_mentioned: bool
+#     usage_rights_mentioned: bool
+#     exclusivity_mentioned: bool
 
-    missing_required_details: List[str]
-    next_action: NextAction
+#     missing_required_details: List[str]
+#     next_action: NextAction
 
 
 class InfluencerDetailsInput(TypedDict):
@@ -98,7 +98,7 @@ class InstagramConversationState(TypedDict):
     last_message: str
 
     intent: MessageIntent
-    analysis: AnalyzeMessageOutput
+    # analysis: AnalyzeMessageOutput
 
     asked_questions: Dict[str, bool]
     influencer_response: Dict[str, Optional[str | float | bool]]
