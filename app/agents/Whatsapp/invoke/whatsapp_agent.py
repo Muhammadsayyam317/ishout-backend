@@ -21,6 +21,135 @@ from app.utils.Enums.user_enum import SenderType
 from app.utils.printcolors import Colors
 
 
+def extract_whatsapp_message(event: dict):
+    entry = event.get("entry")
+    if not entry:
+        return None, None, None, None, None
+
+    changes = entry[0].get("changes")
+    if not changes:
+        return None, None, None, None, None
+
+    value = changes[0].get("value", {})
+    messages = value.get("messages")
+    if not messages:
+        return None, None, None, None, None
+
+    first_message = messages[0]
+
+    thread_id = first_message.get("from")
+
+    msg_text = (
+        first_message.get("text", {}).get("body")
+        if isinstance(first_message.get("text"), dict)
+        else first_message.get("text")
+    ) or ""
+
+    profile_name = (
+        value.get("contacts", [{}])[0].get("profile", {}).get("name") or "iShout"
+    )
+
+    return first_message, thread_id, msg_text, profile_name, value
+
+
+async def process_incoming_message(thread_id, profile_name, msg_text):
+    await save_conversation_message(
+        thread_id=thread_id,
+        username=profile_name,
+        sender=SenderType.USER.value,
+        message=msg_text,
+    )
+
+    print(f"{Colors.GREEN}Conversation message saved")
+    print("--------------------------------")
+
+    await ws_manager.broadcast_event(
+        "whatsapp.message",
+        {
+            "thread_id": thread_id,
+            "sender": "USER",
+            "message": msg_text,
+            "timestamp": datetime.now(timezone.utc),
+        },
+    )
+
+
+async def handle_negotiation_agent(request, thread_id, msg_text, profile_name):
+    negotiation_state = await get_negotiation_state(thread_id)
+
+    if not negotiation_state or negotiation_state.get("agent_paused"):
+        return False  # Not negotiation thread
+
+    print(f"{Colors.CYAN}Routing to Negotiation Agent")
+    print("--------------------------------")
+
+    negotiation_state.update(
+        {
+            "user_message": msg_text,
+            "thread_id": thread_id,
+            "sender_id": thread_id,
+            "name": profile_name,
+        }
+    )
+
+    agent = request.app.state.whatsapp_negotiation_agent
+
+    final_state = await Negotiation_invoke(
+        agent,
+        negotiation_state,
+        config={"configurable": {"thread_id": thread_id}},
+    )
+
+    if final_state:
+        await update_negotiation_state(thread_id, final_state)
+
+    return True
+
+
+async def handle_default_agent(request, thread_id, msg_text, profile_name, value):
+    print("Routing to Default WhatsApp Agent")
+
+    whatsapp_agent = getattr(request.app.state, "whatsapp_agent", None)
+    if not whatsapp_agent:
+        raise HTTPException(
+            status_code=503,
+            detail="WhatsApp agent not initialized",
+        )
+
+    stored_state = await get_user_state(thread_id)
+    state = stored_state or {}
+
+    conversation_round = await get_conversation_round(thread_id) or 1
+
+    if state.get("done") and state.get("acknowledged"):
+        conversation_round = await increment_conversation_round(thread_id)
+
+        if conversation_round > 1:
+            await cleanup_old_checkpoints(thread_id, conversation_round)
+
+        state = await reset_user_state(thread_id)
+
+    checkpoint_thread_id = f"{thread_id}-r{conversation_round}"
+
+    state.update(
+        {
+            "user_message": msg_text,
+            "event_data": value,
+            "thread_id": thread_id,
+            "sender_id": thread_id,
+            "name": profile_name or state.get("name"),
+        }
+    )
+
+    final_state = await whatsapp_agent.ainvoke(
+        state,
+        config={"configurable": {"thread_id": checkpoint_thread_id}},
+    )
+
+    if final_state:
+        await update_user_state(thread_id, final_state)
+
+
 async def handle_whatsapp_events(request: Request):
     print(f"{Colors.GREEN}Entering into handle_whatsapp_events")
     print("--------------------------------")
@@ -28,21 +157,14 @@ async def handle_whatsapp_events(request: Request):
     try:
         event = await request.json()
 
-        entry = event.get("entry")
-        if not entry:
+        first_message, thread_id, msg_text, profile_name, value = (
+            extract_whatsapp_message(event)
+        )
+
+        if not first_message or not thread_id:
             return {"status": "ok"}
 
-        changes = entry[0].get("changes")
-        if not changes:
-            return {"status": "ok"}
-
-        value = changes[0].get("value", {})
-        messages = value.get("messages")
-        if not messages:
-            return {"status": "ok"}
-
-        first_message = messages[0]
-
+        # Handle interactive button replies
         if (
             first_message.get("type") == "interactive"
             and first_message.get("interactive", {}).get("type") == "button_reply"
@@ -50,123 +172,26 @@ async def handle_whatsapp_events(request: Request):
             await handle_button_reply(first_message)
             return {"status": "ok"}
 
-        thread_id = first_message.get("from")
-        if not thread_id:
+        # Save + broadcast
+        await process_incoming_message(thread_id, profile_name, msg_text)
+
+        # negotiation agent
+        negotiation_handled = await handle_negotiation_agent(
+            request, thread_id, msg_text, profile_name
+        )
+        if negotiation_handled:
             return {"status": "ok"}
 
-        msg_text = (
-            first_message.get("text", {}).get("body")
-            if isinstance(first_message.get("text"), dict)
-            else first_message.get("text")
-        ) or ""
-
-        profile_name = (
-            value.get("contacts", [{}])[0].get("profile", {}).get("name") or "iShout"
-        )
-
-        await save_conversation_message(
-            thread_id=thread_id,
-            username=profile_name,
-            sender=SenderType.USER.value,
-            message=msg_text,
-        )
-
-        print(f"{Colors.GREEN}Conversation message saved")
-        print("--------------------------------")
-
-        await ws_manager.broadcast_event(
-            "whatsapp.message",
-            {
-                "thread_id": thread_id,
-                "sender": "USER",
-                "message": msg_text,
-                "timestamp": datetime.now(timezone.utc),
-            },
-        )
-
-        # =====================================================
-        # 1️⃣ CHECK NEGOTIATION STATE FIRST
-        # =====================================================
-
-        print("Checking Negotiaition State for Incoming thread_id:", thread_id)
-        negotiation_state = await get_negotiation_state(thread_id)
-        print("Negotiation state found:", negotiation_state)
-        print("--------------------------------")
-
-        if (
-            negotiation_state
-            and negotiation_state.get("conversation_mode") == "NEGOTIATION"
-            and not negotiation_state.get("agent_paused")
-        ):
-            print(f"{Colors.GREEN}Routing to Negotiation Agent")
-            print("--------------------------------")
-            negotiation_state.update(
-                {
-                    "user_message": msg_text,
-                    "thread_id": thread_id,
-                    "sender_id": thread_id,
-                    "name": profile_name,
-                }
-            )
-            app = request.app
-            agent = app.state.whatsapp_negotiation_agent
-            final_state = await Negotiation_invoke(
-                agent,
-                negotiation_state,
-                config={"configurable": {"thread_id": thread_id}},
-            )
-
-            if final_state:
-                await update_negotiation_state(thread_id, final_state)
-            return {"status": "ok"}
-
-        # =====================================================
-        #  DEFAULT AGENT
-        # =====================================================
-
-        print("Routing to Default WhatsApp Agent")
-
-        app = request.app
-        whatsapp_agent = getattr(app.state, "whatsapp_agent", None)
-        if not whatsapp_agent:
-            raise HTTPException(
-                status_code=503,
-                detail="WhatsApp agent not initialized",
-            )
-
-        stored_state = await get_user_state(thread_id)
-        state = stored_state or {}
-
-        conversation_round = await get_conversation_round(thread_id) or 1
-        if state.get("done") and state.get("acknowledged"):
-            conversation_round = await increment_conversation_round(thread_id)
-            if conversation_round > 1:
-                await cleanup_old_checkpoints(thread_id, conversation_round)
-            state = await reset_user_state(thread_id)
-        checkpoint_thread_id = f"{thread_id}-r{conversation_round}"
-        state.update(
-            {
-                "user_message": msg_text,
-                "event_data": value,
-                "thread_id": thread_id,
-                "sender_id": thread_id,
-                "name": profile_name or state.get("name"),
-            }
-        )
-
-        final_state = await whatsapp_agent.ainvoke(
-            state,
-            config={"configurable": {"thread_id": checkpoint_thread_id}},
-        )
-
-        if final_state:
-            await update_user_state(thread_id, final_state)
+        # Otherwise default agent
+        await handle_default_agent(request, thread_id, msg_text, profile_name, value)
         print(f"{Colors.YELLOW}Exiting from handle_whatsapp_events")
         print("--------------------------------")
         return {"status": "ok"}
+
     except Exception as e:
         print(f"{Colors.RED}Error in handle_whatsapp_events: {e}")
         print("--------------------------------")
+
         raise HTTPException(
             status_code=500,
             detail=f"Webhook processing failed: {str(e)}",
