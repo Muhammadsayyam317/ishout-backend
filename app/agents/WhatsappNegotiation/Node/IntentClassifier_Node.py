@@ -1,25 +1,20 @@
-from app.Schemas.instagram.negotiation_schema import (
-    AnalyzeMessageOutput,
-    NextAction,
-)
-from agents import Agent, Runner
-from app.Guardails.input_guardrails import (
-    WhatsappInputGuardrail,
-)
+from app.Schemas.instagram.negotiation_schema import AnalyzeMessageOutput, NextAction
 from app.Schemas.whatsapp.negotiation_schema import (
     WhatsappMessageIntent,
     WhatsappNegotiationState,
 )
+from agents import Agent, Runner
+from app.Guardails.input_guardrails import WhatsappInputGuardrail
 from app.utils.printcolors import Colors
-from app.utils.prompts import (
-    ANALYZE_INFLUENCER_WHATSAPP_PROMPT,
-)
+from app.utils.prompts import ANALYZE_INFLUENCER_WHATSAPP_PROMPT
 
 
 async def intentclassifier(state: WhatsappNegotiationState):
     try:
-        print(f"{Colors.GREEN}Entering Intent Classifier")
+        print(f"{Colors.GREEN}Entering intentclassifier node")
         print("--------------------------------")
+
+        user_message = state.get("user_message", "")
         result = await Runner.run(
             Agent(
                 name="analyze_whatsapp_message",
@@ -27,39 +22,27 @@ async def intentclassifier(state: WhatsappNegotiationState):
                 input_guardrails=[WhatsappInputGuardrail],
                 output_type=AnalyzeMessageOutput,
             ),
-            input=state.get("user_message", ""),
+            input=user_message,
         )
 
         analysis: AnalyzeMessageOutput = result.final_output or {}
-        print(f"{Colors.CYAN}Intent Classifier Result: {analysis}")
-
         intent = analysis.get("intent", WhatsappMessageIntent.UNCLEAR)
-        budget = analysis.get("budget_amount")
-        next_action = analysis.get("next_action", NextAction.GENERATE_CLARIFICATION)
 
-        # Normalize next_action for negotiation intents
-        if intent in (
-            WhatsappMessageIntent.INTEREST,
-            WhatsappMessageIntent.NEGOTIATE,
-            WhatsappMessageIntent.ACCEPT,
-        ):
-            if budget:
-                next_action = NextAction.ASK_RATE
-            else:
-                next_action = NextAction.GENERATE_CLARIFICATION
-
+        # Update state
         state["analysis"] = analysis
         state["intent"] = intent
-        state["next_action"] = next_action
+        state["next_action"] = analysis.get(
+            "next_action", NextAction.GENERATE_CLARIFICATION
+        )
 
-        print(f"Intent: {intent}")
-        print(f"Budget Amount: {budget}")
-        print(f"Next Action: {next_action}")
-        print(f"{Colors.YELLOW}Exiting from intentclassifier")
+        print(
+            f"{Colors.CYAN}IntentClassifier Result → Intent: {intent}, NextAction: {state['next_action']}"
+        )
+        print(f"{Colors.YELLOW}Exiting intentclassifier node")
         print("--------------------------------")
 
     except Exception as e:
-        print(f"{Colors.RED}Error in intentclassifier: {e}")
+        print(f"{Colors.RED}[intentclassifier] Error: {e}")
         state["intent"] = WhatsappMessageIntent.UNCLEAR
         state["next_action"] = NextAction.GENERATE_CLARIFICATION
         state["analysis"] = {}
