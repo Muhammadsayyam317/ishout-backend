@@ -37,9 +37,9 @@ async def fetch_pricing_node(state: WhatsappNegotiationState):
     print(f"{Colors.GREEN}Entering fetch_pricing_node")
     print("--------------------------------")
 
-    # Guardrail: Skip if pricing already exists
-    if state.get("min_price") is not None and state.get("max_price") is not None:
-        print(f"{Colors.YELLOW}Pricing already present → Skipping DB fetch")
+    if state.get("min_price") and state.get("max_price"):
+        print(f"{Colors.YELLOW}Pricing already present in state. Skipping DB fetch.")
+        print("--------------------------------")
         return state
 
     influencer_id = state.get("_id")
@@ -50,18 +50,19 @@ async def fetch_pricing_node(state: WhatsappNegotiationState):
 
     min_price = influencer.get("min_price")
     max_price = influencer.get("max_price")
+    campaign_id = influencer.get("campaign_id")
 
-    # Validation
     if min_price is None or max_price is None:
         raise ValueError("Pricing configuration missing in campaign influencer")
+
     if min_price > max_price:
         raise ValueError("Invalid pricing configuration: min_price > max_price")
 
     state["min_price"] = float(min_price)
     state["max_price"] = float(max_price)
+    state["campaign_id"] = campaign_id
 
-    print(f"{Colors.CYAN}Pricing loaded → min: {min_price}, max: {max_price}")
-    print(f"{Colors.YELLOW}Exiting fetch_pricing_node")
+    print(f"{Colors.GREEN}Pricing loaded → min: {min_price}, max: {max_price}")
     print("--------------------------------")
 
     return state

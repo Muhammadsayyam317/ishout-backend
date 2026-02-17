@@ -16,9 +16,8 @@ from app.agents.WhatsappNegotiation.Node.closeNegotiation_Node import (
 )
 from app.agents.WhatsappNegotiation.Node.confirmDetail_Node import confirm_details_node
 from app.agents.WhatsappNegotiation.Node.counteroffer_Node import counter_offer_node
-from app.agents.WhatsappNegotiation.Node.fetchInfluencerinfo_Node import (
-    fetch_pricing_node,
-)
+
+from app.agents.WhatsappNegotiation.Node.fetchPricing_Node import fetch_pricing_node
 from app.agents.WhatsappNegotiation.Node.rejectNegotiation_Node import (
     reject_negotiation_node,
 )
