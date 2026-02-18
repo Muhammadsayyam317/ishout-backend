@@ -1,5 +1,8 @@
 from app.Schemas.instagram.message_schema import GenerateReplyOutput
-from app.utils.prompts import NEGOTIATE_INFLUENCER_DM_PROMPT
+from app.utils.prompts import (
+    ANALYZE_INFLUENCER_WHATSAPP_PROMPT,
+    NEGOTIATE_INFLUENCER_DM_PROMPT,
+)
 
 
 def build_message_context(last_messages: list[dict], latest: str) -> str:
@@ -22,6 +25,26 @@ Latest message:
 User: {latest}
 
 Write the next reply as a natural human text message.
+""".strip()
+
+
+def build_whatsapp_message_context(last_messages: list[dict], latest: str) -> str:
+    history = "\n".join(
+        f"{'AI' if msg.get('sender_type') == 'AI' else 'User'}: {msg.get('message', '')}"
+        for msg in last_messages
+    )
+
+    return f"""
+{ANALYZE_INFLUENCER_WHATSAPP_PROMPT}
+
+Conversation so far:
+{history}
+
+Latest message:
+User: {latest}
+
+Write the next reply as a natural WhatsApp message.
+Keep it short, friendly, and human.
 """.strip()
 
 
