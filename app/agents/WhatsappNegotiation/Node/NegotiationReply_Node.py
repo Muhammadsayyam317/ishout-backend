@@ -1,41 +1,56 @@
-from app.Schemas.whatsapp.negotiation_schema import (
-    WhatsappNegotiationState,
-    WhatsappMessageIntent,
-)
-from app.Schemas.instagram.negotiation_schema import NextAction
+from agents import Agent, Runner
+from agents.exceptions import InputGuardrailTripwireTriggered
+from app.Guardails.input_guardrails import WhatsappInputGuardrail
+from app.Schemas.instagram.negotiation_schema import GenerateReplyOutput
+from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
+from app.utils.message_context import build_whatsapp_message_context
+from app.utils.prompts import NEGOTIATE_INFLUENCER_DM_PROMPT
 from app.utils.printcolors import Colors
 
 
-def generate_reply_node(state: WhatsappNegotiationState):
-    print(f"{Colors.GREEN}Entering into generate_reply_node")
+async def generate_reply_node(state: WhatsappNegotiationState):
+    print(f"{Colors.GREEN}Entering generate_reply_node")
     print("--------------------------------")
 
-    intent = state.get("intent")
-
-    if intent == WhatsappMessageIntent.REJECT:
-        state["final_reply"] = (
-            "Thanks for letting us know. "
-            "If anything changes in the future, feel free to reach out."
+    try:
+        prompt = NEGOTIATE_INFLUENCER_DM_PROMPT.format(
+            min_price=state.get("min_price"),
+            max_price=state.get("max_price"),
+            last_offer=state.get("last_offered_price"),
+            negotiation_status=state.get("negotiation_status"),
+            next_action=state.get("next_action"),
         )
-        state["next_action"] = NextAction.CLOSE_CONVERSATION
 
-    elif intent == WhatsappMessageIntent.QUESTION:
-        state["final_reply"] = (
-            "Happy to clarify! Let us know what details you’d like about "
-            "deliverables or timelines."
+        result = await Runner.run(
+            Agent(
+                name="whatsapp_negotiation_reply",
+                instructions=prompt,
+                input_guardrails=[WhatsappInputGuardrail],
+                output_type=GenerateReplyOutput,
+            ),
+            input=build_whatsapp_message_context(
+                state.get("history", []),
+                state.get("user_message"),
+            ),
         )
-        state["next_action"] = NextAction.ANSWER_QUESTION
 
-    else:
-        state["final_reply"] = (
-            "Could you please clarify your expectations so we can proceed?"
+        reply_text = result.final_output["final_reply"]
+        state["negotiation_mode"] = "automatic"
+
+    except InputGuardrailTripwireTriggered as e:
+        reply_text = (
+            e.fallback or "Thanks for your message. Our team will follow up shortly."
         )
-        state["next_action"] = NextAction.GENERATE_CLARIFICATION
+        state["negotiation_mode"] = "manual"
+        state["manual_reason"] = e.reason
 
-    print(
-        f"{Colors.CYAN}[generate_reply_node] Intent: {intent}, Reply: {state['final_reply']}"
-    )
-    print(f"{Colors.YELLOW} Exiting from generate_reply_node")
+    state["final_reply"] = reply_text
+
+    # Save AI reply into history
+    state.setdefault("history", []).append({"sender_type": "AI", "message": reply_text})
+
+    print(f"{Colors.CYAN}Generated Reply: {reply_text}")
+    print(f"{Colors.YELLOW}Exiting generate_reply_node")
     print("--------------------------------")
 
     return state

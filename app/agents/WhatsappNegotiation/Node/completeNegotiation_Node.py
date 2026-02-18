@@ -33,13 +33,6 @@ async def complete_negotiation_node(state: WhatsappNegotiationState):
         )
         state["final_reply"] = message_text
         await send_whatsapp_reply_node(state)
-
-        # await send_message_from_ishout_to_user(
-        #     user_id=state["thread_id"],
-        #     text=message_text,
-        #     sender=SenderType.AI.value,
-        # )
-
         state["final_reply"] = message_text
         state["next_action"] = None
 
