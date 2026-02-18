@@ -5,6 +5,7 @@ from app.model.whatsappconversation import ConversationState
 import json
 import logging
 from typing import Coroutine
+from app.utils.printcolors import Colors
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -44,17 +45,30 @@ async def insta_debug_after(state: InstagramConversationState):
     return state
 
 
-async def negotiation_debug_before(state: WhatsappNegotiationState):
-    logging.info(
-        "\n\n===== 🟡 DEBUG BEFORE =====\n%s", json.dumps(state, indent=2, default=str)
-    )
+async def whatsapp_negotiation_debug_before(state):
+    print(f"{Colors.MAGENTA}========== NEGOTIATION DEBUG (BEFORE) ==========")
+    print(f"Thread ID: {state.get('thread_id')}")
+    print(f"User Message: {state.get('user_message')}")
+    print(f"Intent: {state.get('intent')}")
+    print(f"User Offer: {state.get('user_offer')}")
+    print(f"Last Offered Price: {state.get('last_offered_price')}")
+    print(f"Min Price: {state.get('min_price')}")
+    print(f"Max Price: {state.get('max_price')}")
+    print(f"Negotiation Status: {state.get('negotiation_status')}")
+    print(f"Next Action: {state.get('next_action')}")
+    print("===============================================")
     return state
 
 
-async def negotiation_debug_after(state: WhatsappNegotiationState):
-    logging.info(
-        "\n\n===== 🟢 DEBUG AFTER =====\n%s", json.dumps(state, indent=2, default=str)
-    )
+async def whatsapp_negotiation_debug_after(state):
+    print(f"{Colors.BLUE}========== NEGOTIATION DEBUG (AFTER) ==========")
+    print(f"Intent: {state.get('intent')}")
+    print(f"Negotiation Status: {state.get('negotiation_status')}")
+    print(f"Last Offered Price: {state.get('last_offered_price')}")
+    print(f"Next Action: {state.get('next_action')}")
+    print(f"Manual Negotiation: {state.get('manual_negotiation')}")
+    print(f"Final Reply: {state.get('final_reply')}")
+    print("===============================================")
     return state
 
 
