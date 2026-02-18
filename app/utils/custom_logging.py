@@ -1,6 +1,5 @@
 import time
 from app.Schemas.instagram.negotiation_schema import InstagramConversationState
-from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
 from app.model.whatsappconversation import ConversationState
 import json
 import logging
@@ -28,8 +27,6 @@ async def node_debug_after(state: ConversationState):
     )
     return state
 
-    # For Instagram
-
 
 async def insta_debug_before(state: InstagramConversationState):
     logging.info(
@@ -46,7 +43,7 @@ async def insta_debug_after(state: InstagramConversationState):
 
 
 async def whatsapp_negotiation_debug_before(state):
-    print(f"{Colors.MAGENTA}========== NEGOTIATION DEBUG (BEFORE) ==========")
+    print(f"{Colors.BLINK}========== NEGOTIATION DEBUG (BEFORE) ==========")
     print(f"Thread ID: {state.get('thread_id')}")
     print(f"User Message: {state.get('user_message')}")
     print(f"Intent: {state.get('intent')}")
@@ -61,7 +58,7 @@ async def whatsapp_negotiation_debug_before(state):
 
 
 async def whatsapp_negotiation_debug_after(state):
-    print(f"{Colors.BLUE}========== NEGOTIATION DEBUG (AFTER) ==========")
+    print(f"{Colors.HIDDEN}========== NEGOTIATION DEBUG (AFTER) ==========")
     print(f"Intent: {state.get('intent')}")
     print(f"Negotiation Status: {state.get('negotiation_status')}")
     print(f"Last Offered Price: {state.get('last_offered_price')}")
