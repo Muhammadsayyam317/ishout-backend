@@ -8,10 +8,13 @@ from app.core.exception import InternalServerErrorException
 async def update_negotiation_state(thread_id: str, data: dict) -> Optional[dict]:
     print(f"{Colors.GREEN}Entering update_negotiation_state for thread {thread_id}")
     print("--------------------------------")
+
     try:
         db = get_db()
         collection = db.get_collection("negotiation_agent_controls")
+        data.pop("_id", None)
         data["_updated_at"] = datetime.now(timezone.utc)
+
         await collection.update_one(
             {"thread_id": thread_id},
             {"$set": data},
@@ -19,12 +22,15 @@ async def update_negotiation_state(thread_id: str, data: dict) -> Optional[dict]
         )
 
         updated_doc = await collection.find_one({"thread_id": thread_id})
+
         print(
             f"{Colors.CYAN}[update_negotiation_state] Updated document: {updated_doc}"
         )
         print(f"{Colors.YELLOW}Exiting update_negotiation_state")
         print("--------------------------------")
+
         return updated_doc
+
     except Exception as e:
         print(f"{Colors.RED}[update_negotiation_state] Failed: {e}")
         raise InternalServerErrorException(
