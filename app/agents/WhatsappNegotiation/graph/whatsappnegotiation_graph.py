@@ -50,15 +50,9 @@ negotiation_graph.add_node("complete_negotiation", complete_negotiation_node)
 negotiation_graph.add_node("admin_takeover", admin_takeover_node)
 negotiation_graph.add_node("send_message", send_whatsapp_reply_node)
 
-# ==========================================================
-# START FLOW
-# ==========================================================
 negotiation_graph.add_edge(START, "negotiatedebug_before")
 negotiation_graph.add_edge("negotiatedebug_before", "intentclassifier")
 
-# ==========================================================
-# ROUTING BASED ON INTENT
-# ==========================================================
 negotiation_graph.add_conditional_edges(
     "intentclassifier",
     route_by_intent,
@@ -92,18 +86,8 @@ negotiation_graph.add_edge("close_conversation", "negotiatedebug_after")
 negotiation_graph.add_edge("accept_negotiation", "negotiatedebug_after")
 negotiation_graph.add_edge("complete_negotiation", "negotiatedebug_after")
 
-# ==========================================================
-# DEBUG AFTER → SEND MESSAGE
-# ==========================================================
 negotiation_graph.add_edge("negotiatedebug_after", "send_message")
 
-# ==========================================================
-# TERMINAL STATES
-# ==========================================================
 negotiation_graph.add_edge("send_message", END)
 negotiation_graph.add_edge("admin_takeover", END)
-
-# ==========================================================
-# COMPILE GRAPH
-# ==========================================================
 whatsapp_negotiation_agent = negotiation_graph.compile()

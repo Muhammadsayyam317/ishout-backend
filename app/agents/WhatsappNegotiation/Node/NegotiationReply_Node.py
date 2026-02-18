@@ -33,8 +33,15 @@ async def generate_reply_node(state: WhatsappNegotiationState):
                 state.get("user_message"),
             ),
         )
+        print(f"{Colors.CYAN}History: {state.get('history')}")
+        print("--------------------------------")
+        print(f"{Colors.CYAN}User Message: {state.get('user_message')}")
+        print("--------------------------------")
+        print(f"{Colors.CYAN}Result: {result}")
 
         reply_text = result.final_output["final_reply"]
+        print(f"{Colors.CYAN}Reply Text: {reply_text}")
+        print("--------------------------------")
         state["negotiation_mode"] = "automatic"
 
     except InputGuardrailTripwireTriggered as e:
