@@ -52,8 +52,6 @@ async def generate_reply_node(state: WhatsappNegotiationState):
         state["manual_reason"] = e.reason
 
     state["final_reply"] = reply_text
-
-    # Save AI reply into history
     state.setdefault("history", []).append({"sender_type": "AI", "message": reply_text})
 
     print(f"{Colors.CYAN}Generated Reply: {reply_text}")
