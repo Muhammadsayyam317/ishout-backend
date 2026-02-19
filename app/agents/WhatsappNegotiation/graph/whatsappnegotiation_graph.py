@@ -27,14 +27,8 @@ from app.utils.custom_logging import (
     whatsapp_negotiation_debug_after,
 )
 
-# ----------------------
-# Graph Initialization
-# ----------------------
 negotiation_graph = StateGraph(WhatsappNegotiationState)
 
-# ----------------------
-# Register Nodes
-# ----------------------
 negotiation_graph.add_node("negotiatedebug_before", whatsapp_negotiation_debug_before)
 negotiation_graph.add_node("negotiatedebug_after", whatsapp_negotiation_debug_after)
 
@@ -68,16 +62,12 @@ negotiation_graph.add_conditional_edges(
     },
 )
 
-# After fetching pricing → always go to counter_offer
 negotiation_graph.add_conditional_edges(
     "fetch_pricing",
     lambda state: "counter_offer",
     {"counter_offer": "counter_offer"},
 )
 
-# ==========================================================
-# BUSINESS LOGIC → DEBUG AFTER
-# ==========================================================
 negotiation_graph.add_edge("counter_offer", "negotiatedebug_after")
 negotiation_graph.add_edge("generate_reply", "negotiatedebug_after")
 negotiation_graph.add_edge("confirm_details", "negotiatedebug_after")

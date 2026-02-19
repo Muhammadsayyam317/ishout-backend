@@ -1,68 +1,46 @@
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
-from app.core.exception import NotFoundException
 from app.db.connection import get_db
-from app.utils.helpers import mongo_to_json
 from bson import ObjectId
 from app.utils.printcolors import Colors
 
 
-async def FetchCampaignInfluencerInfo(_id: str):
-    print(f"{Colors.GREEN}Entering Fetch Campaign Influencer Info Node for ID: {_id}")
-    print("--------------------------------")
-    try:
-        db = get_db()
-        collection = db.get_collection("campaign_influencers")
-        projection = {
-            "campaign_id": 1,
-            "platform": 1,
-            "pricing": 1,
-            "max_price": 1,
-            "min_price": 1,
-        }
-
-        data = await collection.find_one({"_id": ObjectId(_id)}, projection)
-        if not data:
-            raise NotFoundException(message=f"Campaign Influencer not found: {_id}")
-
-        print(f"{Colors.CYAN}Fetched influencer data: {data}")
-        print(f"{Colors.YELLOW}Exiting FetchCampaignInfluencerInfo")
-        return mongo_to_json(data)
-
-    except Exception as e:
-        print(f"{Colors.RED}[FetchCampaignInfluencerInfo] Error: {e}")
-        raise NotFoundException(message=f"Campaign Influencer not found: {_id}")
-
-
-async def fetch_pricing_node(state: WhatsappNegotiationState):
+async def fetch_pricing_node(state: WhatsappNegotiationState, checkpointer):
+    thread_id = state.get("thread_id")
+    influencer_id = state.get("_id")
     print(f"{Colors.GREEN}Entering fetch_pricing_node")
     print("--------------------------------")
 
-    if state.get("min_price") and state.get("max_price"):
-        print(f"{Colors.YELLOW}Pricing already present in state. Skipping DB fetch.")
-        print("--------------------------------")
-        return state
-
-    influencer_id = state.get("_id")
     if not influencer_id:
         raise ValueError("Missing campaign influencer _id in state")
 
-    influencer = await FetchCampaignInfluencerInfo(influencer_id)
+    # If pricing already in state, skip DB
+    if state.get("min_price") and state.get("max_price"):
+        print(f"{Colors.YELLOW}Pricing already in state, skipping DB fetch.")
+        return state
 
-    min_price = influencer.get("min_price")
-    max_price = influencer.get("max_price")
-    campaign_id = influencer.get("campaign_id")
+    db = get_db()
+    collection = db.get_collection("campaign_influencers")
+    influencer = await collection.find_one(
+        {"_id": ObjectId(influencer_id)},
+        {"min_price": 1, "max_price": 1, "campaign_id": 1},
+    )
+    if not influencer:
+        raise ValueError(f"Campaign influencer not found: {influencer_id}")
 
-    if min_price is None or max_price is None:
-        raise ValueError("Pricing configuration missing in campaign influencer")
+    state["min_price"] = float(influencer["min_price"])
+    state["max_price"] = float(influencer["max_price"])
+    state["campaign_id"] = influencer["campaign_id"]
 
-    if min_price > max_price:
-        raise ValueError("Invalid pricing configuration: min_price > max_price")
+    # Save pricing to Redis for 5 min
+    await checkpointer.save_checkpoint(
+        key=f"negotiation:{thread_id}:pricing",
+        value={"min_price": state["min_price"], "max_price": state["max_price"]},
+        ttl=300,
+    )
 
-    state["min_price"] = float(min_price)
-    state["max_price"] = float(max_price)
-    state["campaign_id"] = campaign_id
-
-    print(f"{Colors.GREEN}Pricing loaded → min: {min_price}, max: {max_price}")
+    print(
+        f"{Colors.CYAN}Pricing loaded → min: {state['min_price']}, max: {state['max_price']}"
+    )
+    print(f"{Colors.YELLOW}Exiting fetch_pricing_node")
     print("--------------------------------")
-
     return state
