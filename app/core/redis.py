@@ -28,7 +28,7 @@ async def initialize_negotiation_redis(app):
 
     contextmanager = AsyncRedisSaver.from_conn_string(
         config.REDIS_URL,
-        ttl={"default_ttl": 86400},  # 1 day
+        ttl={"default_ttl": 300},  # 5 min
     )
     checkpointer = await contextmanager.__aenter__()
     app.state.whatsapp_negotiation_agent = negotiation_graph.compile(

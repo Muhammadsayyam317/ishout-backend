@@ -7,10 +7,6 @@ from app.agents.Instagram.session.instauser_session import (
 from app.agents.WhatsappNegotiation.Node.InitialMessage_Node import (
     NegotiationInitialMessage,
 )
-from app.agents.WhatsappNegotiation.Node.IntentClassifier_Node import intentclassifier
-from app.agents.WhatsappNegotiation.Node.fetchPricing_Node import (
-    FetchCampaignInfluencerInfo,
-)
 from app.agents.campaiagncreation.create_campaign import create_campaign_breif
 from app.api.controllers.admin.campaign_controller import (
     add_influencer_Number,
@@ -339,13 +335,6 @@ router.add_api_route(
     path="/delete-whatsapp-chat/{thread_id}",
     endpoint=delete_whatsapp_chat,
     methods=["DELETE"],
-    tags=["Admin"],
-)
-
-router.add_api_route(
-    path="/influencer-info/{influencer_id}",
-    endpoint=FetchCampaignInfluencerInfo,
-    methods=["GET"],
     tags=["Admin"],
 )
 

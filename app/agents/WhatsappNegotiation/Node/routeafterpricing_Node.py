@@ -10,7 +10,6 @@ def route_after_pricing(state: WhatsappNegotiationState):
     intent = state.get("intent")
     next_action = state.get("next_action")
 
-    # Reset negotiation state if influencer shows interest
     if intent == "interest":
         state["negotiation_round"] = 0
         state["last_offered_price"] = None
@@ -19,7 +18,6 @@ def route_after_pricing(state: WhatsappNegotiationState):
 
     print(f"{Colors.CYAN}Intent: {intent} | NextAction: {next_action}")
 
-    # Negotiation-related actions → unified counter_offer node
     negotiation_actions = {
         NextAction.ASK_RATE,
         NextAction.ESCALATE_NEGOTIATION,
@@ -30,7 +28,6 @@ def route_after_pricing(state: WhatsappNegotiationState):
         print(f"{Colors.YELLOW}Routing to counter_offer")
         return "counter_offer"
 
-    # Mapping other actions to their respective nodes
     mapping = {
         NextAction.ANSWER_QUESTION: "generate_reply",
         NextAction.CONFIRM_PRICING: "confirm_details",
