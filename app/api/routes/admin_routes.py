@@ -11,6 +11,7 @@ from app.agents.WhatsappNegotiation.Node.IntentClassifier_Node import intentclas
 from app.agents.WhatsappNegotiation.Node.fetchPricing_Node import (
     FetchCampaignInfluencerInfo,
 )
+from app.agents.campaiagncreation.create_campaign import create_campaign_breif
 from app.api.controllers.admin.campaign_controller import (
     add_influencer_Number,
     update_status,
@@ -64,6 +65,7 @@ from app.services.instagram.list_on_conversations import (
 )
 from app.services.negotiation.negotiation import get_all_negotiation_controls
 from app.tools.regenerate_influencer import reject_and_regenerate
+
 
 router = APIRouter()
 
@@ -364,3 +366,11 @@ async def negotiation_controls_route(
         return await get_all_negotiation_controls(page, page_size)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+router.add_api_route(
+    path="/campaign-breif",
+    endpoint=create_campaign_breif,
+    methods=["POST"],
+    tags=["Admin"],
+)
