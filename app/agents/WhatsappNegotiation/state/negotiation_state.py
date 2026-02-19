@@ -1,21 +1,56 @@
 from datetime import datetime, timezone
 from app.db.connection import get_db
+from typing import Optional
+from app.utils.printcolors import Colors
+from app.core.exception import InternalServerErrorException
 
 
-async def update_negotiation_state(thread_id: str, data: dict):
-    print("Entering into update Negotiation State")
-    db = get_db()
-    collection = db.get_collection("negotiation_agent_controls")
-    data.pop("_id", None)
-    data["_updated_at"] = datetime.now(timezone.utc)
-    await collection.update_one({"thread_id": thread_id}, {"$set": data}, upsert=True)
-    print("Negotiation State updated successfully")
-    print(f"Negotiation State: {await collection.find_one({"thread_id": thread_id})}")
-    print("Exiting from update Negotiation State")
-    return await collection.find_one({"thread_id": thread_id})
+async def update_negotiation_state(thread_id: str, data: dict) -> Optional[dict]:
+    print(f"{Colors.GREEN}Entering update_negotiation_state for thread {thread_id}")
+    print("--------------------------------")
+
+    try:
+        db = get_db()
+        collection = db.get_collection("negotiation_agent_controls")
+        data.pop("_id", None)
+        data["_updated_at"] = datetime.now(timezone.utc)
+
+        await collection.update_one(
+            {"thread_id": thread_id},
+            {"$set": data},
+            upsert=True,
+        )
+
+        updated_doc = await collection.find_one({"thread_id": thread_id})
+
+        print(
+            f"{Colors.CYAN}[update_negotiation_state] Updated document: {updated_doc}"
+        )
+        print(f"{Colors.YELLOW}Exiting update_negotiation_state")
+        print("--------------------------------")
+
+        return updated_doc
+
+    except Exception as e:
+        print(f"{Colors.RED}[update_negotiation_state] Failed: {e}")
+        raise InternalServerErrorException(
+            message=f"Error updating negotiation state: {str(e)}"
+        ) from e
 
 
-async def get_negotiation_state(thread_id: str):
-    db = get_db()
-    collection = db.get_collection("negotiation_agent_controls")
-    return await collection.find_one({"thread_id": thread_id})
+async def get_negotiation_state(thread_id: str) -> Optional[dict]:
+    print(f"{Colors.GREEN}Entering get_negotiation_state for thread {thread_id}")
+    print("--------------------------------")
+    try:
+        db = get_db()
+        collection = db.get_collection("negotiation_agent_controls")
+        doc = await collection.find_one({"thread_id": thread_id})
+        print(f"{Colors.CYAN}[get_negotiation_state] Document: {doc}")
+        print(f"{Colors.YELLOW}Exiting get_negotiation_state")
+        print("--------------------------------")
+        return doc
+    except Exception as e:
+        print(f"{Colors.RED}[get_negotiation_state] Failed: {e}")
+        raise InternalServerErrorException(
+            message=f"Error fetching negotiation state: {str(e)}"
+        ) from e
