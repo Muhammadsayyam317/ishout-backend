@@ -164,37 +164,44 @@ Do not explain your reasoning.
 """
 company_website = "https://app.ishout.ae/"
 
-CREATECAMPAIGNBREAKDOWN_PROMPT = f"""
+CREATECAMPAIGNBREAKDOWN_PROMPT = (
+    CREATECAMPAIGNBREAKDOWN_PROMPT
+) = f"""
 You are an AI assistant that creates a detailed influencer campaign breakdown for a brand based on the following company website: {company_website}.
+Whenever a user provides a brand name, respond with a **fully structured JSON object** where each section heading is a key and the value is an array of points. Each point should be a concise item suitable for front-end rendering.  
 
-Whenever a user provides a brand name, respond with a comprehensive campaign brief in **JSON format**. The JSON should have keys for each section and their corresponding points as values.
-
-JSON format example:
+**Required JSON structure:**
 
 {{
-    "Brand Name Influencer Campaign Brief": "Short intro",
-    "Campaign Overview": "Description here",
-    "Campaign Objectives": [
-        "Objective 1",
-        "Objective 2",
-        "Objective 3"
-    ],
-    "Target Audience": "Demographics, interests, and social media behavior",
-    "Influencer Profile": "Follower range, engagement rate, niche, language, location",
-    "Key Campaign Message": "Core idea, tone, brand values",
-    "Content Direction": "Content themes, storytelling style, examples",
-    "Deliverables (Per Influencer)": "Posts, stories, reels, videos",
-    "Hashtags & Mentions": "Primary/secondary hashtags and account tags",
-    "Timeline": "Key dates for selection, seeding, creation, posting",
-    "Approval Process": "Draft submission, review, final approval",
-    "KPIs & Success Metrics": "Metrics for reach, engagement, sentiment",
-    "Usage Rights": "Brand repost and paid media usage permissions",
-    "Do’s & Don’ts": "Guidelines for authentic, safe, and brand-aligned content"
+    "Brand Name Influencer Campaign Brief": [],
+    "Campaign Overview": [],
+    "Campaign Objectives": [],
+    "Target Audience": [],
+    "Influencer Profile": [],
+    "Key Campaign Message": [],
+    "Content Direction": [],
+    "Deliverables (Per Influencer)": [],
+    "Hashtags & Mentions": [],
+    "Timeline": [],
+    "Approval Process": [],
+    "KPIs & Success Metrics": [],
+    "Usage Rights": [],
+    "Do’s & Don’ts": []
 }}
 
 **Instructions for AI response:**  
-- Always output a valid JSON object exactly as above.  
-- Use arrays for lists (like objectives) and strings for paragraphs.  
-- Fill in realistic details if not provided.  
-- Avoid any extra commentary outside the JSON.  
+1. Always output a valid JSON object exactly as above.  
+2. Each value must be an array of strings, even if it has only one item.  
+3. Fill in realistic and contextually relevant details if not provided.  
+4. Include numbers, metrics, or examples wherever applicable.  
+5. Avoid any extra commentary, text, or explanation outside the JSON.  
+6. Ensure brand, campaign, or local entity references are accurate and correctly formatted.  
+
+Example of one field:
+
+"Campaign Objectives": [
+    "Increase brand awareness for Dove products within the KSA market.",
+    "Strengthen Dove’s positioning as a daily self-care essential.",
+    "Drive engagement through relatable influencer storytelling."
+]
 """
