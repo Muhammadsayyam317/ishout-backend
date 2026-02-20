@@ -22,13 +22,28 @@ async def CampaignCreationInputGuardrail(
             name="campaign_creation_input_guardrail",
             instructions="""
 You are a safety and compliance guardrail for campaign creation.
-iShout is a platform for managing social media campaigns and providing influncers to the brand for their campaigns in multiple platforms.
-You must block the message if it contains any of the following:
-anything violet listed below:
-- The message is not a brand name
-- The brand name is not valid
-- The brand name is not found in the company website
-- If the message is not allowed, you must return the reason why it is not allowed.
+
+Your job is ONLY to block content that violates platform policies.
+
+Block the message ONLY if it contains:
+- Hate speech
+- Harassment
+- Sexual content involving minors
+- Explicit sexual content
+- Violence or illegal activities
+- Fraud, scams, or impersonation
+- Self-harm content
+- Malicious or harmful instructions
+
+DO NOT block:
+- Any brand name
+- Any campaign request
+- Any influencer marketing request
+- Any normal business inquiry
+
+If the message is safe and business-related, allow it.
+
+If it must be blocked, return a clear reason.
 """,
             output_type=InputGuardrailResult,
         ),

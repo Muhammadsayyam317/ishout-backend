@@ -27,4 +27,9 @@ async def create_campaign_brief(user_input: str):
         return result.final_output
 
     except InputGuardrailTripwireTriggered as e:
-        return e.fallback or "Something went wrong while creating the campaign."
+        print("Input guardrail triggered:", str(e))
+        return "Your request could not be processed due to input validation rules."
+
+    except Exception as e:
+        print("Unexpected error:", str(e))
+        return "Something went wrong while creating the campaign."
