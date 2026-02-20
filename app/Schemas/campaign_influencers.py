@@ -51,18 +51,22 @@ class GeneratedInfluencersResponse(BaseModel):
     status: GeneratedInfluencersStatus
 
 
+class CampaignBriefRequest(BaseModel):
+    user_input: str
+
+
 class CampaignBriefResponse(BaseModel):
-    Brand_Name_Influencer_Campaign_Brief: List[str]
-    Campaign_Overview: List[str]
-    Campaign_Objectives: List[str]
-    Target_Audience: List[str]
-    Influencer_Profile: List[str]
-    Key_Campaign_Message: List[str]
-    Content_Direction: List[str]
-    Deliverables_Per_Influencer: List[str]
-    Hashtags_and_Mentions: List[str]
-    Timeline: List[str]
-    Approval_Process: List[str]
-    KPIs_and_Success_Metrics: List[str]
-    Usage_Rights: List[str]
-    Dos_and_Donts: List[str]
+    brand_name_influencer_campaign_brief: str
+    campaign_overview: List[str]
+    campaign_objectives: List[str]
+    target_audience: List[str]
+    influencer_profile: List[str]
+    key_campaign_message: List[str]
+    content_direction: List[str]
+    deliverables_per_influencer: List[str]
+    hashtags_mentions: List[str]
+    timeline: List[str]
+    approval_process: List[str]
+    kpis_success_metrics: List[str]
+    usage_rights: List[str]
+    dos_donts: List[str]
