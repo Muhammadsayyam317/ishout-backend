@@ -7,7 +7,7 @@ from app.agents.Instagram.session.instauser_session import (
 from app.agents.WhatsappNegotiation.Node.InitialMessage_Node import (
     NegotiationInitialMessage,
 )
-from app.agents.campaiagncreation.create_campaign import create_campaign_breif
+
 from app.api.controllers.admin.campaign_controller import (
     add_influencer_Number,
     update_status,
@@ -355,11 +355,3 @@ async def negotiation_controls_route(
         return await get_all_negotiation_controls(page, page_size)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-router.add_api_route(
-    path="/campaign-breif",
-    endpoint=create_campaign_breif,
-    methods=["POST"],
-    tags=["Admin"],
-)
