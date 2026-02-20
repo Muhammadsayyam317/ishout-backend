@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional, Tuple
-import re
 from bson import ObjectId
+import phonenumbers
+from phonenumbers import NumberParseException
 
 
 def parse_follower_count(value: str) -> int:
@@ -267,11 +268,39 @@ def followers_in_range(influencer_count: int, ranges: List[Tuple[int, int]]):
     return False
 
 
-def normalize_phone(phone: str | None) -> str | None:
-    if not phone:
-        return None
-    return re.sub(r"[^\d]", "", phone)
+def normalize_phone(phone: str, default_region: str = "US") -> str | None:
+    """
+    More permissive phone normalization:
+    - Accepts with or without '+'
+    - Accepts all countries
+    - Allows possible numbers (not strictly valid)
+    - Enforces E.164 length (7–15 digits)
+    """
 
+    try:
+        phone = phone.strip()
+
+        if not phone:
+            return None
+        if phone.startswith("+"):
+            parsed = phonenumbers.parse(phone, None)
+        else:
+            parsed = phonenumbers.parse(phone, default_region)
+        if not phonenumbers.is_possible_number(parsed):
+            return None
+
+        e164 = phonenumbers.format_number(
+            parsed, phonenumbers.PhoneNumberFormat.E164
+        )
+        digits_only = "".join(filter(str.isdigit, e164))
+
+        if not (7 <= len(digits_only) <= 15):
+            return None
+
+        return e164
+
+    except NumberParseException:
+        return None
 
 def format_followers(count):
     if isinstance(count, (int, float)):

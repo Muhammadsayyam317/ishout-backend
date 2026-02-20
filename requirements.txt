@@ -95,3 +95,7 @@ tabulate
 # packaging
 apscheduler
 pytz
+# -------------------------------
+# Phone number validation
+# -------------------------------
+phonenumbers
