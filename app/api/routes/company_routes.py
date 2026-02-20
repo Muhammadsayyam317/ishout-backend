@@ -23,7 +23,7 @@ from app.Schemas.campaign import (
 from app.services.whatsapp.send_text import send_message_from_ishout_to_user
 from app.tools.search_influencers import search_influencers
 from app.api.controllers.company.profile import get_user_profile, update_user_profile
-
+from app.agents.campaiagncreation.create_campaign import create_campaign_brief
 
 router = APIRouter()
 
@@ -127,6 +127,13 @@ router.add_api_route(
 router.add_api_route(
     path="/send-message-to-user",
     endpoint=send_message_from_ishout_to_user,
+    methods=["POST"],
+    tags=["Company"],
+)
+
+router.add_api_route(
+    path="/campaign-brief",
+    endpoint=create_campaign_brief,
     methods=["POST"],
     tags=["Company"],
 )

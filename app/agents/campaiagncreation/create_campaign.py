@@ -11,7 +11,7 @@ from app.Schemas.instagram.negotiation_schema import GenerateReplyOutput
 from app.utils.prompts import CREATECAMPAIGNBREAKDOWN_PROMPT
 
 
-async def create_campaign_breif(user_input: str):
+async def create_campaign_brief(user_input: str):
     try:
         result = await Runner.run(
             Agent(
