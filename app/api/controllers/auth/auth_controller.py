@@ -1,15 +1,12 @@
 from typing import Dict, Any
-from fastapi import BackgroundTasks, HTTPException, Query
-from fastapi.responses import JSONResponse
+from fastapi import BackgroundTasks, HTTPException
+
 from app.Schemas.user_model import UserLoginRequest, CompanyRegistrationRequest
 from app.services.Auth.auth_service import AuthService
 from app.services.email.email_verification import send_verification_email
 from app.core.security.jwt import create_email_verification_token, verify_token
 from app.core.exception import UnauthorizedException
-from datetime import datetime, timezone
-import os
 
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 async def login_user(request_data: UserLoginRequest) -> Dict[str, Any]:
     try:
