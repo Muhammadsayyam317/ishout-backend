@@ -9,7 +9,6 @@ from app.Guardails.CampaignCreation.campaignoutput_guardrails import (
 )
 from app.Schemas.instagram.negotiation_schema import GenerateReplyOutput
 from app.utils.prompts import CREATECAMPAIGNBREAKDOWN_PROMPT
-import json
 
 
 async def create_campaign_brief(user_input: str):
@@ -25,23 +24,19 @@ async def create_campaign_brief(user_input: str):
             input=user_input,
         )
 
-        raw_output = result.final_output
-        if isinstance(raw_output, dict):
-            campaign_json = raw_output
-        else:
-            campaign_json = json.loads(raw_output)
+        campaign_data = result.final_output
+        if not isinstance(campaign_data, dict):
+            return {
+                "error": "Invalid response format from AI. Expected structured JSON."
+            }
 
-        print("Campaign JSON:", campaign_json)
-        return campaign_json
+        return campaign_data
 
     except InputGuardrailTripwireTriggered as e:
-        print("Input guardrail triggered:", str(e))
-        return {"error": "Input validation triggered."}
-
-    except json.JSONDecodeError as e:
-        print("JSON parsing error:", str(e))
-        return {"error": "Failed to parse JSON from agent output."}
+        return {"error": "Input validation triggered.", "details": str(e)}
 
     except Exception as e:
-        print("Unexpected error:", str(e))
-        return {"error": "Something went wrong while creating the campaign."}
+        return {
+            "error": "Something went wrong while creating the campaign.",
+            "details": str(e),
+        }
