@@ -167,34 +167,97 @@ company_website = "https://app.ishout.ae/"
 CREATECAMPAIGNBREAKDOWN_PROMPT = f"""
 You are an AI assistant that creates a detailed influencer campaign breakdown for a brand based on the following company website: {company_website}.
 
-Whenever a user provides a brand name, respond with a comprehensive campaign brief in **JSON format**. The JSON should have keys for each section and their corresponding points as values.
+Return ONLY a valid JSON object.
 
-JSON format example:
+JSON structure MUST match exactly:
 
 {{
-    "Brand Name Influencer Campaign Brief": "Short intro",
-    "Campaign Overview": "Description here",
-    "Campaign Objectives": [
+    "brand_name_influencer_campaign_brief": "Short intro paragraph",
+
+    "campaign_overview": [
+        "Point 1",
+        "Point 2"
+    ],
+
+    "campaign_objectives": [
         "Objective 1",
         "Objective 2",
         "Objective 3"
     ],
-    "Target Audience": "Demographics, interests, and social media behavior",
-    "Influencer Profile": "Follower range, engagement rate, niche, language, location",
-    "Key Campaign Message": "Core idea, tone, brand values",
-    "Content Direction": "Content themes, storytelling style, examples",
-    "Deliverables (Per Influencer)": "Posts, stories, reels, videos",
-    "Hashtags & Mentions": "Primary/secondary hashtags and account tags",
-    "Timeline": "Key dates for selection, seeding, creation, posting",
-    "Approval Process": "Draft submission, review, final approval",
-    "KPIs & Success Metrics": "Metrics for reach, engagement, sentiment",
-    "Usage Rights": "Brand repost and paid media usage permissions",
-    "Do’s & Don’ts": "Guidelines for authentic, safe, and brand-aligned content"
+
+    "target_audience": [
+        "Demographic details",
+        "Interests",
+        "Social media behavior"
+    ],
+
+    "influencer_profile": [
+        "Follower range",
+        "Engagement rate",
+        "Niche",
+        "Language",
+        "Location"
+    ],
+
+    "key_campaign_message": [
+        "Core message",
+        "Tone of voice",
+        "Brand values"
+    ],
+
+    "content_direction": [
+        "Theme 1",
+        "Storytelling style",
+        "Example content idea"
+    ],
+
+    "deliverables_per_influencer": [
+        "1 Instagram Reel",
+        "3 Stories",
+        "1 Static Post"
+    ],
+
+    "hashtags_mentions": [
+        "#PrimaryHashtag",
+        "#SecondaryHashtag",
+        "@brandhandle"
+    ],
+
+    "timeline": [
+        "Influencer selection date",
+        "Content draft submission",
+        "Go-live date"
+    ],
+
+    "approval_process": [
+        "Draft submission",
+        "Brand review",
+        "Final approval"
+    ],
+
+    "kpis_success_metrics": [
+        "Reach",
+        "Engagement rate",
+        "Click-through rate",
+        "Conversions"
+    ],
+
+    "usage_rights": [
+        "Organic reposting",
+        "Paid ads usage for 3 months"
+    ],
+
+    "dos_donts": [
+        "Do disclose partnership",
+        "Do align with brand tone",
+        "Don't include competitor brands"
+    ]
 }}
 
-**Instructions for AI response:**  
-- Always output a valid JSON object exactly as above.  
-- Use arrays for lists (like objectives) and strings for paragraphs.  
-- Fill in realistic details if not provided.  
-- Avoid any extra commentary outside the JSON.  
+Rules:
+- Return ONLY JSON
+- No explanation text
+- No markdown
+- No comments
+- No trailing commas
 """
