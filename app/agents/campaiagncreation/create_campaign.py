@@ -21,27 +21,17 @@ async def create_campaign_brief(user_input: str) -> CampaignBriefResponse:
                 instructions=CREATECAMPAIGNBREAKDOWN_PROMPT,
                 input_guardrails=[CampaignCreationInputGuardrail],
                 output_guardrails=[CampaignCreationOutputGuardrail],
+                output_type=CampaignBriefResponse,
             ),
             input=user_input,
         )
-
-        output = result.final_output
-        if isinstance(output, dict):
-            return CampaignBriefResponse(**output)
-
-        if isinstance(output, str):
-            parsed = json.loads(output)
-            return CampaignBriefResponse(**parsed)
-
-        raise HTTPException(status_code=500, detail="Unexpected AI response format.")
 
     except InputGuardrailTripwireTriggered as e:
         raise HTTPException(
             status_code=400, detail=f"Input validation triggered: {str(e)}"
         )
 
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=500, detail="AI returned invalid JSON format.")
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Something went wrong: {str(e)}")
+
+    return result.final_output
