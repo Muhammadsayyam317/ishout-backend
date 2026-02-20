@@ -24,6 +24,44 @@ class CompanyRegistrationRequest(BaseModel):
     password: str
     phone: str
 
+# ---- contact_person ----
+    @field_validator("contact_person")
+    @classmethod
+    def validate_contact_person(cls, value: str) -> str:
+        if not value or not value.strip():
+            raise ValueError("Contact person is required")
+        return value.strip()
+
+    # ---- company_name ----
+    @field_validator("company_name")
+    @classmethod
+    def validate_company_name(cls, value: str) -> str:
+        if not value or not value.strip():
+            raise ValueError("Company name is required")
+        return value.strip()
+
+    # ---- password ----
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, value: str) -> str:
+        if len(value) < 6:
+            raise ValueError("Password must be at least 6 characters long")
+        return value
+
+    # ---- phone ----
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, value: str) -> str:
+        if not value or not value.strip():
+            raise ValueError("Phone number is required")
+
+        normalized = normalize_phone(value)
+
+        if not normalized:
+            raise ValueError("Invalid phone number")
+
+        return normalized
+
 
 class UserLoginRequest(BaseModel):
     email: EmailStr

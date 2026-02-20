@@ -40,3 +40,11 @@ class UserModel:
         return await db.get_collection(UserModel.collection_name).update_one(
             {"_id": ObjectId(user_id)}, {"$set": {"status": status}}
         )
+
+    @staticmethod
+    async def update_by_email(email: str, update_data: Dict[str, Any]):
+        db = get_db()
+        return await db.get_collection(UserModel.collection_name).update_one(
+            {"email": email},
+            {"$set": update_data}
+        )
