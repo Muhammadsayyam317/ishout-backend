@@ -22,7 +22,6 @@ async def CampaignCreationInputGuardrail(
             name="campaign_creation_input_guardrail",
             instructions="""
 You are a safety and compliance guardrail for campaign creation.
-
 Your job is ONLY to block content that violates platform policies.
 
 Block the message ONLY if it contains:
@@ -42,7 +41,6 @@ DO NOT block:
 - Any normal business inquiry
 
 If the message is safe and business-related, allow it.
-
 If it must be blocked, return a clear reason.
 """,
             output_type=InputGuardrailResult,
@@ -50,7 +48,7 @@ If it must be blocked, return a clear reason.
         input=message,
         context=context,
     )
-    print("🛡️ Campaign Creation Input Guardrail result:", result.final_output)
+    print("🛡️Input Guardrail result:", result.final_output)
     if not result.final_output.allowed:
         return GuardrailFunctionOutput(
             output_info=result.final_output.reason,
