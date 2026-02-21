@@ -25,7 +25,7 @@ async def create_campaign_brief(user_input: str) -> CampaignBriefResponse:
             ),
             input=user_input,
         )
-
+        return result.final_output
     except InputGuardrailTripwireTriggered as e:
         raise HTTPException(
             status_code=400, detail=f"Input validation triggered: {str(e)}"
@@ -33,5 +33,3 @@ async def create_campaign_brief(user_input: str) -> CampaignBriefResponse:
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Something went wrong: {str(e)}")
-
-    return result.final_output

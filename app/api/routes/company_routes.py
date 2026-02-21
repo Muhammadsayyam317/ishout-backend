@@ -1,5 +1,6 @@
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends
+from app.Schemas.campaign_influencers import CampaignBriefRequest, CampaignBriefResponse
 from app.api.controllers.admin.approved_campaign import (
     companyApprovedSingleInfluencer,
 )
@@ -131,9 +132,11 @@ router.add_api_route(
     tags=["Company"],
 )
 
-router.add_api_route(
-    path="/campaign-brief",
-    endpoint=create_campaign_brief,
-    methods=["POST"],
+
+@router.post(
+    "/campaign-brief",
+    response_model=CampaignBriefResponse,
     tags=["Company"],
 )
+async def campaign_brief(request: CampaignBriefRequest):
+    return await create_campaign_brief(request.user_input)
