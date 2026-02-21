@@ -133,10 +133,8 @@ router.add_api_route(
 )
 
 
-@router.post(
-    "/campaign-brief",
-    response_model=CampaignBriefResponse,
-    tags=["Company"],
-)
-async def campaign_brief(request: CampaignBriefRequest):
-    return await create_campaign_brief(request.user_input)
+@router.post("/campaign-brief", response_model=CampaignBriefResponse, tags=["Company"])
+async def create_campaign_brief_endpoint(request: CampaignBriefRequest):
+    return await create_campaign_brief(
+        user_input=request.user_input, user_id=request.user_id
+    )

@@ -53,6 +53,7 @@ class GeneratedInfluencersResponse(BaseModel):
 
 class CampaignBriefRequest(BaseModel):
     user_input: str
+    user_id: str
 
 
 class CampaignBriefResponse(BaseModel):
