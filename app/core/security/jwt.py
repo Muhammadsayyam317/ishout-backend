@@ -32,3 +32,19 @@ def verify_token(token: str) -> Optional[Dict[str, Any]]:
         raise UnauthorizedException("Token has expired")
     except jwt.InvalidTokenError:
         raise UnauthorizedException("Invalid token")
+
+
+def create_email_verification_token(data: Dict[str, Any]) -> str:
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + timedelta(minutes=60)
+
+    to_encode.update({
+        "exp": expire,
+        "type": "email_verification"
+    })
+
+    return jwt.encode(
+        to_encode,
+        config.JWT_SECRET_KEY,
+        algorithm=config.JWT_ALGORITHM
+    )

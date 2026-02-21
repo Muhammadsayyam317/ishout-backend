@@ -1,14 +1,11 @@
 from typing import Dict, Any
-from app.core.exception import (
-    UnauthorizedException,
-)
-from app.core.security.jwt import verify_token
-from app.Schemas.user_model import UserLoginRequest
+from fastapi import BackgroundTasks, HTTPException
+
+from app.Schemas.user_model import UserLoginRequest, CompanyRegistrationRequest
 from app.services.Auth.auth_service import AuthService
-from fastapi import HTTPException
-from app.Schemas.user_model import (
-    CompanyRegistrationRequest,
-)
+from app.services.email.email_verification import send_verification_email
+from app.core.security.jwt import create_email_verification_token, verify_token
+from app.core.exception import UnauthorizedException
 
 
 async def login_user(request_data: UserLoginRequest) -> Dict[str, Any]:
@@ -17,12 +14,26 @@ async def login_user(request_data: UserLoginRequest) -> Dict[str, Any]:
     except UnauthorizedException as e:
         raise HTTPException(status_code=401, detail=e.detail["message"])
 
-
 async def register_company(
     request_data: CompanyRegistrationRequest,
+    background_tasks: BackgroundTasks,
 ) -> Dict[str, Any]:
-    return await AuthService.register_company(request_data)
 
+    response = await AuthService.register_company(request_data)
+    verification_token = create_email_verification_token({
+        "email": request_data.email
+    })
+
+    # Add task to send email with correct token link
+    background_tasks.add_task(
+        send_verification_email,
+        [request_data.email],
+        "Verify your Ishout account",
+        request_data.company_name,
+        verification_token,  # pass only token
+    )
+
+    return response
 
 async def get_current_user(token: str) -> Dict[str, Any]:
     try:
@@ -36,17 +47,3 @@ async def get_current_user(token: str) -> Dict[str, Any]:
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-# async def instagram_oauth_callback(code: str):
-#     async with httpx.AsyncClient() as client:
-#         token_res = await client.post(
-#             "https://graph.facebook.com/v19.0/oauth/access_token",
-#             data={
-#                 "client_id": config.META_APP_ID,
-#                 "client_secret": config.META_APP_SECRET,
-#                 "redirect_uri": config.INSTAGRAM_REDIRECT_URL,
-#                 "code": code,
-#             },
-#         )
-#     return token_res.json()

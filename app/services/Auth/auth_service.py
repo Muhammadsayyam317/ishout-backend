@@ -1,4 +1,6 @@
 from typing import Dict, Any
+from datetime import datetime, timezone
+
 from app.model.user_model import UserModel
 from app.Schemas.user_model import (
     CompanyRegistrationRequest,
@@ -15,7 +17,6 @@ from app.core.exception import (
     PhoneNumberAlreadyExistsException,
     UnauthorizedException,
 )
-from datetime import datetime, timezone
 
 
 class AuthService:
@@ -23,11 +24,15 @@ class AuthService:
     @staticmethod
     async def login(request_data: UserLoginRequest) -> Dict[str, Any]:
         user = await UserModel.find_by_email(request_data.email)
+
         if not user:
             raise UnauthorizedException()
 
+        # 🔴 Prevent login if not verified
         if user["status"] != UserStatus.ACTIVE:
-            raise AccountNotActiveException()
+            raise AccountNotActiveException(
+                message="Account not verified. Please verify your email."
+            )
 
         if not verify_password(request_data.password, user["password"]):
             raise UnauthorizedException()
@@ -39,6 +44,7 @@ class AuthService:
         }
 
         access_token = create_access_token(token_data)
+
         user_response = UserResponse(
             user_id=str(user["_id"]),
             company_name=user["company_name"],
@@ -68,48 +74,33 @@ class AuthService:
 
         if existing_user:
             raise EmailAlreadyExistsException()
+
         if phone_number:
             raise PhoneNumberAlreadyExistsException()
+
         hashed_password = hash_password(request_data.password)
         now = datetime.now(timezone.utc)
+
+      
         user_doc = request_data.model_dump(exclude={"password"}) | {
             "password": hashed_password,
             "role": UserRole.COMPANY,
-            "status": UserStatus.ACTIVE,
+            "status": UserStatus.INACTIVE,  
             "created_at": now,
             "updated_at": now,
         }
 
-        result = await UserModel.create(user_doc)
-        user_id = str(result.inserted_id)
-        token_data = {
-            "user_id": user_id,
-            "email": request_data.email,
-            "role": UserRole.COMPANY,
-        }
-
-        access_token = create_access_token(token_data)
-        user_response = UserResponse(
-            user_id=user_id,
-            company_name=request_data.company_name,
-            email=request_data.email,
-            contact_person=request_data.contact_person,
-            phone=request_data.phone,
-            role=UserRole.COMPANY,
-            status=UserStatus.ACTIVE,
-            created_at=now,
-            updated_at=now,
-        )
+        await UserModel.create(user_doc)
+        
         return {
-            "message": "Company registered successfully",
-            "access_token": access_token,
-            "token_type": "bearer",
-            "user": user_response.model_dump(),
+            "message": "Company registered successfully. Please verify your email."
         }
 
 
 WELCOME_WHATSAPP_MESSAGE = """Welcome to Ishout 🎉
-We’re excited to have you on board! Your company account has been successfully created on Ishout— the platform that helps brands discover, evaluate, and collaborate with the right influencers effortlessly.With Ishout, you can:
+We’re excited to have you on board! Your company account has been successfully created on Ishout— the platform that helps brands discover, evaluate, and collaborate with the right influencers effortlessly.
+
+With Ishout, you can:
 
   🔍 Discover relevant influencers for your campaigns
   📊 Review influencer profiles and performance insights
