@@ -1,3 +1,4 @@
+import json
 from agents import (
     Agent,
     GuardrailFunctionOutput,
@@ -26,7 +27,7 @@ async def CampaignCreationOutputGuardrail(
             """,
             output_type=OutputGuardrailResult,
         ),
-        output["final_reply"],
+        input=json.dumps(output.model_dump()),
         context=ctx.context,
     )
     print("🛡️ Output Guardrail result:", result.final_output)

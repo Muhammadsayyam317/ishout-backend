@@ -1,4 +1,3 @@
-import json
 from fastapi import HTTPException
 from agents import Runner, Agent
 from agents.exceptions import InputGuardrailTripwireTriggered
@@ -25,7 +24,8 @@ async def create_campaign_brief(user_input: str) -> CampaignBriefResponse:
             ),
             input=user_input,
         )
-        return result.final_output
+        print("Result", result.final_output)
+        return result.final_output.model_dump()
     except InputGuardrailTripwireTriggered as e:
         raise HTTPException(
             status_code=400, detail=f"Input validation triggered: {str(e)}"
