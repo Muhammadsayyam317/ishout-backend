@@ -76,7 +76,7 @@ class UserResponse(BaseModel):
     phone: str
     role: UserRole
     status: UserStatus
-
+    
 
 class LoginResponse(BaseModel):
     access_token: str
@@ -102,6 +102,28 @@ class UserUpdateRequest(BaseModel):
     company_name: Optional[str] = None
     contact_person: Optional[str] = None
     phone: Optional[str] = None
+    password: Optional[str] = None  
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, value: str) -> str:
+        if len(value) < 6:
+            raise ValueError("Password must be at least 6 characters long")
+        return value
+    
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, value: str) -> str:
+        if not value or not value.strip():
+            raise ValueError("Phone number is required")
+
+        normalized = normalize_phone(value)
+
+        if not normalized:
+            raise ValueError("Invalid phone number")
+
+        return normalized
+
 
 
 class UserCampaignResponse(BaseModel):
