@@ -25,6 +25,7 @@ from app.services.whatsapp.send_text import send_message_from_ishout_to_user
 from app.tools.search_influencers import search_influencers
 from app.api.controllers.company.profile import get_user_profile, update_user_profile
 from app.agents.campaiagncreation.create_campaign import create_campaign_brief
+from app.services.campaignbrief.store_brief import CampaignBriefById
 
 router = APIRouter()
 
@@ -138,3 +139,11 @@ async def create_campaign_brief_endpoint(request: CampaignBriefRequest):
     return await create_campaign_brief(
         user_input=request.user_input, user_id=request.user_id
     )
+
+
+router.add_api_route(
+    path="/campaign-brief/{user_id}",
+    endpoint=CampaignBriefById,
+    methods=["GET"],
+    tags=["Company"],
+)
