@@ -17,14 +17,11 @@ async def NegotiationInitialMessage(influencer_id: str):
     print("--------------------------------")
     db = get_db()
     collection = db.get_collection("campaign_influencers")
-
     try:
         influencer_object_id = ObjectId(influencer_id)
     except InvalidId:
         return {"status": "error", "message": "Invalid influencer_id"}
-
     influencer = await collection.find_one({"_id": influencer_object_id})
-
     if not influencer:
         return {"status": "error", "message": "Influencer not found"}
 
