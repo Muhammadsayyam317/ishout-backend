@@ -1,5 +1,7 @@
 from agents import Agent, Runner
+from agents.agent_output import AgentOutputSchema
 from app.Guardails.input_guardrails import WhatsappInputGuardrail
+from app.Schemas.instagram.negotiation_schema import GenerateReplyOutput
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
 from app.utils.printcolors import Colors
 
@@ -17,7 +19,9 @@ async def generate_reply_node(state: WhatsappNegotiationState):
             name="ai_generate_reply",
             instructions=prompt,
             input_guardrails=[WhatsappInputGuardrail],
-            output_type=dict,
+            output_type=AgentOutputSchema(
+                GenerateReplyOutput, strict_json_schema=False
+            ),
         ),
         input=state.get("history", []),
     )

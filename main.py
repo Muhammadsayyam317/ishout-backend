@@ -1,3 +1,6 @@
+from app.agents.WhatsappNegotiation.graph.whatsappnegotiation_graph import (
+    negotiation_graph,
+)
 from app.core.redis import Initialize_redis, initialize_negotiation_redis
 
 # from app.core.scheduler import shutdown_scheduler, start_scheduler
@@ -30,13 +33,9 @@ async def lifespan(app: FastAPI):
     await connect()
     print("connected successfully")
     await Initialize_redis(app)
-    await initialize_negotiation_redis(app)
+    await initialize_negotiation_redis(app, negotiation_graph)
     print("whatsapp redis initialized successfully")
-    # start_scheduler()
-    # print("⏰ Scheduler started")
     yield
-    # shutdown_scheduler()
-    # print("⏰ Scheduler stopped")
     await close()
     print("🧹closed")
 
