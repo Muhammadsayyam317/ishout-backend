@@ -25,6 +25,7 @@ def route_by_intent(state: WhatsappNegotiationState):
         WhatsappMessageIntent.NEGOTIATE,
         WhatsappMessageIntent.QUESTION,
     ):
+        print(f"{Colors.CYAN}Intent is {intent} → proceed to counter_offer")
         if state.get("min_price") and state.get("max_price"):
             print(f"{Colors.CYAN}Pricing already present → proceed to counter_offer")
             return "counter_offer"

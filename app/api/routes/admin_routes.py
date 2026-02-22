@@ -4,10 +4,6 @@ from app.Schemas.influencers import MoreInfluencerRequest
 from app.agents.Instagram.session.instauser_session import (
     all_instagram_user_sessions,
 )
-from app.agents.WhatsappNegotiation.Node.InitialMessage_Node import (
-    NegotiationInitialMessage,
-)
-
 from app.api.controllers.admin.campaign_controller import (
     add_influencer_Number,
     update_status,
@@ -59,6 +55,7 @@ from app.services.instagram.list_on_conversations import (
     instagram_conversation_messages,
     instagram_conversations_list,
 )
+from app.services.negotiation.InitialMessage import NegotiationInitialMessage
 from app.services.negotiation.negotiation import get_all_negotiation_controls
 from app.tools.regenerate_influencer import reject_and_regenerate
 

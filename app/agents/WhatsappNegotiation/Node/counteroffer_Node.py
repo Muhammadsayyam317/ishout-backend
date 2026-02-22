@@ -15,7 +15,6 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer):
     last_price = state.get("last_offered_price")
     user_offer = state.get("user_offer")
 
-    # Determine next offer
     if user_offer is not None and user_offer <= max_price:
         next_price = user_offer
         state["negotiation_status"] = "agreed"
@@ -40,7 +39,6 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer):
     state["last_offered_price"] = next_price
     state["user_offer"] = None
 
-    # AI generates message dynamically
     prompt = f"Generate a WhatsApp negotiation reply with offered price ${next_price} and status {state['negotiation_status']}."
     result = await Runner.run(
         Agent(
@@ -55,7 +53,6 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer):
     ai_message = result.final_output.get("final_reply", f"My offer is ${next_price}")
     state["final_reply"] = ai_message
 
-    # Save last AI message in Redis for 5 min
     await checkpointer.save_checkpoint(
         key=f"negotiation:{thread_id}:last_message", value=ai_message, ttl=300
     )
