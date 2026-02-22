@@ -1,15 +1,14 @@
 from agents import Agent, Runner
+from agents.agent_output import AgentOutputSchema
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
-from app.Schemas.instagram.negotiation_schema import NextAction
-from app.Guardails.input_guardrails import WhatsappInputGuardrail
+from app.Schemas.instagram.negotiation_schema import GenerateReplyOutput, NextAction
 from app.utils.printcolors import Colors
 
 
-async def counter_offer_node(state: WhatsappNegotiationState, checkpointer):
+async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None):
     print(f"{Colors.GREEN}Entering counter_offer_node")
     print("--------------------------------")
     thread_id = state.get("thread_id")
-
     min_price = state.get("min_price", 0)
     max_price = state.get("max_price", 0)
     last_price = state.get("last_offered_price")
@@ -44,20 +43,20 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer):
         Agent(
             name="ai_counter_offer",
             instructions=prompt,
-            input_guardrails=[WhatsappInputGuardrail],
-            output_type=dict,
+            input_guardrails=[],
+            output_type=AgentOutputSchema(
+                GenerateReplyOutput, strict_json_schema=False
+            ),
         ),
         input=state.get("history", []),
     )
-
     ai_message = result.final_output.get("final_reply", f"My offer is ${next_price}")
     state["final_reply"] = ai_message
+    state.setdefault("history", []).append({"sender_type": "AI", "message": ai_message})
 
-    await checkpointer.save_checkpoint(
-        key=f"negotiation:{thread_id}:last_message", value=ai_message, ttl=300
-    )
+    if checkpointer:
+        await checkpointer.save_checkpoint(
+            key=f"negotiation:{thread_id}:last_message", value=ai_message, ttl=300
+        )
 
-    print(f"{Colors.CYAN}Counter Offer AI Message: {ai_message}")
-    print(f"{Colors.YELLOW}Exiting counter_offer_node")
-    print("--------------------------------")
     return state

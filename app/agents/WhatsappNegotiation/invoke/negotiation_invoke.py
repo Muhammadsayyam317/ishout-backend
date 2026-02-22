@@ -5,7 +5,11 @@ async def Negotiation_invoke(agent, state: dict, config: dict | None = None):
     print(
         f"{Colors.YELLOW}Entering Negotiation_invoke for thread {state.get('thread_id')}"
     )
-    final_state = await agent.ainvoke(state, config=config)
+    try:
+        final_state = await agent.ainvoke(state, config=config)
+    except Exception as e:
+        print(f"[Negotiation_invoke] Agent invocation failed: {e}")
+        final_state = state
     print(
         f"{Colors.GREEN}Exiting Negotiation_invoke for thread {state.get('thread_id')}"
     )

@@ -1,3 +1,5 @@
+from agents.agent_output import AgentOutputSchema
+from app.Schemas.instagram.negotiation_schema import GenerateReplyOutput
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
 from app.utils.printcolors import Colors
 from agents import Agent, Runner
@@ -21,7 +23,9 @@ async def complete_negotiation_node(state: WhatsappNegotiationState):
                 name="whatsapp_negotiation_complete",
                 instructions="Generate a WhatsApp negotiation reply for completing the negotiation with the influencer.",
                 input_guardrails=[WhatsappInputGuardrail],
-                output_type=dict,
+                output_type=AgentOutputSchema(
+                    GenerateReplyOutput, strict_json_schema=False
+                ),
             ),
             input=state.get("history", []),
         )
