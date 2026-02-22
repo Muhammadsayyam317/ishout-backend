@@ -1,8 +1,5 @@
 from langgraph.checkpoint.redis.aio import AsyncRedisSaver
 from app.agents.Whatsapp.graph.whatsapp_graph import graph
-from app.agents.WhatsappNegotiation.graph.whatsappnegotiation_graph import (
-    negotiation_graph,
-)
 from app.config.credentials_config import config
 import redis.asyncio as redis
 from app.utils.printcolors import Colors
