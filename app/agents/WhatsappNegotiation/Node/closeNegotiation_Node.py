@@ -2,17 +2,6 @@ from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
 from app.utils.printcolors import Colors
 from agents import Agent, Runner
 from app.Guardails.input_guardrails import WhatsappInputGuardrail
-from app.Schemas.instagram.negotiation_schema import GenerateReplyOutput
-from langgraph.checkpoint.redis.aio import AsyncRedisSaver
-from app.config.credentials_config import config
-
-# Redis TTL in seconds (5 minutes)
-REDIS_TTL = 300
-
-
-CLOSE_CONVERSATION_PROMPT = "Generate a WhatsApp negotiation reply for closing the conversation with the influencer."
-
-
 from app.db.connection import get_db
 from bson import ObjectId
 

@@ -7,10 +7,6 @@ from app.db.connection import get_db
 from bson import ObjectId
 
 
-REDIS_TTL = 300
-CONFIRM_DETAILS_PROMPT = "Generate a WhatsApp negotiation reply for confirming the details with the influencer."
-
-
 async def confirm_details_node(state: WhatsappNegotiationState):
     print(f"{Colors.GREEN}Entering confirm_details_node")
     print("--------------------------------")

@@ -1,7 +1,5 @@
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
 from app.utils.printcolors import Colors
-
-
 from app.db.connection import get_db
 from bson import ObjectId
 
@@ -15,7 +13,6 @@ async def admin_takeover_node(state: WhatsappNegotiationState):
         print(f"{Colors.RED}[admin_takeover_node] Missing thread_id")
         return state
 
-    # Update state flags
     state["admin_takeover"] = True
     state["human_takeover"] = True
     state["agent_paused"] = True
@@ -23,7 +20,6 @@ async def admin_takeover_node(state: WhatsappNegotiationState):
     state["negotiation_status"] = "manual_required"
     state["next_action"] = None
 
-    # Persist to Mongo
     try:
         db = get_db()
         collection = db.get_collection("campaign_influencers")

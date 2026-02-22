@@ -12,7 +12,6 @@ async def generate_reply_node(state: WhatsappNegotiationState):
     print("--------------------------------")
 
     prompt = f"Generate a professional WhatsApp reply based on conversation history: {state.get('history', [])} and user message: {state.get('user_message')}"
-
     result = await Runner.run(
         Agent(
             name="ai_generate_reply",
