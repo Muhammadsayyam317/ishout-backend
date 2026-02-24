@@ -38,10 +38,38 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
     state["last_offered_price"] = next_price
     state["user_offer"] = None
 
-    prompt = (
-        f"Generate a WhatsApp negotiation reply with offered price ${next_price} "
-        f"and status {state['negotiation_status']}."
-    )
+    # Build a single prompt that encodes the situation (first offer vs counter)
+    user_offer = state.get("user_offer")
+    negotiation_round = state.get("negotiation_round", 1)
+    has_user_offer = user_offer is not None
+
+    context_lines = [
+        "You are an AI assistant negotiating on behalf of a brand with an influencer on WhatsApp.",
+        f"Negotiation round: {negotiation_round}.",
+        f"Brand's current offer to the influencer: ${next_price:.2f}.",
+    ]
+
+    if has_user_offer:
+        context_lines.append(
+            f\"The influencer has previously proposed a rate of ${user_offer:.2f}.\"
+        )
+    else:
+        context_lines.append(
+            "The influencer has not proposed any price yet; they have only expressed interest in collaborating."
+        )
+
+    rules = (
+        "Write a short, friendly WhatsApp message that:\n"
+        "- If the influencer has not proposed a price, present ${offer} clearly as the brand's offer "
+        "(e.g. \"we can offer you $X\"), and do NOT imply they offered this price.\n"
+        "- If the influencer has proposed a price, treat that as their offer and respond to it appropriately "
+        f"using ${next_price:.2f} as the brand's response.\n"
+        "- Never say \"thank you for your offer of $X\" unless X is truly the influencer's proposed rate.\n"
+        "- Do not mention internal status words like 'pending' or 'escalated'.\n"
+        "- You may ask them to confirm, suggest next steps, or say you'll review and follow up.\n"
+    ).replace("${offer}", f"${next_price:.2f}")
+
+    prompt = "\n".join(context_lines) + "\n\n" + rules
 
     # Ensure we always provide a non-empty input to the agent.
     history = state.get("history", [])
@@ -50,8 +78,8 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
     else:
         # First turn: send a simple textual input instead of an empty list
         agent_input = (
-            f"User is negotiating price. Offer: ${next_price}, "
-            f"status: {state['negotiation_status']}."
+            f"Brand is sending an offer of ${next_price:.2f} to an interested influencer. "
+            "Generate a natural WhatsApp message for this situation."
         )
 
     result = await Runner.run(
