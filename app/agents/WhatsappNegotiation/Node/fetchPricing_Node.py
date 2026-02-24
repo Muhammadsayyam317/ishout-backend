@@ -6,7 +6,7 @@ from app.utils.printcolors import Colors
 
 async def fetch_pricing_node(state: WhatsappNegotiationState, checkpointer=None):
     thread_id = state.get("thread_id")
-    influencer_id = state.get("_id")
+    influencer_id = state.get("influencer_id")
     print(f"{Colors.GREEN}Entering fetch_pricing_node")
 
     if state.get("min_price") and state.get("max_price"):
