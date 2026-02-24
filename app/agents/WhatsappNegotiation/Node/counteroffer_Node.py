@@ -46,12 +46,12 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
     context_lines = [
         "You are an AI assistant negotiating on behalf of a brand with an influencer on WhatsApp.",
         f"Negotiation round: {negotiation_round}.",
-        f"Brand's current offer to the influencer: ${next_price:.2f}.",
+        f"Brand's current offer to the influencer: ${next_price:.2f}",
     ]
 
     if has_user_offer:
         context_lines.append(
-            f\"The influencer has previously proposed a rate of ${user_offer:.2f}.\"
+            f"The influencer has previously proposed a rate of ${user_offer:.2f}"
         )
     else:
         context_lines.append(
