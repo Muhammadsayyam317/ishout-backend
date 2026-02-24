@@ -2,6 +2,7 @@ from app.Schemas.whatsapp.negotiation_schema import (
     WhatsappNegotiationState,
     WhatsappMessageIntent,
 )
+from app.Schemas.instagram.negotiation_schema import NextAction
 from app.utils.printcolors import Colors
 
 
@@ -10,8 +11,60 @@ def route_by_intent(state: WhatsappNegotiationState):
     print("--------------------------------")
 
     intent = state.get("intent", WhatsappMessageIntent.UNCLEAR)
-    print(f"{Colors.CYAN}Routing based on intent: {intent}")
+    next_action = state.get("next_action")
+    print(f"{Colors.CYAN}Routing based on intent: {intent}, next_action: {next_action}")
 
+    # 1) Route by NextAction when available (higher priority)
+    if next_action is not None:
+        # Normalize to enum if it's coming through as a raw value
+        try:
+            na = (
+                next_action
+                if isinstance(next_action, NextAction)
+                else NextAction(next_action)
+            )
+        except Exception:
+            na = None
+
+        if na is not None:
+            # Question / clarification style actions
+            if na in {
+                NextAction.ANSWER_QUESTION,
+                NextAction.GENERATE_CLARIFICATION,
+                NextAction.ASK_INTEREST,
+                NextAction.ASK_AVAILABILITY,
+                NextAction.WAIT_OR_ACKNOWLEDGE,
+            }:
+                print(f"{Colors.YELLOW}NextAction={na} → generate_reply")
+                return "generate_reply"
+
+            # Pricing / negotiation steps
+            if na in {
+                NextAction.ASK_RATE,
+                NextAction.ESCALATE_NEGOTIATION,
+                NextAction.ACCEPT_NEGOTIATION,
+            }:
+                print(f"{Colors.YELLOW}NextAction={na} → counter_offer")
+                return "counter_offer"
+
+            # Confirmation / details
+            if na in {
+                NextAction.CONFIRM_PRICING,
+                NextAction.CONFIRM_DELIVERABLES,
+                NextAction.CONFIRM_TIMELINE,
+            }:
+                print(f"{Colors.YELLOW}NextAction={na} → confirm_details")
+                return "confirm_details"
+
+            # Terminal states
+            if na == NextAction.REJECT_NEGOTIATION:
+                print(f"{Colors.YELLOW}NextAction={na} → reject_negotiation")
+                return "reject_negotiation"
+            if na == NextAction.CLOSE_CONVERSATION:
+                print(f"{Colors.YELLOW}NextAction={na} → close_conversation")
+                return "close_conversation"
+
+    # 2) Fallback: route by high-level intent
     if intent == WhatsappMessageIntent.REJECT:
         print(f"{Colors.YELLOW}Intent is REJECT → generate_reply")
         return "generate_reply"
@@ -25,7 +78,7 @@ def route_by_intent(state: WhatsappNegotiationState):
         WhatsappMessageIntent.NEGOTIATE,
         WhatsappMessageIntent.QUESTION,
     ):
-        print(f"{Colors.CYAN}Intent is {intent} → proceed to counter_offer")
+        print(f"{Colors.CYAN}Intent is {intent} → price negotiation path")
         if state.get("min_price") and state.get("max_price"):
             print(f"{Colors.CYAN}Pricing already present → proceed to counter_offer")
             return "counter_offer"
