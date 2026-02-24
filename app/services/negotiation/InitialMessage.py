@@ -13,7 +13,7 @@ from app.utils.printcolors import Colors
 
 
 async def NegotiationInitialMessage(influencer_id: str):
-    print(f"{Colors.GREEN}Entering into NegotiationInitialMessage")
+    print(f"{Colors.GREEN}Entering into NegotiationInitialMessage for influencer_id: {influencer_id}")
     print("--------------------------------")
     db = get_db()
     collection = db.get_collection("campaign_influencers")
@@ -82,7 +82,7 @@ async def NegotiationInitialMessage(influencer_id: str):
         thread_id=phone_number,
         data={
             "thread_id": phone_number,
-            "_id": influencer_id,
+            "influencer_id": influencer_id,
             "conversation_mode": "NEGOTIATION",
             "agent_paused": False,
             "human_takeover": False,
