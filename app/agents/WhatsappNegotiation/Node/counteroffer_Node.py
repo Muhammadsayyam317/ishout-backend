@@ -9,10 +9,15 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
     print(f"{Colors.GREEN}Entering counter_offer_node")
     print("--------------------------------")
     thread_id = state.get("thread_id")
-    min_price = state.get("min_price", 0)
-    max_price = state.get("max_price", 0)
+    min_price = state.get("min_price") or 0
+    max_price = state.get("max_price") or 0
     last_price = state.get("last_offered_price")
     user_offer = state.get("user_offer")
+
+    if not min_price or not max_price:
+        print(f"{Colors.RED}[counter_offer_node] min_price={min_price}, max_price={max_price} — pricing not loaded, skipping")
+        state["final_reply"] = "Thanks for your interest! Let me get some details together and get back to you shortly."
+        return state
 
     if user_offer is not None and user_offer <= max_price:
         next_price = user_offer

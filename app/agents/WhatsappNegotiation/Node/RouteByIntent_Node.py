@@ -44,8 +44,12 @@ def route_by_intent(state: WhatsappNegotiationState):
                 NextAction.ESCALATE_NEGOTIATION,
                 NextAction.ACCEPT_NEGOTIATION,
             }:
-                print(f"{Colors.YELLOW}NextAction={na} → counter_offer")
-                return "counter_offer"
+                if state.get("min_price") and state.get("max_price"):
+                    print(f"{Colors.YELLOW}NextAction={na} → counter_offer (pricing present)")
+                    return "counter_offer"
+                else:
+                    print(f"{Colors.YELLOW}NextAction={na} → fetch_pricing first (pricing missing)")
+                    return "fetch_pricing"
 
             # Confirmation / details
             if na in {
