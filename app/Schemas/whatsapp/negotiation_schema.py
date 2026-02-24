@@ -22,7 +22,10 @@ class WhatsappNegotiationInitialMessageRequest(TypedDict):
 
 class WhatsappNegotiationState(TypedDict):
     thread_id: str
+    # Mongo document id for negotiation_agent_controls (not the influencer id)
     _id: str
+    # Influencer id from campaign_influencers used to fetch pricing
+    influencer_id: Optional[str]
     user_message: str
     intent: WhatsappMessageIntent
     next_action: NextAction

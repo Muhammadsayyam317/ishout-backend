@@ -13,15 +13,27 @@ async def fetch_pricing_node(state: WhatsappNegotiationState, checkpointer=None)
     if state.get("min_price") and state.get("max_price"):
         return state
 
+    # Guard: influencer_id must be present
+    if not influencer_id:
+        print(f"{Colors.RED}[fetch_pricing_node] Missing influencer_id in state")
+        return state
+
     db = get_db()
     collection = db.get_collection("campaign_influencers")
     influencer = await collection.find_one(
         {"_id": ObjectId(influencer_id)},
         {"min_price": 1, "max_price": 1, "campaign_id": 1},
     )
-    state["min_price"] = float(influencer["min_price"])
-    state["max_price"] = float(influencer["max_price"])
-    state["campaign_id"] = influencer["campaign_id"]
+
+    if not influencer:
+        print(
+            f"{Colors.RED}[fetch_pricing_node] Influencer not found for _id={influencer_id}"
+        )
+        return state
+
+    state["min_price"] = float(influencer.get("min_price", 0))
+    state["max_price"] = float(influencer.get("max_price", 0))
+    state["campaign_id"] = influencer.get("campaign_id")
 
     if checkpointer:
         await checkpointer.save_checkpoint(
