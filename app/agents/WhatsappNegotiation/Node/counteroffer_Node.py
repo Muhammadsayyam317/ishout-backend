@@ -38,7 +38,22 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
     state["last_offered_price"] = next_price
     state["user_offer"] = None
 
-    prompt = f"Generate a WhatsApp negotiation reply with offered price ${next_price} and status {state['negotiation_status']}."
+    prompt = (
+        f"Generate a WhatsApp negotiation reply with offered price ${next_price} "
+        f"and status {state['negotiation_status']}."
+    )
+
+    # Ensure we always provide a non-empty input to the agent.
+    history = state.get("history", [])
+    if history:
+        agent_input = history
+    else:
+        # First turn: send a simple textual input instead of an empty list
+        agent_input = (
+            f"User is negotiating price. Offer: ${next_price}, "
+            f"status: {state['negotiation_status']}."
+        )
+
     result = await Runner.run(
         Agent(
             name="ai_counter_offer",
@@ -48,7 +63,7 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
                 GenerateReplyOutput, strict_json_schema=False
             ),
         ),
-        input=state.get("history", []),
+        input=agent_input,
     )
     ai_message = result.final_output.get("final_reply", f"My offer is ${next_price}")
     state["final_reply"] = ai_message
