@@ -71,3 +71,13 @@ class CampaignBriefResponse(BaseModel):
     kpis_success_metrics: List[str]
     usage_rights: List[str]
     dos_donts: List[str]
+
+class CampaignBriefDBResponse(BaseModel):
+    id: str
+    user_id: str
+    prompt: str
+    response: CampaignBriefResponse
+    status: str
+    version: int
+    regenerated_from: Optional[str] = None
+    created_at: Optional[datetime] = None

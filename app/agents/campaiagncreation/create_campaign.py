@@ -1,5 +1,6 @@
-from typing import Optional
+from typing import List, Optional
 from bson import ObjectId
+from bson.errors import InvalidId
 from fastapi import HTTPException
 from agents import Runner, Agent
 from app.Guardails.CampaignCreation.campaignInput_guardrails import (
@@ -8,7 +9,10 @@ from app.Guardails.CampaignCreation.campaignInput_guardrails import (
 from app.Guardails.CampaignCreation.campaignoutput_guardrails import (
     CampaignCreationOutputGuardrail,
 )
-from app.Schemas.campaign_influencers import CampaignBriefResponse
+from app.Schemas.campaign_influencers import (
+    CampaignBriefDBResponse,
+    CampaignBriefResponse,
+)
 from app.model.Campaign.campaignbrief_model import (
     CampaignBriefGeneration,
     CampaignBriefStatus,
@@ -97,3 +101,58 @@ async def create_campaign_brief(user_input: str, user_id: str) -> CampaignBriefR
         raise HTTPException(
             status_code=500, detail=f"Campaign generation failed: {str(e)}"
         )
+
+
+async def get_campaign_briefs(
+    user_id: str, skip: int = 0, limit: int = 10
+) -> List[CampaignBriefDBResponse]:
+
+    user_doc = await validate_user(user_id)
+    db = get_db()
+    collection = db.get_collection("CampaignBriefGeneration")
+
+    cursor = (
+        collection.find({"user_id": str(user_doc["_id"])})
+        .sort("version", -1)
+        .skip(skip)
+        .limit(limit)
+    )
+
+    briefs = []
+    async for doc in cursor:
+        briefs.append(
+            CampaignBriefDBResponse(
+                id=str(doc["_id"]),
+                user_id=doc["user_id"],
+                prompt=doc["prompt"],
+                response=CampaignBriefResponse(**doc["response"]),
+                status=doc["status"],
+                version=doc["version"],
+                regenerated_from=doc.get("regenerated_from"),
+                created_at=doc.get("created_at"),
+            )
+        )
+
+    return briefs
+
+
+async def get_campaign_brief_by_id(campaign_id: str):
+    db = get_db()
+    collection = db.get_collection("CampaignBriefGeneration")  # correct collection
+
+    campaign = await collection.find_one({"_id": campaign_id})  # fetch only by _id
+
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign brief not found")
+
+    # Convert to response model
+    return CampaignBriefDBResponse(
+        id=str(campaign["_id"]),
+        user_id=campaign["user_id"],
+        prompt=campaign["prompt"],
+        response=CampaignBriefResponse(**campaign["response"]),
+        status=campaign["status"],
+        version=campaign["version"],
+        regenerated_from=campaign.get("regenerated_from"),
+        created_at=campaign.get("created_at"),
+    )

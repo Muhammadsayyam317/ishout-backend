@@ -1,6 +1,10 @@
 from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends
-from app.Schemas.campaign_influencers import CampaignBriefRequest, CampaignBriefResponse
+from app.Schemas.campaign_influencers import (
+    CampaignBriefDBResponse,
+    CampaignBriefRequest,
+    CampaignBriefResponse,
+)
 from app.api.controllers.admin.approved_campaign import (
     companyApprovedSingleInfluencer,
 )
@@ -21,10 +25,15 @@ from app.Schemas.campaign import (
     CreateCampaignRequest,
     UserRejectInfluencersRequest,
 )
+from typing import List
 from app.services.whatsapp.send_text import send_message_from_ishout_to_user
 from app.tools.search_influencers import search_influencers
 from app.api.controllers.company.profile import get_user_profile, update_user_profile
-from app.agents.campaiagncreation.create_campaign import create_campaign_brief
+from app.agents.campaiagncreation.create_campaign import (
+    create_campaign_brief,
+    get_campaign_brief_by_id,
+    get_campaign_briefs,
+)
 
 router = APIRouter()
 
@@ -138,3 +147,29 @@ async def create_campaign_brief_endpoint(request: CampaignBriefRequest):
     return await create_campaign_brief(
         user_input=request.user_input, user_id=request.user_id
     )
+
+
+@router.get(
+    "/campaign-brief/{user_id}",
+    response_model=List[CampaignBriefDBResponse],
+    tags=["Company"],
+)
+async def get_campaign_briefs_endpoint(
+    user_id: str,
+    skip: int = 0,
+    limit: int = 10,
+):
+    return await get_campaign_briefs(user_id, skip, limit)
+
+
+@router.get(
+    "/campaign-brief/detail/{id}",
+    response_model=CampaignBriefDBResponse,
+    tags=["Company"],
+)
+async def get_campaign_brief_detail_endpoint(id: str):
+    """
+    Fetch a single campaign brief by its unique ID.
+    No user_id required.
+    """
+    return await get_campaign_brief_by_id(id)
