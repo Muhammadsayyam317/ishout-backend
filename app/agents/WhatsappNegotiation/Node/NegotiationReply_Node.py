@@ -13,7 +13,36 @@ async def generate_reply_node(state: WhatsappNegotiationState):
     print(f"{Colors.GREEN}Entering generate_reply_node")
     print("--------------------------------")
 
-    prompt = f"Generate a professional WhatsApp reply based on conversation history: {state.get('history', [])} and user message: {state.get('user_message')}"
+    user_message = state.get("user_message", "")
+    intent = state.get("intent")
+    next_action = state.get("next_action")
+
+    # Build a single prompt using state + history
+    history = state.get("history", [])
+    context_lines = [
+        "You are an AI assistant helping a brand chat with an influencer on WhatsApp.",
+        f"Latest influencer message: {user_message!r}",
+        f"Model intent: {intent}",
+        f"Recommended next action: {next_action}",
+    ]
+
+    rules = (
+        "Write a short, friendly WhatsApp reply that:\n"
+        "- Answers the influencer based on their latest message.\n"
+        "- If they asked a question, focus on clearly answering it.\n"
+        "- If they are just showing interest, you can acknowledge and move the conversation forward.\n"
+        "- Do not mention internal status words like 'pending' or 'escalated'.\n"
+        "- Do not restate pricing unless it is directly relevant to their question.\n"
+    )
+
+    prompt = "\n".join(context_lines) + "\n\n" + rules
+
+    # Ensure we always provide a non-empty input to the agent.
+    if history:
+        agent_input = history
+    else:
+        agent_input = f"Influencer message: {user_message}"
+
     result = await Runner.run(
         Agent(
             name="ai_generate_reply",
@@ -23,7 +52,7 @@ async def generate_reply_node(state: WhatsappNegotiationState):
                 GenerateReplyOutput, strict_json_schema=False
             ),
         ),
-        input=state.get("history", []),
+        input=agent_input,
     )
 
     ai_message = result.final_output.get(

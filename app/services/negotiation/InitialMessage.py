@@ -83,6 +83,18 @@ async def NegotiationInitialMessage(influencer_id: str):
         data={
             "thread_id": phone_number,
             "influencer_id": influencer_id,
+            # Reset negotiation-specific fields for a fresh conversation
+            "analysis": {},
+            "final_reply": None,
+            "intent": None,
+            "next_action": None,
+            "min_price": None,
+            "max_price": None,
+            "last_offered_price": None,
+            "negotiation_round": 0,
+            "negotiation_status": None,
+            "manual_negotiation": False,
+            "user_offer": None,
             "conversation_mode": "NEGOTIATION",
             "agent_paused": False,
             "human_takeover": False,
