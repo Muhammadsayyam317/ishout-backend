@@ -76,3 +76,19 @@ def get_history_list(state: dict) -> list:
 def set_history_list(state: dict, history: list) -> None:
     """Ensure state['history'] is a list so later setdefault/append are safe."""
     state["history"] = history if isinstance(history, list) else []
+
+
+def history_to_agent_messages(history: list[dict]) -> list[dict]:
+    """
+    Convert our history (sender_type: 'USER'|'AI', message: str) to the format
+    expected by the agents API: role 'user'|'assistant', content: str.
+    """
+    out = []
+    for msg in history:
+        if not isinstance(msg, dict):
+            continue
+        role = "user" if (msg.get("sender_type") or "").upper() == "USER" else "assistant"
+        content = (msg.get("message") or msg.get("content") or "").strip()
+        if content:
+            out.append({"role": role, "content": content})
+    return out

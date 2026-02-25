@@ -7,7 +7,11 @@ from app.Guardails.input_guardrails import WhatsappInputGuardrail
 from app.db.connection import get_db
 from bson import ObjectId
 from app.utils.prompts import WHATSAPP_CONFIRM_DETAILS_SUFFIX
-from app.utils.message_context import get_history_list, set_history_list
+from app.utils.message_context import (
+    get_history_list,
+    set_history_list,
+    history_to_agent_messages,
+)
 
 
 async def confirm_details_node(state: WhatsappNegotiationState):
@@ -38,7 +42,7 @@ async def confirm_details_node(state: WhatsappNegotiationState):
     )
 
     agent_input = (
-        history
+        history_to_agent_messages(history)
         if history
         else f"Influencer asked about deliverables/timeline. Offered rate: {rate}"
     )

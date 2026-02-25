@@ -5,7 +5,11 @@ from app.Schemas.instagram.negotiation_schema import GenerateReplyOutput
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
 from app.utils.printcolors import Colors
 from app.utils.prompts import WHATSAPP_GENERATE_REPLY_RULES
-from app.utils.message_context import get_history_list, set_history_list
+from app.utils.message_context import (
+    get_history_list,
+    set_history_list,
+    history_to_agent_messages,
+)
 
 
 async def generate_reply_node(state: WhatsappNegotiationState):
@@ -29,9 +33,9 @@ async def generate_reply_node(state: WhatsappNegotiationState):
 
     prompt = "\n".join(context_lines) + "\n\n" + WHATSAPP_GENERATE_REPLY_RULES
 
-    # Ensure we always provide a non-empty input to the agent.
+    # Ensure we always provide a non-empty input to the agent (API expects role/user or role/assistant).
     if history:
-        agent_input = history
+        agent_input = history_to_agent_messages(history)
     else:
         agent_input = f"Influencer message: {user_message}"
 
