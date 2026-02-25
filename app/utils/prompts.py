@@ -167,8 +167,8 @@ company_website = "https://app.ishout.ae/"
 CREATECAMPAIGNBREAKDOWN_PROMPT = f"""
 You are an AI assistant that creates a detailed influencer campaign breakdown for a brand based on the following company website: {company_website}.
 
-From the user input prompt, ONLY extract information that is explicitly mentioned by the user. 
-Do NOT guess, infer, or assume any platform, category, limit, followers, or country if it is not stated.
+- Generate meaningful content for all campaign sections (overview, objectives, target audience, influencer profile, key campaign message, content direction, deliverables, hashtags, timeline, approval process, KPIs, usage rights, dos/donts) based on the user prompt.
+- For the following fields ONLY: platform, category, limit, followers, country — extract values only if explicitly mentioned in the user input. If not mentioned, return empty array [] (for lists) or null (for limit/followers).
 
 Return ONLY a valid JSON object.
 
@@ -177,24 +177,20 @@ JSON structure MUST match exactly:
 {{
     "title": "Campaign title (short, clear, professional name for the campaign)",
     "brand_name_influencer_campaign_brief": "Short intro paragraph",
-
     "campaign_overview": [
         "Point 1",
         "Point 2"
     ],
-
     "campaign_objectives": [
         "Objective 1",
         "Objective 2",
         "Objective 3"
     ],
-
     "target_audience": [
         "Demographic details",
         "Interests",
         "Social media behavior"
     ],
-
     "influencer_profile": [
         "Follower range",
         "Engagement rate",
@@ -202,72 +198,62 @@ JSON structure MUST match exactly:
         "Language",
         "Location"
     ],
-
     "key_campaign_message": [
         "Core message",
         "Tone of voice",
         "Brand values"
     ],
-
     "content_direction": [
         "Theme 1",
         "Storytelling style",
         "Example content idea"
     ],
-
     "deliverables_per_influencer": [
         "1 Instagram Reel",
         "3 Stories",
         "1 Static Post"
     ],
-
     "hashtags_mentions": [
         "#PrimaryHashtag",
         "#SecondaryHashtag",
         "@brandhandle"
     ],
-
     "timeline": [
         "Influencer selection date",
         "Content draft submission",
         "Go-live date"
     ],
-
     "approval_process": [
         "Draft submission",
         "Brand review",
         "Final approval"
     ],
-
     "kpis_success_metrics": [
         "Reach",
         "Engagement rate",
         "Click-through rate",
         "Conversions"
     ],
-
     "usage_rights": [
         "Organic reposting",
         "Paid ads usage for 3 months"
     ],
-
     "dos_donts": [
         "Do disclose partnership",
         "Do align with brand tone",
         "Don't include competitor brands"
     ],
-
-    "platform": [], 
-    "category": [], 
+    "platform": [],
+    "category": [],
     "limit": null,
     "followers": null,
     "country": []
 }}
 
 Rules:
-- Include the above fields ONLY if they are explicitly mentioned by the user in the prompt.
-- If a field is not mentioned, return it as empty array `[]` for lists, or `null` for limit/followers.
-- Do NOT assume, infer, or guess any values.
+- Generate full content for all campaign sections based on the prompt.
+- For platform, category, limit, followers, country — only populate if explicitly mentioned by the user.
+- If a field is not mentioned, return empty array `[]` or null.
 - Return ONLY JSON
 - No explanation text
 - No markdown
