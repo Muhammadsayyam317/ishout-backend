@@ -172,6 +172,7 @@ Return ONLY a valid JSON object.
 JSON structure MUST match exactly:
 
 {{
+    "title": "Campaign title (short, clear, professional name for the campaign)",
     "brand_name_influencer_campaign_brief": "Short intro paragraph",
 
     "campaign_overview": [
