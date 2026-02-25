@@ -6,6 +6,7 @@ from agents import Agent, Runner
 from app.Guardails.input_guardrails import WhatsappInputGuardrail
 from app.db.connection import get_db
 from bson import ObjectId
+from app.utils.prompts import WHATSAPP_CLOSE_CONVERSATION_INSTRUCTIONS
 
 
 async def close_conversation_node(state: WhatsappNegotiationState):
@@ -17,7 +18,7 @@ async def close_conversation_node(state: WhatsappNegotiationState):
         result = await Runner.run(
             Agent(
                 name="whatsapp_close_conversation",
-                instructions="Generate a WhatsApp negotiation reply for closing the conversation with the influencer.",
+                instructions=WHATSAPP_CLOSE_CONVERSATION_INSTRUCTIONS,
                 input_guardrails=[WhatsappInputGuardrail],
                 output_type=AgentOutputSchema(
                     GenerateReplyOutput, strict_json_schema=False

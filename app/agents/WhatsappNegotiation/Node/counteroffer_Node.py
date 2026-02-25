@@ -3,6 +3,7 @@ from agents.agent_output import AgentOutputSchema
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
 from app.Schemas.instagram.negotiation_schema import GenerateReplyOutput, NextAction
 from app.utils.printcolors import Colors
+from app.utils.prompts import WHATSAPP_COUNTER_OFFER_RULES
 
 
 async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None):
@@ -83,6 +84,7 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
         "You are an AI assistant negotiating on behalf of a brand with an influencer on WhatsApp.",
         f"Negotiation round: {negotiation_round}.",
         f"Brand's current offer to the influencer: ${next_price:.2f}",
+        f"Allowed price range for this influencer: ${min_price:.2f}–${max_price:.2f}.",
     ]
 
     if has_user_offer:
@@ -94,16 +96,7 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
             "The influencer has not proposed any price yet; they have only expressed interest in collaborating."
         )
 
-    rules = (
-        "Write a short, friendly WhatsApp message that:\n"
-        "- If the influencer has not proposed a price, present ${offer} clearly as the brand's offer "
-        "(e.g. \"we can offer you $X\"), and do NOT imply they offered this price.\n"
-        "- If the influencer has proposed a price, treat that as their offer and respond to it appropriately "
-        f"using ${next_price:.2f} as the brand's response.\n"
-        "- Never say \"thank you for your offer of $X\" unless X is truly the influencer's proposed rate.\n"
-        "- Do not mention internal status words like 'pending' or 'escalated'.\n"
-        "- You may ask them to confirm, suggest next steps, or say you'll review and follow up.\n"
-    ).replace("${offer}", f"${next_price:.2f}")
+    rules = WHATSAPP_COUNTER_OFFER_RULES.replace("${offer}", f"${next_price:.2f}")
 
     prompt = "\n".join(context_lines) + "\n\n" + rules
 

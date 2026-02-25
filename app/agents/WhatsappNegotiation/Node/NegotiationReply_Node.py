@@ -4,6 +4,7 @@ from app.Guardails.input_guardrails import WhatsappInputGuardrail
 from app.Schemas.instagram.negotiation_schema import GenerateReplyOutput
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
 from app.utils.printcolors import Colors
+from app.utils.prompts import WHATSAPP_GENERATE_REPLY_RULES
 
 
 NEGOTIATE_INFLUENCER_DM_PROMPT = "Generate a professional WhatsApp reply based on conversation history: {state.get('history', [])} and user message: {state.get('user_message')}"
@@ -26,19 +27,7 @@ async def generate_reply_node(state: WhatsappNegotiationState):
         f"Recommended next action: {next_action}",
     ]
 
-    rules = (
-        "Write a short, friendly WhatsApp reply that:\n"
-        "- Answers the influencer based on their latest message.\n"
-        "- If they asked a question, focus on clearly answering it.\n"
-        "- If they are just showing interest, you can acknowledge and move the conversation forward.\n"
-        "- Do not mention internal status words like 'pending' or 'escalated'.\n"
-        "- Do not restate pricing unless it is directly relevant to their question.\n"
-        "- Do NOT invent specific campaign deliverables/timelines (e.g., exact number of posts/reels or dates)\n"
-        "  unless those details are explicitly present in the provided context/history.\n"
-        "- If details are missing, ask for clarification or say you will share finalized campaign details shortly.\n"
-    )
-
-    prompt = "\n".join(context_lines) + "\n\n" + rules
+    prompt = "\n".join(context_lines) + "\n\n" + WHATSAPP_GENERATE_REPLY_RULES
 
     # Ensure we always provide a non-empty input to the agent.
     if history:

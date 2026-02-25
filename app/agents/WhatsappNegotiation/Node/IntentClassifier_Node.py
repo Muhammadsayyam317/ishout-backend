@@ -9,6 +9,16 @@ from app.utils.printcolors import Colors
 async def intentclassifier(state: WhatsappNegotiationState, checkpointer=None):
     print(f"{Colors.GREEN}Entering intentclassifier node")
     user_message = state.get("user_message", "")
+    history = state.get("history", [])
+
+    # Provide recent conversation history plus the latest user message so the
+    # analyzer can infer context (e.g., earlier offers) instead of relying only
+    # on a single turn or potentially stale state variables.
+    analyzer_input = {
+        "history": history,
+        "latest_user_message": user_message,
+    }
+
     result = await Runner.run(
         Agent(
             name="analyze_whatsapp_message",
@@ -16,7 +26,7 @@ async def intentclassifier(state: WhatsappNegotiationState, checkpointer=None):
             input_guardrails=[WhatsappInputGuardrail],
             output_type=AnalyzeMessageOutput,
         ),
-        input=user_message,
+        input=analyzer_input,
     )
     analysis: AnalyzeMessageOutput = result.final_output or {}
     intent = analysis.get("intent", "unclear")

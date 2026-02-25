@@ -137,17 +137,31 @@ Your main task is conform the influencer availability,then ask their rate card,a
 ANALYZE_INFLUENCER_WHATSAPP_PROMPT = """
 You are an AI assistant analyzing WhatsApp replies from influencers during a brand negotiation.
 
+INPUT FORMAT
+- You are given a JSON object with:
+  - "history": the recent WhatsApp conversation as a list of messages, each with:
+    - "sender_type": "USER" or "AI"
+    - "message": the text that was sent
+  - "latest_user_message": the most recent message from the influencer (string)
+
+GENERAL RULES
+- Always use the full conversation history plus the latest message to understand the situation.
+- Do NOT assume internal state variables (like min_price, max_price, last_offered_price, user_offer, negotiation_round)
+  are present or correct – if they conflict with the text, trust the conversation text.
+- If the influencer’s price or intent is expressed in earlier messages, you must still take it into account even if
+  it is not restated in the latest message.
+
 Your task:
-1. Identify the influencer’s primary intent.
-2. Extract any mentioned pricing, deliverables, platforms, or timeline.
+1. Identify the influencer’s primary intent based on the entire conversation.
+2. Extract any mentioned pricing, deliverables, platforms, or timeline from the conversation.
 3. Decide the next best action for the negotiation agent.
 
 Intent rules:
 - INTEREST: positive or open responses without rejection.
-- NEGOTIATE: mentions budget issues, counter offers, or pricing concerns. handle messages that show interest but push back on price or terms as well
-  (e.g. \"that's too low\", \"not enough for me\", \"can you do more?\", \"need a higher rate\").
-- REJECT: clear refusal or lack of interest in collaborating at all
-  (e.g. \"I'm not interested\", \"no collaborations\", \"this is not for me\"), even if price is mentioned.
+- NEGOTIATE: mentions budget issues, counter offers, or pricing concerns. Handle messages that show interest but push back
+  on price or terms as well (e.g. "that's too low", "not enough for me", "can you do more?", "need a higher rate").
+- REJECT: clear refusal or lack of interest in collaborating at all (e.g. "I'm not interested", "no collaborations",
+  "this is not for me"), even if price is mentioned.
 - ACCEPT: explicit agreement to proposed terms.
 - QUESTION: asking for missing details.
 - UNCLEAR: vague or ambiguous responses.
@@ -261,4 +275,65 @@ Rules:
 - No markdown
 - No comments
 - No trailing commas
+"""
+
+
+WHATSAPP_COUNTER_OFFER_RULES = """
+Write a short, friendly WhatsApp message that:
+- If the influencer has not proposed a price, present ${offer} clearly as the brand's offer
+  (e.g. "we can offer you $X"), and do NOT imply they offered this price.
+- If the influencer has proposed a price, treat that as their offer and respond to it appropriately
+  using ${offer} as the brand's response.
+- Never say "thank you for your offer of $X" unless X is truly the influencer's proposed rate.
+- Assume state variables like last_offered_price, user_offer, negotiation_round or negotiation_status may be missing or slightly outdated.
+  If there is any conflict between those values and the conversation history, trust the conversation history.
+- Use the conversation history you receive as input to understand whether this is an initial offer, a counter offer, or a follow-up.
+- Do not mention internal status words like 'pending' or 'escalated'.
+- You may ask them to confirm, suggest next steps, or say you'll review and follow up.
+"""
+
+
+WHATSAPP_GENERATE_REPLY_RULES = """
+Write a short, friendly WhatsApp reply that:
+- Answers the influencer based on their latest message.
+- If they asked a question, focus on clearly answering it.
+- If they are just showing interest, you can acknowledge and move the conversation forward.
+- Use the recent conversation history you receive as input to understand context (e.g. earlier pricing, prior answers),
+  and do not rely blindly on internal variables if they seem inconsistent with the chat.
+- Do not mention internal status words like 'pending' or 'escalated'.
+- Do not restate pricing unless it is directly relevant to their question.
+- Do NOT invent specific campaign deliverables/timelines (e.g., exact number of posts/reels or dates)
+  unless those details are explicitly present in the provided context/history.
+- If details are missing, ask for clarification or say you will share finalized campaign details shortly.
+"""
+
+
+WHATSAPP_CONFIRM_DETAILS_SUFFIX = """
+Important:
+- Sometimes the numeric rate in state may be missing or slightly outdated even if the conversation history
+  clearly shows a rate. In that case, trust the conversation text over the state variable.
+- Use the recent conversation history you receive as input to understand whether the rate has already been
+  discussed or confirmed.
+
+Write a concise WhatsApp reply that:
+- Acknowledges their rate or willingness to proceed positively.
+- Does NOT ask the influencer to provide or confirm deliverables or timeline (the brand defines those details).
+- States that the brand will share the final deliverables and timeline shortly or in the next message.
+- Does NOT invent specific deliverables or timelines.
+- Keeps tone professional and friendly.
+"""
+
+
+WHATSAPP_CLOSE_CONVERSATION_INSTRUCTIONS = """
+Generate a short WhatsApp negotiation reply for closing the conversation with the influencer.
+Use the recent conversation history to keep the tone consistent, be polite, and clearly indicate that
+this specific negotiation thread is being wrapped up (without introducing new offers or deliverables).
+"""
+
+
+WHATSAPP_NEGOTIATION_COMPLETE_INSTRUCTIONS = """
+Generate a WhatsApp negotiation reply for completing the negotiation with the influencer.
+Use the recent conversation history to keep the tone consistent, confirm that the negotiation is complete,
+and set the expectation that the brand will follow up with any remaining operational details if needed.
+Do not introduce new terms, prices, or deliverables that were not already agreed in the conversation.
 """
