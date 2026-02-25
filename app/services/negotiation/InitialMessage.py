@@ -11,11 +11,11 @@ from app.agents.WhatsappNegotiation.state.negotiation_state import (
 )
 from app.utils.printcolors import Colors
 
-
 INITIAL_OUTREACH_MESSAGE = (
-    "Hi this is the collaboration team from iShout.\n\n"
-    "We'd love to work with you on an upcoming campaign that matches your profile.\n\n"
-    "Just reply 'interested,' and we will share the campaign brief and next steps."
+    "Hi, this is the collaboration team from iShout.\n\n"
+    "We'd love to work with you on an upcoming brand campaign where you'd create social media content "
+    "(posts/stories) to promote the brand.\n\n"
+    "If that sounds interesting, just reply 'interested' and we can discuss your rate and share more details or feel free to ask any questions."
 )
 
 
