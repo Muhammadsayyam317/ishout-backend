@@ -5,21 +5,21 @@ from app.Schemas.instagram.negotiation_schema import GenerateReplyOutput
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
 from app.utils.printcolors import Colors
 from app.utils.prompts import WHATSAPP_GENERATE_REPLY_RULES
-
-
-NEGOTIATE_INFLUENCER_DM_PROMPT = "Generate a professional WhatsApp reply based on conversation history: {state.get('history', [])} and user message: {state.get('user_message')}"
+from app.utils.message_context import get_history_list, set_history_list
 
 
 async def generate_reply_node(state: WhatsappNegotiationState):
     print(f"{Colors.GREEN}Entering generate_reply_node")
     print("--------------------------------")
 
+    history = get_history_list(state)
+    set_history_list(state, history)
+
     user_message = state.get("user_message", "")
     intent = state.get("intent")
     next_action = state.get("next_action")
 
     # Build a single prompt using state + history
-    history = state.get("history", [])
     context_lines = [
         "You are an AI assistant helping a brand chat with an influencer on WhatsApp.",
         f"Latest influencer message: {user_message!r}",

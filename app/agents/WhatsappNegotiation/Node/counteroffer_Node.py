@@ -4,6 +4,7 @@ from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
 from app.Schemas.instagram.negotiation_schema import GenerateReplyOutput, NextAction
 from app.utils.printcolors import Colors
 from app.utils.prompts import WHATSAPP_COUNTER_OFFER_RULES
+from app.utils.message_context import get_history_list, set_history_list
 
 
 async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None):
@@ -40,9 +41,9 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
         state["manual_negotiation"] = True
         # After this, further messages should go through a non-pricing path
         state["next_action"] = NextAction.WAIT_OR_ACKNOWLEDGE
-        state.setdefault("history", []).append(
-            {"sender_type": "AI", "message": handoff_message}
-        )
+        hist = get_history_list(state)
+        set_history_list(state, hist)
+        state["history"].append({"sender_type": "AI", "message": handoff_message})
         if checkpointer:
             await checkpointer.save_checkpoint(
                 key=f"negotiation:{thread_id}:last_message",
@@ -100,8 +101,9 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
 
     prompt = "\n".join(context_lines) + "\n\n" + rules
 
-    # Ensure we always provide a non-empty input to the agent.
-    history = state.get("history", [])
+    # Ensure we always provide a non-empty input to the agent (list, never dict).
+    history = get_history_list(state)
+    set_history_list(state, history)
     if history:
         agent_input = history
     else:
@@ -124,7 +126,7 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
     )
     ai_message = result.final_output.get("final_reply", f"My offer is ${next_price}")
     state["final_reply"] = ai_message
-    state.setdefault("history", []).append({"sender_type": "AI", "message": ai_message})
+    state["history"].append({"sender_type": "AI", "message": ai_message})
 
     if checkpointer:
         await checkpointer.save_checkpoint(

@@ -7,11 +7,15 @@ from app.Guardails.input_guardrails import WhatsappInputGuardrail
 from app.db.connection import get_db
 from bson import ObjectId
 from app.utils.prompts import WHATSAPP_CONFIRM_DETAILS_SUFFIX
+from app.utils.message_context import get_history_list, set_history_list
 
 
 async def confirm_details_node(state: WhatsappNegotiationState):
     print(f"{Colors.GREEN}Entering confirm_details_node")
     print("--------------------------------")
+
+    history = get_history_list(state)
+    set_history_list(state, history)
 
     rate = state.get("analysis", {}).get("budget_amount") or state.get(
         "last_offered_price"
@@ -33,7 +37,6 @@ async def confirm_details_node(state: WhatsappNegotiationState):
         + WHATSAPP_CONFIRM_DETAILS_SUFFIX
     )
 
-    history = state.get("history", [])
     agent_input = (
         history
         if history
