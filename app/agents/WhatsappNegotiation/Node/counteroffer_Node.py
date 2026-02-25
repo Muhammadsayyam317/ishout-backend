@@ -1,7 +1,7 @@
 from agents import Agent, Runner
 from agents.agent_output import AgentOutputSchema
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
-from app.Schemas.instagram.negotiation_schema import GenerateReplyOutput, NextAction
+from app.Schemas.instagram.negotiation_schema import CounterOfferOutput, NextAction
 from app.utils.printcolors import Colors
 from app.utils.prompts import WHATSAPP_COUNTER_OFFER_RULES
 from app.utils.message_context import (
@@ -19,6 +19,7 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
     max_price = state.get("max_price") or 0
     last_price = state.get("last_offered_price")
     user_offer = state.get("user_offer")
+    negotiation_round = state.get("negotiation_round") or 0
 
     if not min_price or not max_price:
         print(
@@ -30,20 +31,17 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
         return state
 
     # If we've already escalated (hit our max offer before), don't keep
-    # re-sending higher prices. Instead, send a handoff-style message.
-    if state.get("negotiation_status") == "escalated" and state.get(
-        "last_offered_price"
-    ) == max_price:
+    # re-sending higher prices. Send a handoff-style message.
+    if state.get("negotiation_status") == "escalated" and last_price == max_price:
         print(
             f"{Colors.YELLOW}[counter_offer_node] Already escalated at max_price={max_price} → sending review/hand-off message"
         )
         handoff_message = (
-            "We’ve already shared the best rate we can offer at the moment. "
-            "We’ll review this internally and get back to you if we can adjust anything further."
+            "We've already shared the best rate we can offer at the moment. "
+            "We'll review this internally and get back to you if we can adjust anything further."
         )
         state["final_reply"] = handoff_message
         state["manual_negotiation"] = True
-        # After this, further messages should go through a non-pricing path
         state["next_action"] = NextAction.WAIT_OR_ACKNOWLEDGE
         hist = get_history_list(state)
         set_history_list(state, hist)
@@ -56,64 +54,30 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
             )
         return state
 
-    if user_offer is not None and user_offer <= max_price:
-        next_price = user_offer
-        state["negotiation_status"] = "agreed"
-        state["next_action"] = NextAction.ACCEPT_NEGOTIATION
-    else:
-        if last_price is None:
-            next_price = min_price
-            state["negotiation_round"] = 1
-        else:
-            next_price = last_price + round(0.2 * min_price, 2)
-            state["negotiation_round"] = state.get("negotiation_round", 1) + 1
+    new_round = negotiation_round + 1
 
-        if next_price >= max_price:
-            next_price = max_price
-            state["negotiation_status"] = "escalated"
-            state["manual_negotiation"] = True
-            state["next_action"] = NextAction.ESCALATE_NEGOTIATION
-        else:
-            state["negotiation_status"] = "pending"
-            state["next_action"] = NextAction.ASK_RATE
-
-    state["last_offered_price"] = next_price
-    state["user_offer"] = None
-
-    # Build a single prompt that encodes the situation (first offer vs counter)
-    user_offer = state.get("user_offer")
-    negotiation_round = state.get("negotiation_round", 1)
-    has_user_offer = user_offer is not None
-
+    # Build context for the AI to decide both the price and the message
     context_lines = [
-        "You are an AI assistant negotiating on behalf of a brand with an influencer on WhatsApp.",
-        f"Negotiation round: {negotiation_round}.",
-        f"Brand's current offer to the influencer: ${next_price:.2f}",
-        f"Allowed price range for this influencer: ${min_price:.2f}–${max_price:.2f}.",
+        "You are a professional negotiator representing a brand, chatting with an influencer on WhatsApp.",
+        "",
+        "PRICING CONTEXT:",
+        f"- Minimum the brand can offer: ${min_price:.2f}",
+        f"- Maximum the brand can go up to: ${max_price:.2f}",
+        f"- Brand's last offered price: {'${:.2f}'.format(last_price) if last_price is not None else 'None (this is the first offer)'}",
+        f"- Influencer's proposed rate (if any): {'${:.2f}'.format(user_offer) if user_offer is not None else 'None (they have not named a specific number)'}",
+        f"- Negotiation round: {new_round}",
     ]
 
-    if has_user_offer:
-        context_lines.append(
-            f"The influencer has previously proposed a rate of ${user_offer:.2f}"
-        )
-    else:
-        context_lines.append(
-            "The influencer has not proposed any price yet; they have only expressed interest in collaborating."
-        )
+    prompt = "\n".join(context_lines) + "\n\n" + WHATSAPP_COUNTER_OFFER_RULES
 
-    rules = WHATSAPP_COUNTER_OFFER_RULES.replace("${offer}", f"${next_price:.2f}")
-
-    prompt = "\n".join(context_lines) + "\n\n" + rules
-
-    # Ensure we always provide a non-empty input to the agent (list, never dict).
     history = get_history_list(state)
     set_history_list(state, history)
     if history:
         agent_input = history_to_agent_messages(history)
     if not history or not agent_input:
         agent_input = (
-            f"Brand is sending an offer of ${next_price:.2f} to an interested influencer. "
-            "Generate a natural WhatsApp message for this situation."
+            f"Brand is negotiating a collaboration rate with an influencer. "
+            f"Range: ${min_price:.2f}–${max_price:.2f}. Generate an appropriate offer and message."
         )
 
     result = await Runner.run(
@@ -122,12 +86,44 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
             instructions=prompt,
             input_guardrails=[],
             output_type=AgentOutputSchema(
-                GenerateReplyOutput, strict_json_schema=False
+                CounterOfferOutput, strict_json_schema=False
             ),
         ),
         input=agent_input,
     )
-    ai_message = result.final_output.get("final_reply", f"My offer is ${next_price}")
+
+    raw_output = result.final_output or {}
+    ai_price = raw_output.get("offered_price")
+    ai_message = raw_output.get("final_reply", "")
+
+    # --- Hard guardrails: clamp AI's chosen price to [min, max] and never go backward ---
+    try:
+        ai_price = float(ai_price)
+    except (TypeError, ValueError):
+        ai_price = last_price if last_price is not None else min_price
+
+    ai_price = max(ai_price, min_price)
+    ai_price = min(ai_price, max_price)
+    if last_price is not None:
+        ai_price = max(ai_price, last_price)
+    ai_price = round(ai_price, 2)
+
+    if not ai_message:
+        ai_message = f"We can offer you ${ai_price:.2f} for this collaboration. Let us know what you think!"
+
+    # Update state
+    state["last_offered_price"] = ai_price
+    state["negotiation_round"] = new_round
+    state["user_offer"] = None
+
+    if ai_price >= max_price:
+        state["negotiation_status"] = "escalated"
+        state["manual_negotiation"] = True
+        state["next_action"] = NextAction.ESCALATE_NEGOTIATION
+    else:
+        state["negotiation_status"] = "pending"
+        state["next_action"] = NextAction.ASK_RATE
+
     state["final_reply"] = ai_message
     state["history"].append({"sender_type": "AI", "message": ai_message})
 
@@ -136,4 +132,8 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
             key=f"negotiation:{thread_id}:last_message", value=ai_message, ttl=300
         )
 
+    print(
+        f"{Colors.CYAN}[counter_offer_node] AI chose price=${ai_price:.2f} "
+        f"(min={min_price}, max={max_price}, last={last_price}, user_offer={user_offer})"
+    )
     return state
