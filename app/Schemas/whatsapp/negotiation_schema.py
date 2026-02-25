@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 from typing_extensions import TypedDict
 from datetime import datetime
 from app.Schemas.instagram.negotiation_schema import NextAction
@@ -22,9 +22,7 @@ class WhatsappNegotiationInitialMessageRequest(TypedDict):
 
 class WhatsappNegotiationState(TypedDict):
     thread_id: str
-    # Mongo document id for negotiation_agent_controls (not the influencer id)
     _id: str
-    # Influencer id from campaign_influencers used to fetch pricing
     influencer_id: Optional[str]
     user_message: str
     intent: WhatsappMessageIntent
@@ -38,6 +36,15 @@ class WhatsappNegotiationState(TypedDict):
     manual_negotiation: Optional[bool]
     final_reply: Optional[str]
     user_offer: Optional[float]
+    history: List[dict]
+    name: Optional[str]
+    sender_id: Optional[str]
+    campaign_id: Optional[str]
+    conversation_mode: Optional[str]
+    human_takeover: Optional[bool]
+    negotiation_completed: Optional[bool]
+    agent_paused: Optional[bool]
+    admin_takeover: Optional[bool]
 
 
 class InfluencersNegotiation(TypedDict):
