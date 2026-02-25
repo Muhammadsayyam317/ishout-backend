@@ -4,7 +4,11 @@ from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
 from app.Schemas.instagram.negotiation_schema import GenerateReplyOutput, NextAction
 from app.utils.printcolors import Colors
 from app.utils.prompts import WHATSAPP_COUNTER_OFFER_RULES
-from app.utils.message_context import get_history_list, set_history_list
+from app.utils.message_context import (
+    get_history_list,
+    set_history_list,
+    history_to_agent_messages,
+)
 
 
 async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None):
@@ -105,9 +109,8 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
     history = get_history_list(state)
     set_history_list(state, history)
     if history:
-        agent_input = history
-    else:
-        # First turn: send a simple textual input instead of an empty list
+        agent_input = history_to_agent_messages(history)
+    if not history or not agent_input:
         agent_input = (
             f"Brand is sending an offer of ${next_price:.2f} to an interested influencer. "
             "Generate a natural WhatsApp message for this situation."
