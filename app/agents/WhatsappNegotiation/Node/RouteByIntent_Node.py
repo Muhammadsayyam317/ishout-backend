@@ -14,6 +14,12 @@ def route_by_intent(state: WhatsappNegotiationState):
     next_action = state.get("next_action")
     print(f"{Colors.CYAN}Routing based on intent: {intent}, next_action: {next_action}")
 
+    # 0) If intent is explicit ACCEPT, always close the deal
+    #    so \"I agree\" never accidentally goes back into counter_offer.
+    if intent == WhatsappMessageIntent.ACCEPT:
+        print(f"{Colors.YELLOW}Intent is ACCEPT → accept_negotiation")
+        return "accept_negotiation"
+
     # 1) Route by NextAction when available (higher priority)
     if next_action is not None:
         # Normalize to enum if it's coming through as a raw value
@@ -38,11 +44,17 @@ def route_by_intent(state: WhatsappNegotiationState):
                 print(f"{Colors.YELLOW}NextAction={na} → generate_reply")
                 return "generate_reply"
 
-            # Pricing / negotiation steps
+            # Influencer accepted → close deal, do NOT send to counter_offer
+            if na == NextAction.ACCEPT_NEGOTIATION:
+                print(
+                    f"{Colors.YELLOW}NextAction=ACCEPT_NEGOTIATION → accept_negotiation"
+                )
+                return "accept_negotiation"
+
+            # Pricing / negotiation steps (ask rate / escalate only)
             if na in {
                 NextAction.ASK_RATE,
                 NextAction.ESCALATE_NEGOTIATION,
-                NextAction.ACCEPT_NEGOTIATION,
             }:
                 if state.get("min_price") and state.get("max_price"):
                     print(f"{Colors.YELLOW}NextAction={na} → counter_offer (pricing present)")
@@ -72,10 +84,6 @@ def route_by_intent(state: WhatsappNegotiationState):
     if intent == WhatsappMessageIntent.REJECT:
         print(f"{Colors.YELLOW}Intent is REJECT → generate_reply")
         return "generate_reply"
-
-    if intent == WhatsappMessageIntent.ACCEPT:
-        print(f"{Colors.YELLOW}Intent is ACCEPT → accept_negotiation")
-        return "accept_negotiation"
 
     if intent in (
         WhatsappMessageIntent.INTEREST,

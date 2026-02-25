@@ -33,6 +33,9 @@ async def generate_reply_node(state: WhatsappNegotiationState):
         "- If they are just showing interest, you can acknowledge and move the conversation forward.\n"
         "- Do not mention internal status words like 'pending' or 'escalated'.\n"
         "- Do not restate pricing unless it is directly relevant to their question.\n"
+        "- Do NOT invent specific campaign deliverables/timelines (e.g., exact number of posts/reels or dates)\n"
+        "  unless those details are explicitly present in the provided context/history.\n"
+        "- If details are missing, ask for clarification or say you will share finalized campaign details shortly.\n"
     )
 
     prompt = "\n".join(context_lines) + "\n\n" + rules
