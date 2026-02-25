@@ -167,6 +167,9 @@ company_website = "https://app.ishout.ae/"
 CREATECAMPAIGNBREAKDOWN_PROMPT = f"""
 You are an AI assistant that creates a detailed influencer campaign breakdown for a brand based on the following company website: {company_website}.
 
+From the user input prompt, ONLY extract information that is explicitly mentioned by the user. 
+Do NOT guess, infer, or assume any platform, category, limit, followers, or country if it is not stated.
+
 Return ONLY a valid JSON object.
 
 JSON structure MUST match exactly:
@@ -252,10 +255,19 @@ JSON structure MUST match exactly:
         "Do disclose partnership",
         "Do align with brand tone",
         "Don't include competitor brands"
-    ]
+    ],
+
+    "platform": [], 
+    "category": [], 
+    "limit": null,
+    "followers": null,
+    "country": []
 }}
 
 Rules:
+- Include the above fields ONLY if they are explicitly mentioned by the user in the prompt.
+- If a field is not mentioned, return it as empty array `[]` for lists, or `null` for limit/followers.
+- Do NOT assume, infer, or guess any values.
 - Return ONLY JSON
 - No explanation text
 - No markdown
