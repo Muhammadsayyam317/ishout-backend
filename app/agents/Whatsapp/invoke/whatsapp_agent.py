@@ -94,12 +94,21 @@ async def handle_negotiation_agent(request, thread_id, msg_text, profile_name):
     print(f"{Colors.CYAN}Routing to Negotiation Agent")
     print("--------------------------------")
 
+    # Maintain a rolling window of recent conversation history (USER + AI)
+    history = negotiation_state.get("history") or []
+    history.append({"sender_type": "USER", "message": msg_text})
+    # Keep only the last N messages to avoid unbounded growth
+    MAX_HISTORY_LENGTH = 20
+    if len(history) > MAX_HISTORY_LENGTH:
+        history = history[-MAX_HISTORY_LENGTH:]
+
     negotiation_state.update(
         {
             "user_message": msg_text,
             "thread_id": thread_id,
             "sender_id": thread_id,
             "name": profile_name,
+            "history": history,
         }
     )
 

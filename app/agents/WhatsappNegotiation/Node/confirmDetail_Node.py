@@ -6,6 +6,7 @@ from agents import Agent, Runner
 from app.Guardails.input_guardrails import WhatsappInputGuardrail
 from app.db.connection import get_db
 from bson import ObjectId
+from app.utils.prompts import WHATSAPP_CONFIRM_DETAILS_SUFFIX
 
 
 async def confirm_details_node(state: WhatsappNegotiationState):
@@ -28,14 +29,8 @@ async def confirm_details_node(state: WhatsappNegotiationState):
 
     prompt = (
         "You are an AI assistant helping a brand negotiate with an influencer on WhatsApp.\n"
-        f"The influencer's offered/confirmed rate is: {rate}.\n\n"
-        "Write a concise WhatsApp reply that:\n"
-        "- Acknowledges their rate positively.\n"
-        "- Does NOT ask the influencer to provide or confirm deliverables or timeline "
-        "(the brand defines those details).\n"
-        "- States that the brand will share the final deliverables and timeline shortly or in the next message.\n"
-        "- Does NOT invent specific deliverables or timelines.\n"
-        "- Keeps tone professional and friendly.\n"
+        f"The influencer's offered/confirmed rate (if detected from state) is: {rate}.\n\n"
+        + WHATSAPP_CONFIRM_DETAILS_SUFFIX
     )
 
     history = state.get("history", [])
