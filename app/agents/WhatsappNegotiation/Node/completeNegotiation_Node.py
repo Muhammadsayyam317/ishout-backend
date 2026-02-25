@@ -7,11 +7,15 @@ from app.Guardails.input_guardrails import WhatsappInputGuardrail
 from app.db.connection import get_db
 from bson import ObjectId
 from app.utils.prompts import WHATSAPP_NEGOTIATION_COMPLETE_INSTRUCTIONS
+from app.utils.message_context import get_history_list, set_history_list
 
 
 async def complete_negotiation_node(state: WhatsappNegotiationState):
     print(f"{Colors.GREEN}Entering complete_negotiation_node")
     print("--------------------------------")
+
+    history = get_history_list(state)
+    set_history_list(state, history)
 
     state["conversation_mode"] = "DEFAULT"
     state["human_takeover"] = False
@@ -28,7 +32,7 @@ async def complete_negotiation_node(state: WhatsappNegotiationState):
                     GenerateReplyOutput, strict_json_schema=False
                 ),
             ),
-            input=state.get("history", []),
+            input=history,
         )
         ai_reply = result.final_output.get(
             "final_reply", "Thanks for your time! We'll follow up shortly."

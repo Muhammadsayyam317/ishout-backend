@@ -59,3 +59,20 @@ def normalize_ai_reply(reply) -> str:
         return reply or DEFAULT_REPLY
     else:
         return DEFAULT_REPLY
+
+
+def get_history_list(state: dict) -> list:
+    """
+    Return state['history'] as a list. Never return a dict.
+    Mongo or other storage may persist history in a shape that deserializes as a dict;
+    passing that to agents or calling .append()/.extend() on it causes runtime errors.
+    """
+    h = state.get("history")
+    if isinstance(h, list):
+        return h
+    return []
+
+
+def set_history_list(state: dict, history: list) -> None:
+    """Ensure state['history'] is a list so later setdefault/append are safe."""
+    state["history"] = history if isinstance(history, list) else []

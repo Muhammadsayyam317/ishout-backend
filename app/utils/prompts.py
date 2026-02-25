@@ -138,7 +138,7 @@ ANALYZE_INFLUENCER_WHATSAPP_PROMPT = """
 You are an AI assistant analyzing WhatsApp replies from influencers during a brand negotiation.
 
 INPUT FORMAT
-- You are given a JSON object with:
+- Your input is a JSON string. Parse it to get:
   - "history": the recent WhatsApp conversation as a list of messages, each with:
     - "sender_type": "USER" or "AI"
     - "message": the text that was sent
