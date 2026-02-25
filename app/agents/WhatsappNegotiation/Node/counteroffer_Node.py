@@ -15,8 +15,39 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
     user_offer = state.get("user_offer")
 
     if not min_price or not max_price:
-        print(f"{Colors.RED}[counter_offer_node] min_price={min_price}, max_price={max_price} — pricing not loaded, skipping")
-        state["final_reply"] = "Thanks for your interest! Let me get some details together and get back to you shortly."
+        print(
+            f"{Colors.RED}[counter_offer_node] min_price={min_price}, max_price={max_price} — pricing not loaded, skipping"
+        )
+        state["final_reply"] = (
+            "Thanks for your interest! Let me get some details together and get back to you shortly."
+        )
+        return state
+
+    # If we've already escalated (hit our max offer before), don't keep
+    # re-sending higher prices. Instead, send a handoff-style message.
+    if state.get("negotiation_status") == "escalated" and state.get(
+        "last_offered_price"
+    ) == max_price:
+        print(
+            f"{Colors.YELLOW}[counter_offer_node] Already escalated at max_price={max_price} → sending review/hand-off message"
+        )
+        handoff_message = (
+            "We’ve already shared the best rate we can offer at the moment. "
+            "We’ll review this internally and get back to you if we can adjust anything further."
+        )
+        state["final_reply"] = handoff_message
+        state["manual_negotiation"] = True
+        # After this, further messages should go through a non-pricing path
+        state["next_action"] = NextAction.WAIT_OR_ACKNOWLEDGE
+        state.setdefault("history", []).append(
+            {"sender_type": "AI", "message": handoff_message}
+        )
+        if checkpointer:
+            await checkpointer.save_checkpoint(
+                key=f"negotiation:{thread_id}:last_message",
+                value=handoff_message,
+                ttl=300,
+            )
         return state
 
     if user_offer is not None and user_offer <= max_price:
