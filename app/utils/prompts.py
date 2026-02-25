@@ -144,7 +144,7 @@ Your task:
 
 Intent rules:
 - INTEREST: positive or open responses without rejection.
-- NEGOTIATE: messages that show interest but push back on price or terms
+- NEGOTIATE: mentions budget issues, counter offers, or pricing concerns. handle messages that show interest but push back on price or terms as well
   (e.g. \"that's too low\", \"not enough for me\", \"can you do more?\", \"need a higher rate\").
 - REJECT: clear refusal or lack of interest in collaborating at all
   (e.g. \"I'm not interested\", \"no collaborations\", \"this is not for me\"), even if price is mentioned.
