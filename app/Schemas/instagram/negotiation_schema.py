@@ -68,6 +68,11 @@ class GenerateReplyOutput(TypedDict):
     final_reply: str
 
 
+class CounterOfferOutput(TypedDict):
+    offered_price: float
+    final_reply: str
+
+
 class PricingRules(TypedDict, total=False):
     minPrice: float
     maxPrice: float

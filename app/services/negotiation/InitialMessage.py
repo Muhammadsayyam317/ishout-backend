@@ -12,6 +12,13 @@ from app.agents.WhatsappNegotiation.state.negotiation_state import (
 from app.utils.printcolors import Colors
 
 
+INITIAL_OUTREACH_MESSAGE = (
+    "Hi this is the collaboration team from iShout.\n\n"
+    "We'd love to work with you on an upcoming campaign that matches your profile.\n\n"
+    "Just reply 'interested,' and we will share the campaign brief and next steps."
+)
+
+
 async def NegotiationInitialMessage(influencer_id: str):
     print(f"{Colors.GREEN}Entering into NegotiationInitialMessage for influencer_id: {influencer_id}")
     print("--------------------------------")
@@ -72,18 +79,17 @@ async def NegotiationInitialMessage(influencer_id: str):
         thread_id=phone_number,
         username=influencer_name,
         sender=SenderType.AI.value,
-        message="""Hi this is the collaboration team from iShout.\n\nWe’d love to work with you on an upcoming campaign that matches your profile.\n\nJust reply 'interested,' and we will share the campaign brief and next steps.""",
+        message=INITIAL_OUTREACH_MESSAGE,
         agent_paused=False,
         human_takeover=False,
         conversation_mode="NEGOTIATION",
     )
-    # Create Negotiation Control Record
+    # Create Negotiation Control Record with fresh history containing the initial outreach
     await update_negotiation_state(
         thread_id=phone_number,
         data={
             "thread_id": phone_number,
             "influencer_id": influencer_id,
-            # Reset negotiation-specific fields for a fresh conversation
             "analysis": {},
             "final_reply": None,
             "intent": None,
@@ -95,10 +101,14 @@ async def NegotiationInitialMessage(influencer_id: str):
             "negotiation_status": None,
             "manual_negotiation": False,
             "user_offer": None,
+            "negotiation_completed": False,
             "conversation_mode": "NEGOTIATION",
             "agent_paused": False,
             "human_takeover": False,
             "timestamp": datetime.now(timezone.utc).isoformat(),
+            "history": [
+                {"sender_type": "AI", "message": INITIAL_OUTREACH_MESSAGE},
+            ],
         },
     )
 
