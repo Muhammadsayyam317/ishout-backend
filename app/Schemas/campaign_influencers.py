@@ -57,6 +57,8 @@ class CampaignBriefRequest(BaseModel):
 
 
 class CampaignBriefResponse(BaseModel):
+    id: Optional[str] = None 
+    title: str
     brand_name_influencer_campaign_brief: str
     campaign_overview: List[str]
     campaign_objectives: List[str]
@@ -71,3 +73,34 @@ class CampaignBriefResponse(BaseModel):
     kpis_success_metrics: List[str]
     usage_rights: List[str]
     dos_donts: List[str]
+
+    platform: List[str] = []
+    category: List[str] = []
+    limit: Optional[int] = None
+    followers: Optional[str] = None
+    country: List[str] = []
+
+class CampaignBriefDBResponse(BaseModel):
+    id: str
+    user_id: str
+    prompt: str
+    response: CampaignBriefResponse
+    status: str
+    version: int
+    regenerated_from: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+class UpdateCampaignBriefRequest(BaseModel):
+    campaign_overview: Optional[List[str]] = None
+    campaign_objectives: Optional[List[str]] = None
+    target_audience: Optional[List[str]] = None
+    influencer_profile: Optional[List[str]] = None
+    key_campaign_message: Optional[List[str]] = None
+    content_direction: Optional[List[str]] = None
+    deliverables_per_influencer: Optional[List[str]] = None
+    hashtags_mentions: Optional[List[str]] = None
+    timeline: Optional[List[str]] = None
+    approval_process: Optional[List[str]] = None
+    kpis_success_metrics: Optional[List[str]] = None
+    usage_rights: Optional[List[str]] = None
+    dos_donts: Optional[List[str]] = None

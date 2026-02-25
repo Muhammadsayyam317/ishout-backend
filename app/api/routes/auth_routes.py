@@ -37,9 +37,7 @@ async def register_route(
     except HTTPException:
         raise
     except Exception:
-        raise InternalServerErrorException(
-            message="Internal server error"
-        )
+        raise InternalServerErrorException(message="Internal server error")
 
 
 @router.post("/login", tags=["Auth"])
@@ -49,10 +47,7 @@ async def login_route(request_data: UserLoginRequest):
     except HTTPException:
         raise
     except Exception:
-        raise InternalServerErrorException(
-            message="Internal server error"
-        )
-
+        raise InternalServerErrorException(message="Internal server error")
 
 
 @router.post("/forgot-password", tags=["Auth"])
