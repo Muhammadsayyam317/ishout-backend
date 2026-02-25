@@ -9,9 +9,11 @@ from app.Guardails.CampaignCreation.campaignInput_guardrails import (
 from app.Guardails.CampaignCreation.campaignoutput_guardrails import (
     CampaignCreationOutputGuardrail,
 )
+from typing import Dict
 from app.Schemas.campaign_influencers import (
     CampaignBriefDBResponse,
     CampaignBriefResponse,
+    UpdateCampaignBriefRequest,
 )
 from app.model.Campaign.campaignbrief_model import (
     CampaignBriefGeneration,
@@ -80,6 +82,7 @@ async def create_campaign_brief(user_input: str, user_id: str) -> CampaignBriefR
             ),
             input=user_input,
         )
+
         if isinstance(result.final_output, dict):
             response_obj = CampaignBriefResponse(**result.final_output)
         elif isinstance(result.final_output, CampaignBriefResponse):
@@ -92,15 +95,44 @@ async def create_campaign_brief(user_input: str, user_id: str) -> CampaignBriefR
             response=response_obj,
             user_doc=user_doc,
         )
-        return stored_doc.response
+
+        response_obj.id = stored_doc.id
+        return response_obj
 
     except InputGuardrailTripwireTriggered:
         raise HTTPException(status_code=400, detail="Invalid campaign request.")
-
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Campaign generation failed: {str(e)}"
         )
+
+
+async def update_campaign_brief_service(
+    brief_id: str, update_request: UpdateCampaignBriefRequest
+) -> CampaignBriefResponse:
+
+    db = get_db()
+    collection = db.get_collection("CampaignBriefGeneration")
+
+    existing_brief = await collection.find_one({"_id": brief_id})
+    if not existing_brief:
+        raise HTTPException(status_code=404, detail="Campaign brief not found")
+
+    update_data = {k: v for k, v in update_request.dict().items() if v is not None}
+
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields provided to update")
+
+    await collection.update_one(
+        {"_id": brief_id},
+        {"$set": {f"response.{k}": v for k, v in update_data.items()}},
+    )
+
+    updated_brief = await collection.find_one({"_id": brief_id})
+    response_obj = CampaignBriefResponse(**updated_brief["response"])
+    response_obj.id = str(updated_brief["_id"])
+
+    return response_obj
 
 
 async def get_campaign_briefs(
@@ -119,13 +151,24 @@ async def get_campaign_briefs(
     )
 
     briefs = []
+
     async for doc in cursor:
+        response_data = doc.get("response", {})
+        if "title" not in response_data or not response_data.get("title"):
+            response_data["title"] = "Untitled Campaign"
+
+        try:
+            response_obj = CampaignBriefResponse(**response_data)
+        except Exception as e:
+            print(f"CampaignBrief parsing error: {e}")
+            continue
+
         briefs.append(
             CampaignBriefDBResponse(
                 id=str(doc["_id"]),
                 user_id=doc["user_id"],
                 prompt=doc["prompt"],
-                response=CampaignBriefResponse(**doc["response"]),
+                response=response_obj,
                 status=doc["status"],
                 version=doc["version"],
                 regenerated_from=doc.get("regenerated_from"),
@@ -138,19 +181,29 @@ async def get_campaign_briefs(
 
 async def get_campaign_brief_by_id(campaign_id: str):
     db = get_db()
-    collection = db.get_collection("CampaignBriefGeneration")  # correct collection
+    collection = db.get_collection("CampaignBriefGeneration")
 
-    campaign = await collection.find_one({"_id": campaign_id})  # fetch only by _id
+    campaign = await collection.find_one({"_id": campaign_id})
 
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign brief not found")
 
-    # Convert to response model
+    response_data = campaign.get("response", {})
+    if "title" not in response_data or not response_data.get("title"):
+        response_data["title"] = "Untitled Campaign"
+
+    try:
+        response_obj = CampaignBriefResponse(**response_data)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Corrupted campaign brief data: {str(e)}"
+        )
+
     return CampaignBriefDBResponse(
         id=str(campaign["_id"]),
         user_id=campaign["user_id"],
         prompt=campaign["prompt"],
-        response=CampaignBriefResponse(**campaign["response"]),
+        response=response_obj,
         status=campaign["status"],
         version=campaign["version"],
         regenerated_from=campaign.get("regenerated_from"),

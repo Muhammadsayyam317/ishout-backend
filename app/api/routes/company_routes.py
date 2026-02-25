@@ -1,9 +1,10 @@
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Path
 from app.Schemas.campaign_influencers import (
     CampaignBriefDBResponse,
     CampaignBriefRequest,
     CampaignBriefResponse,
+    UpdateCampaignBriefRequest,
 )
 from app.api.controllers.admin.approved_campaign import (
     companyApprovedSingleInfluencer,
@@ -33,6 +34,7 @@ from app.agents.campaiagncreation.create_campaign import (
     create_campaign_brief,
     get_campaign_brief_by_id,
     get_campaign_briefs,
+    update_campaign_brief_service,
 )
 
 router = APIRouter()
@@ -76,6 +78,7 @@ async def reject_influencers_route(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 
 router.add_api_route(
@@ -147,6 +150,17 @@ async def create_campaign_brief_endpoint(request: CampaignBriefRequest):
     return await create_campaign_brief(
         user_input=request.user_input, user_id=request.user_id
     )
+
+@router.patch(
+    "/update-campaign-brief/{brief_id}",
+    response_model=CampaignBriefResponse,
+    tags=["Company"],
+)
+async def update_campaign_brief(
+    brief_id: str = Path(..., description="ID of the campaign brief to update"),
+    request: UpdateCampaignBriefRequest = None,
+):
+    return await update_campaign_brief_service(brief_id, request)
 
 
 @router.get(
