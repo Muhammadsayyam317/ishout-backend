@@ -74,6 +74,12 @@ class CampaignBriefResponse(BaseModel):
     usage_rights: List[str]
     dos_donts: List[str]
 
+    platform: List[str] = []
+    category: List[str] = []
+    limit: Optional[int] = None
+    followers: Optional[str] = None
+    country: List[str] = []
+
 class CampaignBriefDBResponse(BaseModel):
     id: str
     user_id: str
