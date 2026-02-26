@@ -2,7 +2,8 @@ from typing import Any, Dict
 from app.db.connection import get_db
 from app.utils.printcolors import Colors
 from app.core.exception import InternalServerErrorException
-from app.utils.mongo_serializer import serialize_mongo_data  # <-- import your serializer
+from app.utils.mongo_serializer import serialize_mongo_data
+from bson import ObjectId
 
 
 async def get_all_negotiation_controls(
@@ -42,4 +43,33 @@ async def get_all_negotiation_controls(
         print("--------------------------------")
         raise InternalServerErrorException(
             message=f"Error in negotiationstats: {str(e)}"
+        ) from e
+
+
+async def get_negotiation_control_detail(_id: str) -> Dict[str, Any]:
+    try:
+        db = get_db()
+        collection = db.get_collection("negotiation_agent_controls")
+        try:
+            object_id = ObjectId(_id)
+        except Exception:
+            return None  
+
+        document = await collection.find_one({"_id": object_id})
+        if not document:
+            return None
+
+        serialized_doc = serialize_mongo_data(document)
+
+        return {
+            "name": serialized_doc.get("name"),
+            "phone": serialized_doc.get("sender_id"),
+            "history": serialized_doc.get("history", []),
+            "conversation_mode": serialized_doc.get("conversation_mode"),
+        }
+
+    except Exception as e:
+        print(f"{Colors.RED}Error in get_negotiation_control_detail: {e}")
+        raise InternalServerErrorException(
+            message=f"Error in get_negotiation_control_detail: {str(e)}"
         ) from e
