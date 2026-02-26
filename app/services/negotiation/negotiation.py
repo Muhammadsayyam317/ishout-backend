@@ -2,6 +2,7 @@ from typing import Any, Dict
 from app.db.connection import get_db
 from app.utils.printcolors import Colors
 from app.core.exception import InternalServerErrorException
+from app.utils.mongo_serializer import serialize_mongo_data  # <-- import your serializer
 
 
 async def get_all_negotiation_controls(
@@ -12,6 +13,7 @@ async def get_all_negotiation_controls(
         db = get_db()
         collection = db.get_collection("negotiation_agent_controls")
         skip = (page - 1) * page_size
+
         total_count = await collection.count_documents({})
         negotiation_controls = (
             await collection.find({})
@@ -20,9 +22,13 @@ async def get_all_negotiation_controls(
             .limit(page_size)
             .to_list(length=None)
         )
+
+        # Serialize Mongo data
+        negotiation_controls_serialized = serialize_mongo_data(negotiation_controls)
+
         total_pages = (total_count + page_size - 1) // page_size
         return {
-            "negotiation_controls": negotiation_controls,
+            "negotiation_controls": negotiation_controls_serialized,
             "total": total_count,
             "page": page,
             "page_size": page_size,
