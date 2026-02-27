@@ -78,6 +78,7 @@ class UserResponse(BaseModel):
     phone: str
     role: UserRole
     status: UserStatus
+    logo_url: Optional[str] = None 
 
 
 class LoginResponse(BaseModel):

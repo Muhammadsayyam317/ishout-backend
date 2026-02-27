@@ -61,6 +61,7 @@ async def get_all_users(page: int = 1, page_size: int = 10) -> Dict[str, Any]:
         ) from e
 
 
+
 async def update_user_status(user_id: str, status: str) -> Dict[str, Any]:
     try:
         db = get_db()
