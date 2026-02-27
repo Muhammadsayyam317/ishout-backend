@@ -4,21 +4,26 @@ from app.Guardails.input_guardrails import WhatsappInputGuardrail
 from app.Schemas.instagram.negotiation_schema import GenerateReplyOutput
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
 from app.utils.printcolors import Colors
-
-
-NEGOTIATE_INFLUENCER_DM_PROMPT = "Generate a professional WhatsApp reply based on conversation history: {state.get('history', [])} and user message: {state.get('user_message')}"
+from app.utils.prompts import WHATSAPP_GENERATE_REPLY_RULES
+from app.utils.message_context import (
+    get_history_list,
+    set_history_list,
+    history_to_agent_messages,
+)
 
 
 async def generate_reply_node(state: WhatsappNegotiationState):
     print(f"{Colors.GREEN}Entering generate_reply_node")
     print("--------------------------------")
 
+    history = get_history_list(state)
+    set_history_list(state, history)
+
     user_message = state.get("user_message", "")
     intent = state.get("intent")
     next_action = state.get("next_action")
 
     # Build a single prompt using state + history
-    history = state.get("history", [])
     context_lines = [
         "You are an AI assistant helping a brand chat with an influencer on WhatsApp.",
         f"Latest influencer message: {user_message!r}",
@@ -26,23 +31,11 @@ async def generate_reply_node(state: WhatsappNegotiationState):
         f"Recommended next action: {next_action}",
     ]
 
-    rules = (
-        "Write a short, friendly WhatsApp reply that:\n"
-        "- Answers the influencer based on their latest message.\n"
-        "- If they asked a question, focus on clearly answering it.\n"
-        "- If they are just showing interest, you can acknowledge and move the conversation forward.\n"
-        "- Do not mention internal status words like 'pending' or 'escalated'.\n"
-        "- Do not restate pricing unless it is directly relevant to their question.\n"
-        "- Do NOT invent specific campaign deliverables/timelines (e.g., exact number of posts/reels or dates)\n"
-        "  unless those details are explicitly present in the provided context/history.\n"
-        "- If details are missing, ask for clarification or say you will share finalized campaign details shortly.\n"
-    )
+    prompt = "\n".join(context_lines) + "\n\n" + WHATSAPP_GENERATE_REPLY_RULES
 
-    prompt = "\n".join(context_lines) + "\n\n" + rules
-
-    # Ensure we always provide a non-empty input to the agent.
+    # Ensure we always provide a non-empty input to the agent (API expects role/user or role/assistant).
     if history:
-        agent_input = history
+        agent_input = history_to_agent_messages(history)
     else:
         agent_input = f"Influencer message: {user_message}"
 

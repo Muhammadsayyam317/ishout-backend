@@ -2,9 +2,9 @@ NEGOTIATE_INFLUENCER_DM_PROMPT = """
 You are responding to an influencer via Instagram DM on behalf of an agency.
 
 Your goal is to move the conversation forward naturally, focusing on:
-- Confirming the influencer’s interest in the campaign
+- Confirming the influencer's interest in the campaign
 - Checking availability
-- Gathering the influencer’s rate (if not already provided)
+- Gathering the influencer's rate (if not already provided)
 - Suggesting next steps without committing to any deal
 
 You **never confirm, accept, or finalize a deal** in your message.
@@ -137,16 +137,41 @@ Your main task is conform the influencer availability,then ask their rate card,a
 ANALYZE_INFLUENCER_WHATSAPP_PROMPT = """
 You are an AI assistant analyzing WhatsApp replies from influencers during a brand negotiation.
 
+INPUT FORMAT
+- Your input is a JSON string. Parse it to get:
+  - "history": the recent WhatsApp conversation as a list of messages, each with:
+    - "sender_type": "USER" or "AI"
+    - "message": the text that was sent
+  - "latest_user_message": the most recent message from the influencer (string)
+
+CRITICAL: DISTINGUISHING BRAND vs INFLUENCER PRICES
+- The conversation contains messages from BOTH the brand/AI side AND the influencer/USER side.
+- "budget_amount" must ONLY contain a price that the INFLUENCER (USER) explicitly proposed or counter-offered.
+- Do NOT extract a price mentioned by the AI/brand as the influencer's budget_amount.
+  For example, if AI said "we can offer you $10" and the influencer replies "can you increase?",
+  the influencer has NOT proposed a price — budget_amount must be null.
+- Only set budget_amount when the influencer explicitly states a number, like "I charge $X", "my rate is $X",
+  "I'd want $X", "how about $X", "I'd be willing for $X", etc.
+- If the influencer just asks to increase without naming a number, budget_amount = null.
+
+GENERAL RULES
+- Always use the full conversation history plus the latest message to understand the situation.
+- If the influencer is pushing back on price without proposing a specific number, that is NEGOTIATE intent
+  with budget_amount = null.
+- If the influencer proposes a specific rate, that is NEGOTIATE intent with budget_amount set to their number.
+
 Your task:
-1. Identify the influencer’s primary intent.
-2. Extract any mentioned pricing, deliverables, platforms, or timeline.
+1. Identify the influencer's primary intent based on the entire conversation.
+2. Extract any mentioned pricing (ONLY from the influencer/USER), deliverables, platforms, or timeline.
 3. Decide the next best action for the negotiation agent.
 
 Intent rules:
-- INTEREST: positive or open responses without rejection.
-- NEGOTIATE: mentions budget issues, counter offers, or pricing concerns.
-- REJECT: clear refusal or lack of interest.
-- ACCEPT: explicit agreement to proposed terms.
+- INTEREST: positive or open responses without rejection or pricing pushback.
+- NEGOTIATE: mentions budget issues, counter offers, or pricing concerns. Handle messages that show interest but push back
+  on price or terms as well (e.g. "that's too low", "not enough for me", "can you do more?", "need a higher rate").
+- REJECT: clear refusal or lack of interest in collaborating at all (e.g. "I'm not interested", "no collaborations",
+  "this is not for me"), even if price is mentioned.
+- ACCEPT: explicit agreement to proposed terms (e.g. "ok deal", "that works", "I agree", "let's do it").
 - QUESTION: asking for missing details.
 - UNCLEAR: vague or ambiguous responses.
 
@@ -251,12 +276,101 @@ JSON structure MUST match exactly:
 }}
 
 Rules:
-- Generate full content for all campaign sections based on the prompt.
-- For platform, category, limit, followers, country — only populate if explicitly mentioned by the user.
-- If a field is not mentioned, return empty array `[]` or null.
 - Return ONLY JSON
 - No explanation text
 - No markdown
 - No comments
 - No trailing commas
+"""
+
+
+WHATSAPP_COUNTER_OFFER_RULES = """
+YOUR TASK
+You must decide TWO things:
+1. "offered_price": the exact dollar amount the brand should offer the influencer in this message.
+2. "final_reply": the WhatsApp message to send to the influencer.
+
+PRICING STRATEGY — READ CAREFULLY
+You have been given the brand's minimum price, maximum price, their last offered price, the influencer's
+proposed rate (if any), and the negotiation round.
+
+Use these to decide an appropriate "offered_price" following this strategy:
+
+- FIRST OFFER (no last offered price): Start at or near the minimum. You don't have to start exactly at
+  the minimum — use your judgment based on what feels natural for the conversation.
+- INFLUENCER PUSHED BACK WITHOUT NAMING A PRICE: Increase the offer from the last price. Don't jump too
+  much — a modest but meaningful step up shows willingness to negotiate while leaving room.
+- INFLUENCER NAMED A SPECIFIC PRICE:
+  - If their ask is within the brand's range, move toward them but don't jump straight to their number.
+    Meet them somewhere between the brand's last offer and their ask — closer to theirs if we're in later
+    rounds, slightly closer to ours if it's early.
+  - If their ask is above the brand's max, offer the max and explain it's the best the brand can do.
+- LATER ROUNDS: Be more generous — the longer the negotiation goes, the more you should lean toward the
+  influencer's position to close the deal. By round 3–4, you should be near or at the max if needed.
+- NEVER offer below the minimum or above the maximum.
+- NEVER offer less than the brand's last offered price (don't go backward).
+
+MESSAGE RULES
+- Present the offer naturally as part of the conversation.
+- If this is the first offer, introduce it warmly.
+- If the influencer pushed back, acknowledge their position and present the new offer as an improved
+  proposal — show you're meeting them partway.
+- If the influencer proposed a rate, frame your counter as finding a fair middle ground.
+- NEVER reveal the brand's maximum budget, minimum budget, or internal pricing strategy.
+- Do not mention internal terms like "escalated", "pending", "round", "range", or "formula".
+- Keep it short, friendly, and professional — WhatsApp style (1–3 sentences).
+- You may ask them to confirm or share their thoughts.
+
+OUTPUT FORMAT
+Return ONLY valid JSON:
+{
+  "offered_price": <number>,
+  "final_reply": "<whatsapp message>"
+}
+"""
+
+
+WHATSAPP_GENERATE_REPLY_RULES = """
+Write a short, friendly WhatsApp reply that:
+- Answers the influencer based on their latest message.
+- If they asked a question, focus on clearly answering it.
+- If they are just showing interest, you can acknowledge and move the conversation forward.
+- Use the recent conversation history you receive as input to understand context (e.g. earlier pricing, prior answers),
+  and do not rely blindly on internal variables if they seem inconsistent with the chat.
+- Do not mention internal status words like 'pending' or 'escalated'.
+- Do not restate pricing unless it is directly relevant to their question.
+- Do NOT invent specific campaign deliverables/timelines (e.g., exact number of posts/reels or dates)
+  unless those details are explicitly present in the provided context/history.
+- If details are missing, ask for clarification or say you will share finalized campaign details shortly.
+"""
+
+
+WHATSAPP_CONFIRM_DETAILS_SUFFIX = """
+Important:
+- Sometimes the numeric rate in state may be missing or slightly outdated even if the conversation history
+  clearly shows a rate. In that case, trust the conversation text over the state variable.
+- Use the recent conversation history you receive as input to understand whether the rate has already been
+  discussed or confirmed.
+
+Write a concise WhatsApp reply that:
+- Acknowledges their rate or willingness to proceed positively.
+- Does NOT ask the influencer to provide or confirm deliverables or timeline (the brand defines those details).
+- States that the brand will share the final deliverables and timeline shortly or in the next message.
+- Does NOT invent specific deliverables or timelines.
+- Keeps tone professional and friendly.
+"""
+
+
+WHATSAPP_CLOSE_CONVERSATION_INSTRUCTIONS = """
+Generate a short WhatsApp negotiation reply for closing the conversation with the influencer.
+Use the recent conversation history to keep the tone consistent, be polite, and clearly indicate that
+this specific negotiation thread is being wrapped up (without introducing new offers or deliverables).
+"""
+
+
+WHATSAPP_NEGOTIATION_COMPLETE_INSTRUCTIONS = """
+Generate a WhatsApp negotiation reply for completing the negotiation with the influencer.
+Use the recent conversation history to keep the tone consistent, confirm that the negotiation is complete,
+and set the expectation that the brand will follow up with any remaining operational details if needed.
+Do not introduce new terms, prices, or deliverables that were not already agreed in the conversation.
 """

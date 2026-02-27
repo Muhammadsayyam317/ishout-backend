@@ -6,24 +6,33 @@ from agents import Agent, Runner
 from app.Guardails.input_guardrails import WhatsappInputGuardrail
 from app.db.connection import get_db
 from bson import ObjectId
+from app.utils.prompts import WHATSAPP_CLOSE_CONVERSATION_INSTRUCTIONS
+from app.utils.message_context import (
+    get_history_list,
+    set_history_list,
+    history_to_agent_messages,
+)
 
 
 async def close_conversation_node(state: WhatsappNegotiationState):
     print(f"{Colors.GREEN}Entering close_conversation_node")
     print("--------------------------------")
 
+    history = get_history_list(state)
+    set_history_list(state, history)
+
     state["negotiation_status"] = "closed"
     try:
         result = await Runner.run(
             Agent(
                 name="whatsapp_close_conversation",
-                instructions="Generate a WhatsApp negotiation reply for closing the conversation with the influencer.",
+                instructions=WHATSAPP_CLOSE_CONVERSATION_INSTRUCTIONS,
                 input_guardrails=[WhatsappInputGuardrail],
                 output_type=AgentOutputSchema(
                     GenerateReplyOutput, strict_json_schema=False
                 ),
             ),
-            input=state.get("history", []),
+            input=history_to_agent_messages(history),
         )
         ai_reply = result.final_output.get(
             "final_reply", "Thank you! Looking forward to working together."

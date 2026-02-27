@@ -6,11 +6,20 @@ from agents import Agent, Runner
 from app.Guardails.input_guardrails import WhatsappInputGuardrail
 from app.db.connection import get_db
 from bson import ObjectId
+from app.utils.prompts import WHATSAPP_NEGOTIATION_COMPLETE_INSTRUCTIONS
+from app.utils.message_context import (
+    get_history_list,
+    set_history_list,
+    history_to_agent_messages,
+)
 
 
 async def complete_negotiation_node(state: WhatsappNegotiationState):
     print(f"{Colors.GREEN}Entering complete_negotiation_node")
     print("--------------------------------")
+
+    history = get_history_list(state)
+    set_history_list(state, history)
 
     state["conversation_mode"] = "DEFAULT"
     state["human_takeover"] = False
@@ -21,13 +30,13 @@ async def complete_negotiation_node(state: WhatsappNegotiationState):
         result = await Runner.run(
             Agent(
                 name="whatsapp_negotiation_complete",
-                instructions="Generate a WhatsApp negotiation reply for completing the negotiation with the influencer.",
+                instructions=WHATSAPP_NEGOTIATION_COMPLETE_INSTRUCTIONS,
                 input_guardrails=[WhatsappInputGuardrail],
                 output_type=AgentOutputSchema(
                     GenerateReplyOutput, strict_json_schema=False
                 ),
             ),
-            input=state.get("history", []),
+            input=history_to_agent_messages(history),
         )
         ai_reply = result.final_output.get(
             "final_reply", "Thanks for your time! We'll follow up shortly."

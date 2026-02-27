@@ -14,13 +14,18 @@ def route_by_intent(state: WhatsappNegotiationState):
     next_action = state.get("next_action")
     print(f"{Colors.CYAN}Routing based on intent: {intent}, next_action: {next_action}")
 
-    # 0) If intent is explicit ACCEPT, always close the deal
-    #    so \"I agree\" never accidentally goes back into counter_offer.
+    # 0) Deal already closed — e.g. "Thanks for the opportunity" / "Ok thank you" should get
+    #    a friendly reply (generate_reply), not run accept_negotiation again.
+    if state.get("negotiation_completed") or state.get("negotiation_status") == "agreed":
+        print(f"{Colors.YELLOW}Deal already agreed → generate_reply (post-deal message)")
+        return "generate_reply"
+
+    # 1) If intent is explicit ACCEPT, close the deal (so "I agree" never goes to counter_offer).
     if intent == WhatsappMessageIntent.ACCEPT:
         print(f"{Colors.YELLOW}Intent is ACCEPT → accept_negotiation")
         return "accept_negotiation"
 
-    # 1) Route by NextAction when available (higher priority)
+    # 2) Route by NextAction when available (higher priority)
     if next_action is not None:
         # Normalize to enum if it's coming through as a raw value
         try:
@@ -80,7 +85,7 @@ def route_by_intent(state: WhatsappNegotiationState):
                 print(f"{Colors.YELLOW}NextAction={na} → close_conversation")
                 return "close_conversation"
 
-    # 2) Fallback: route by high-level intent
+    # 3) Fallback: route by high-level intent
     if intent == WhatsappMessageIntent.REJECT:
         print(f"{Colors.YELLOW}Intent is REJECT → generate_reply")
         return "generate_reply"

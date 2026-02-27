@@ -14,6 +14,7 @@ from app.agents.WhatsappNegotiation.state.negotiation_state import (
     get_negotiation_state,
     update_negotiation_state,
 )
+from app.utils.message_context import get_history_list
 from app.services.websocket_manager import ws_manager
 from app.services.whatsapp.reply_button import handle_button_reply
 from app.services.whatsapp.save_message import save_conversation_message
@@ -69,7 +70,7 @@ async def process_incoming_message(thread_id, profile_name, msg_text):
             "thread_id": thread_id,
             "sender": "USER",
             "message": msg_text,
-            "timestamp": datetime.now(timezone.utc),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         },
     )
 
@@ -80,19 +81,31 @@ async def handle_negotiation_agent(request, thread_id, msg_text, profile_name):
     negotiation_state = await get_negotiation_state(thread_id)
     print(f"{Colors.CYAN}Negotiation state: {negotiation_state}")
     print("--------------------------------")
-    if (
-        not negotiation_state
-        or negotiation_state.get("agent_paused")
-        or negotiation_state.get("negotiation_completed")
-    ):
-        print(f"{Colors.RED}No active negotiation state or agent paused/completed")
-        print("--------------------------------")
-        print(f"{Colors.YELLOW}Exiting from handle_negotiation_agent")
+
+    if not negotiation_state:
+        print(f"{Colors.RED}No negotiation state found for thread {thread_id}")
         print("--------------------------------")
         return False
 
+    if negotiation_state.get("agent_paused"):
+        print(
+            f"{Colors.YELLOW}Negotiation is paused for thread {thread_id} — "
+            f"absorbing message, not falling through to default agent"
+        )
+        print("--------------------------------")
+        return True
+
     print(f"{Colors.CYAN}Routing to Negotiation Agent")
     print("--------------------------------")
+
+    # Maintain a rolling window of recent conversation history (USER + AI).
+    # Normalize to list (Mongo may return history as dict or other type).
+    history = get_history_list(negotiation_state)
+    history.append({"sender_type": "USER", "message": msg_text})
+    # Keep only the last N messages to avoid unbounded growth
+    MAX_HISTORY_LENGTH = 20
+    if len(history) > MAX_HISTORY_LENGTH:
+        history = history[-MAX_HISTORY_LENGTH:]
 
     negotiation_state.update(
         {
@@ -100,6 +113,7 @@ async def handle_negotiation_agent(request, thread_id, msg_text, profile_name):
             "thread_id": thread_id,
             "sender_id": thread_id,
             "name": profile_name,
+            "history": history,
         }
     )
 

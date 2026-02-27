@@ -122,6 +122,7 @@ async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]
             "status": CampaignStatus.PENDING,
             "limit": request_data.limit,
             "generated": False,
+            "brief_id": request_data.brief_id,
             "created_at": datetime.now(timezone.utc),
             "updated_at": datetime.now(timezone.utc),
         }
@@ -329,7 +330,6 @@ async def storeInfluencerNumber(
 
 async def add_influencer_Number(
     request_data: AddInfluencerNumberRequest,
-    background_tasks: BackgroundTasks,
 ):
     try:
         db = get_db()
@@ -354,10 +354,7 @@ async def add_influencer_Number(
         if result.modified_count == 0:
             raise HTTPException(status_code=404, detail="Failed to update influencer")
         if request_data.phone_number and request_data.platform:
-            background_tasks.add_task(
-                storeInfluencerNumber,
-                request_data,
-            )
+            await storeInfluencerNumber(request_data)
         return {
             "message": "Influencer details updated successfully",
             "influencer_id": request_data.influencer_id,

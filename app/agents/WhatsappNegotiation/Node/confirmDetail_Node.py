@@ -6,11 +6,20 @@ from agents import Agent, Runner
 from app.Guardails.input_guardrails import WhatsappInputGuardrail
 from app.db.connection import get_db
 from bson import ObjectId
+from app.utils.prompts import WHATSAPP_CONFIRM_DETAILS_SUFFIX
+from app.utils.message_context import (
+    get_history_list,
+    set_history_list,
+    history_to_agent_messages,
+)
 
 
 async def confirm_details_node(state: WhatsappNegotiationState):
     print(f"{Colors.GREEN}Entering confirm_details_node")
     print("--------------------------------")
+
+    history = get_history_list(state)
+    set_history_list(state, history)
 
     rate = state.get("analysis", {}).get("budget_amount") or state.get(
         "last_offered_price"
@@ -28,19 +37,12 @@ async def confirm_details_node(state: WhatsappNegotiationState):
 
     prompt = (
         "You are an AI assistant helping a brand negotiate with an influencer on WhatsApp.\n"
-        f"The influencer's offered/confirmed rate is: {rate}.\n\n"
-        "Write a concise WhatsApp reply that:\n"
-        "- Acknowledges their rate positively.\n"
-        "- Does NOT ask the influencer to provide or confirm deliverables or timeline "
-        "(the brand defines those details).\n"
-        "- States that the brand will share the final deliverables and timeline shortly or in the next message.\n"
-        "- Does NOT invent specific deliverables or timelines.\n"
-        "- Keeps tone professional and friendly.\n"
+        f"The influencer's offered/confirmed rate (if detected from state) is: {rate}.\n\n"
+        + WHATSAPP_CONFIRM_DETAILS_SUFFIX
     )
 
-    history = state.get("history", [])
     agent_input = (
-        history
+        history_to_agent_messages(history)
         if history
         else f"Influencer asked about deliverables/timeline. Offered rate: {rate}"
     )
