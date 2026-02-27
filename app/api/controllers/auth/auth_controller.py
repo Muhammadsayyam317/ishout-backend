@@ -1,6 +1,5 @@
 from typing import Dict, Any
 from fastapi import BackgroundTasks, HTTPException
-
 from app.Schemas.user_model import UserLoginRequest, CompanyRegistrationRequest
 from app.services.Auth.auth_service import AuthService
 from app.services.email.email_verification import send_verification_email

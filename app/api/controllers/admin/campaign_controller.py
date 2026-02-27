@@ -122,6 +122,7 @@ async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]
             "status": CampaignStatus.PENDING,
             "limit": request_data.limit,
             "generated": False,
+            "brief_id": request_data.brief_id,
             "created_at": datetime.now(timezone.utc),
             "updated_at": datetime.now(timezone.utc),
         }
