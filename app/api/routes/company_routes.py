@@ -80,7 +80,6 @@ async def reject_influencers_route(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-
 router.add_api_route(
     path="/search-influencers",
     endpoint=search_influencers,
@@ -150,6 +149,7 @@ async def create_campaign_brief_endpoint(request: CampaignBriefRequest):
     return await create_campaign_brief(
         user_input=request.user_input, user_id=request.user_id
     )
+
 
 @router.patch(
     "/update-campaign-brief/{brief_id}",
