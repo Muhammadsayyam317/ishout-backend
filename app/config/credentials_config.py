@@ -98,7 +98,6 @@ class Config(BaseModel):
     FRONTEND_URL: str = Field(default=os.getenv("FRONTEND_URL"))
     VERIFY_OTP_URL: str = Field(default=os.getenv("VERIFY_OTP_URL"))
 
- 
     AWS_ACCESS_KEY_ID: str = Field(default=os.getenv("AWS_ACCESS_KEY_ID"))
     AWS_SECRET_ACCESS_KEY: str = Field(default=os.getenv("AWS_SECRET_ACCESS_KEY"))
     AWS_REGION: str = Field(default=os.getenv("AWS_REGION"))
