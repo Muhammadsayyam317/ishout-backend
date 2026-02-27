@@ -1,4 +1,4 @@
-from fastapi import APIRouter, BackgroundTasks, Query
+from fastapi import APIRouter, BackgroundTasks, Query,UploadFile, File
 from fastapi.responses import JSONResponse
 from app.Schemas.password import VerifyOtpRequest
 from app.Schemas.user_model import (
@@ -11,6 +11,7 @@ from fastapi import HTTPException
 from app.api.controllers.auth.auth_controller import (
     login_user,
     register_company,
+    upload_user_logo
 )
 from app.api.controllers.auth.password_controller import (
     change_password,
@@ -34,6 +35,19 @@ async def register_route(
 ):
     try:
         return await register_company(request_data, background_tasks)
+    except HTTPException:
+        raise
+    except Exception:
+        raise InternalServerErrorException(message="Internal server error")
+    
+
+@router.post("/users/{user_id}/upload-logo", tags=["Admin"])
+async def upload_logo_route(
+    user_id: str,
+    file: UploadFile = File(...)
+):
+    try:
+        return await upload_user_logo(user_id, file)
     except HTTPException:
         raise
     except Exception:

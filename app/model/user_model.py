@@ -3,6 +3,7 @@ from bson import ObjectId
 from app.Schemas.user_model import UserStatus
 from app.config import config
 from app.db.connection import get_db
+from datetime import datetime, timezone
 
 
 class UserModel:
@@ -48,3 +49,23 @@ class UserModel:
             {"email": email},
             {"$set": update_data}
         )
+    
+    @staticmethod
+    async def find_by_id(user_id: str):
+        db = get_db()
+        return await db.get_collection(UserModel.collection_name).find_one(
+          {"_id": ObjectId(user_id)}
+        )
+
+    @staticmethod
+    async def update_logo(user_id: str, logo_url: str):
+      db = get_db()
+      return await db.get_collection(UserModel.collection_name).update_one(
+        {"_id": ObjectId(user_id)},
+        {
+            "$set": {
+                "logo_url": logo_url,
+                "updated_at": datetime.now(timezone.utc),
+            }
+        },
+    )
