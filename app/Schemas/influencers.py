@@ -50,9 +50,8 @@ class GenerateInfluencersRequest(BaseModel):
     limit: int
 
 
-class AddInfluencerNumberRequest(BaseModel):
-    influencer_id: str
+class UpdateCampaignInfluencerRequest(BaseModel):
+    campaign_influencer_id: str
     phone_number: Optional[str] = None
-    platform: Optional[str] = None
     max_price: Optional[float] = None
     min_price: Optional[float] = None
