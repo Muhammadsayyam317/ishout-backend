@@ -1,5 +1,4 @@
 import json
-
 from agents import Agent, Runner
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
 from app.Schemas.instagram.negotiation_schema import AnalyzeMessageOutput, NextAction

@@ -45,3 +45,4 @@ tabulate
 apscheduler
 pytz
 phonenumbers
+openai-agents 
