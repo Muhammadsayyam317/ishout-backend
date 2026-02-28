@@ -15,6 +15,7 @@ from app.Schemas.campaign_influencers import (
     CampaignBriefResponse,
     UpdateCampaignBriefRequest,
 )
+from datetime import datetime, timezone
 from app.model.Campaign.campaignbrief_model import (
     CampaignBriefGeneration,
     CampaignBriefStatus,
@@ -105,6 +106,20 @@ async def create_campaign_brief(user_input: str, user_id: str) -> CampaignBriefR
         raise HTTPException(
             status_code=500, detail=f"Campaign generation failed: {str(e)}"
         )
+
+
+async def delete_campaign_brief_service(brief_id: str):
+    db = get_db()
+    collection = db.get_collection("CampaignBriefGeneration")
+
+    existing = await collection.find_one({"_id": brief_id})
+
+    if not existing:
+        raise HTTPException(status_code=404, detail="Campaign brief not found")
+
+    await collection.delete_one({"_id": brief_id})
+
+    return {"message": "Campaign brief deleted successfully"}
 
 
 async def update_campaign_brief_service(
