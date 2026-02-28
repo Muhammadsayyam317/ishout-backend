@@ -1,6 +1,5 @@
 from typing import Dict, Any
-from fastapi import BackgroundTasks, HTTPException,UploadFile
-
+from fastapi import HTTPException, UploadFile
 from app.Schemas.user_model import UserLoginRequest, CompanyRegistrationRequest
 from app.services.Auth.auth_service import AuthService
 from app.services.email.email_verification import send_verification_email
@@ -26,27 +25,19 @@ async def login_user(request_data: UserLoginRequest) -> Dict[str, Any]:
     except UnauthorizedException as e:
         raise HTTPException(status_code=401, detail=e.detail["message"])
 
+
 async def register_company(
     request_data: CompanyRegistrationRequest,
-    background_tasks: BackgroundTasks,
 ) -> Dict[str, Any]:
-
     response = await AuthService.register_company(request_data)
-    verification_token = create_email_verification_token({
-        "email": request_data.email
-    })
-
-    # Add task to send email with correct token link
-    background_tasks.add_task(
-        send_verification_email,
+    verification_token = create_email_verification_token({"email": request_data.email})
+    await send_verification_email(
         [request_data.email],
         "Verify your Ishout account",
         request_data.company_name,
-        verification_token,  # pass only token
+        verification_token,
     )
-
     return response
-
 
 
 async def upload_user_logo(user_id: str, file: UploadFile):
@@ -59,12 +50,10 @@ async def upload_user_logo(user_id: str, file: UploadFile):
             detail="Only PNG or JPEG images are allowed",
         )
 
-
     user = await UserModel.find_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     file_content = await file.read()
-
     if not file_content:
         raise HTTPException(status_code=400, detail="Empty file uploaded")
 
@@ -81,18 +70,16 @@ async def upload_user_logo(user_id: str, file: UploadFile):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"S3 upload failed: {str(e)}")
-
     file_url = (
         f"https://{config.S3_BUCKET_NAME}.s3."
         f"{config.AWS_REGION}.amazonaws.com/{s3_key}"
     )
-
     await UserModel.update_logo(user_id, file_url)
-
     return {
         "message": "Logo uploaded successfully",
         "logo_url": file_url,
     }
+
 
 async def get_current_user(token: str) -> Dict[str, Any]:
     try:
