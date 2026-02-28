@@ -35,6 +35,7 @@ from app.agents.campaiagncreation.create_campaign import (
     get_campaign_brief_by_id,
     get_campaign_briefs,
     update_campaign_brief_service,
+    delete_campaign_brief_service
 )
 
 router = APIRouter()
@@ -149,6 +150,10 @@ async def create_campaign_brief_endpoint(request: CampaignBriefRequest):
     return await create_campaign_brief(
         user_input=request.user_input, user_id=request.user_id
     )
+
+@router.delete("/campaign-brief/{brief_id}", tags=["Company"])
+async def delete_campaign_brief_endpoint(brief_id: str):
+    return await delete_campaign_brief_service(brief_id)
 
 
 @router.patch(
