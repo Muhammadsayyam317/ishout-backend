@@ -145,7 +145,10 @@ async def get_all_campaigns(
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
+        users_collection = db.get_collection("users")
+
         query = {}
+
         if status:
             try:
                 valid_status = {
@@ -155,16 +158,19 @@ async def get_all_campaigns(
                     CampaignStatus.COMPLETED,
                     CampaignStatus.REJECTED,
                 }
+
                 if status not in valid_status and status not in {
                     s.value for s in valid_status
                 }:
                     raise BadRequestException(
                         message="Invalid status. Use pending, processing, approved, completed, or rejected.",
                     )
+
                 normalized = (
                     status.value if isinstance(status, CampaignStatus) else str(status)
                 )
                 query["status"] = normalized
+
             except Exception as e:
                 raise BadRequestException(
                     message=f"Invalid status: {str(e)}",
@@ -172,6 +178,7 @@ async def get_all_campaigns(
 
         skip = (page - 1) * page_size
         total_count = await campaigns_collection.count_documents(query)
+
         campaigns = (
             await campaigns_collection.find(query)
             .sort("created_at", -1)
@@ -179,7 +186,31 @@ async def get_all_campaigns(
             .limit(page_size)
             .to_list(length=None)
         )
+
+        # Collect unique user_ids
+        user_ids = list(
+            {
+                campaign.get("user_id")
+                for campaign in campaigns
+                if campaign.get("user_id")
+            }
+        )
+        object_user_ids = []
+        for uid in user_ids:
+            try:
+                object_user_ids.append(ObjectId(uid))
+            except Exception:
+                continue
+
+        users = await users_collection.find(
+            {"_id": {"$in": object_user_ids}}, {"logo_url": 1}
+        ).to_list(length=None)
+
+        user_logo_map = {str(user["_id"]): user.get("logo_url") for user in users}
+        for campaign in campaigns:
+            campaign["logo_url"] = user_logo_map.get(campaign.get("user_id"))
         campaigns = [convert_objectid(doc) for doc in campaigns]
+
         total_pages = (total_count + page_size - 1) // page_size
 
         return {
