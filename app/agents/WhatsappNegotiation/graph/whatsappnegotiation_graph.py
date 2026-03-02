@@ -9,6 +9,9 @@ from app.agents.WhatsappNegotiation.Node.RouteByIntent_Node import route_by_inte
 from app.agents.WhatsappNegotiation.Node.acceptNegotiation_Node import (
     accept_negotiation_node,
 )
+from app.agents.WhatsappNegotiation.Node.fetchCampaignBrief_Node import (
+    fetch_campaign_brief_node,
+)
 from app.agents.WhatsappNegotiation.Node.admintakeover_Node import admin_takeover_node
 from app.agents.WhatsappNegotiation.Node.closeNegotiation_Node import (
     close_conversation_node,
@@ -34,6 +37,7 @@ negotiation_graph = StateGraph(WhatsappNegotiationState)
 negotiation_graph.add_node("negotiatedebug_before", whatsapp_negotiation_debug_before)
 negotiation_graph.add_node("negotiatedebug_after", whatsapp_negotiation_debug_after)
 
+negotiation_graph.add_node("fetch_campaign_brief", fetch_campaign_brief_node)
 negotiation_graph.add_node("intentclassifier", intentclassifier)
 negotiation_graph.add_node("fetch_pricing", fetch_pricing_node)
 negotiation_graph.add_node("counter_offer", counter_offer_node)
@@ -48,7 +52,8 @@ negotiation_graph.add_node("send_message", send_whatsapp_reply_node)
 
 
 negotiation_graph.add_edge(START, "negotiatedebug_before")
-negotiation_graph.add_edge("negotiatedebug_before", "intentclassifier")
+negotiation_graph.add_edge("negotiatedebug_before", "fetch_campaign_brief")
+negotiation_graph.add_edge("fetch_campaign_brief", "intentclassifier")
 
 negotiation_graph.add_conditional_edges(
     "intentclassifier",
