@@ -106,8 +106,6 @@ class UserUpdateRequest(BaseModel):
     contact_person: Optional[str] = None
     phone: Optional[str] = None
     password: Optional[str] = None
-    old_password: Optional[str] = None
-    new_password: Optional[str] = None
 
     @field_validator("password")
     @classmethod
@@ -129,6 +127,28 @@ class UserUpdateRequest(BaseModel):
 
         return normalized
 
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
+
+    @field_validator("old_password")
+    @classmethod
+    def validate_old_password(cls, value: str) -> str:
+        if not value or not value.strip():
+            raise ValueError("Old password is required")
+        return value
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, value: str) -> str:
+        if not value or not value.strip():
+            raise ValueError("New password is required")
+
+        if len(value) < 6:
+            raise ValueError("New password must be at least 6 characters long")
+
+        return value
 
 class UserCampaignResponse(BaseModel):
     campaign_id: str
