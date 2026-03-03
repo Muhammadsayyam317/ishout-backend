@@ -29,7 +29,7 @@ from app.Schemas.campaign import (
 from typing import List
 from app.services.whatsapp.send_text import send_message_from_ishout_to_user
 from app.tools.search_influencers import search_influencers
-from app.api.controllers.company.profile import get_user_profile, update_user_profile
+from app.api.controllers.company.profile import get_user_profile, update_user_profile,change_user_password
 from app.agents.campaiagncreation.create_campaign import (
     create_campaign_brief,
     get_campaign_brief_by_id,
@@ -115,6 +115,14 @@ router.add_api_route(
     endpoint=update_user_profile,
     methods=["PATCH"],
     tags=["User"],
+)
+
+
+router.add_api_route(
+    "/change-password/{user_id}",
+    change_user_password,
+    methods=["PATCH"],
+    tags=["User"]
 )
 
 router.add_api_route(
