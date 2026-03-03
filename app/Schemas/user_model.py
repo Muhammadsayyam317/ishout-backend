@@ -106,6 +106,8 @@ class UserUpdateRequest(BaseModel):
     contact_person: Optional[str] = None
     phone: Optional[str] = None
     password: Optional[str] = None
+    old_password: Optional[str] = None
+    new_password: Optional[str] = None
 
     @field_validator("password")
     @classmethod

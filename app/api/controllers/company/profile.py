@@ -4,7 +4,8 @@ from bson import ObjectId
 from fastapi import HTTPException
 from app.db.connection import get_db
 from app.Schemas.user_model import UserResponse, UserUpdateRequest
-from app.core.security.password import hash_password
+from app.core.security.password import hash_password, verify_password
+
 
 async def get_user_profile(user_id: str) -> Dict[str, Any]:
     try:
@@ -44,14 +45,33 @@ async def update_user_profile(
         raise HTTPException(status_code=404, detail="User not found")
 
     update_data = request_data.model_dump(exclude_none=True)
-    if "password" in update_data:
-        update_data["password"] = hash_password(update_data["password"])
+    
+    old_pass = update_data.pop("old_password", None)
+    new_pass = update_data.pop("new_password", None)
 
+    if old_pass or new_pass:
+        if not old_pass or not new_pass:
+            raise HTTPException(
+                status_code=400, detail="Both old and new passwords are required"
+            )
+
+        if not verify_password(old_pass, user.get("password", "")):
+            raise HTTPException(status_code=400, detail="Old password is incorrect")
+
+        if len(new_pass) < 6:
+            raise HTTPException(
+                status_code=400,
+                detail="New password must be at least 6 characters long",
+            )
+
+        update_data["password"] = hash_password(new_pass)
+
+    elif "password" in update_data and update_data["password"]:
+        update_data["password"] = hash_password(update_data["password"])
     update_data["updated_at"] = datetime.now(timezone.utc)
 
     result = await users_collection.update_one(
-        {"_id": ObjectId(user_id)},
-        {"$set": update_data}
+        {"_id": ObjectId(user_id)}, {"$set": update_data}
     )
 
     if result.modified_count == 0:
