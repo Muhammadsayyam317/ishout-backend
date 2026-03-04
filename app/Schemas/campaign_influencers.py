@@ -80,6 +80,8 @@ class CampaignBriefResponse(BaseModel):
     followers: Optional[str] = None
     country: List[str] = []
 
+    campaign_logo_url: Optional[str] = None
+
 class CampaignBriefDBResponse(BaseModel):
     id: str
     user_id: str
