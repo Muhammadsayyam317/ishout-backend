@@ -24,6 +24,7 @@ from app.utils.prompts import CREATECAMPAIGNBREAKDOWN_PROMPT
 from app.db.connection import get_db
 from agents.exceptions import InputGuardrailTripwireTriggered
 import json
+from app.utils.image_generator import generate_campaign_logo
 
 
 async def validate_user(user_id: str):
@@ -90,6 +91,13 @@ async def create_campaign_brief(user_input: str, user_id: str) -> CampaignBriefR
             response_obj = result.final_output
         else:
             response_obj = CampaignBriefResponse(**json.loads(result.final_output))
+
+        logo_url = await generate_campaign_logo(
+            title=response_obj.title,
+            overview=" ".join(response_obj.campaign_overview),
+            brand_name_influencer_campaign_brief=response_obj.brand_name_influencer_campaign_brief,
+        )
+        response_obj.campaign_logo_url = logo_url
 
         stored_doc = await store_campaign_brief(
             prompt=user_input,
