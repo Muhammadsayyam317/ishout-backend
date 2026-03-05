@@ -1,5 +1,5 @@
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Depends, Path
+from fastapi import APIRouter, HTTPException, Depends, Path, UploadFile, File
 from app.Schemas.campaign_influencers import (
     CampaignBriefDBResponse,
     CampaignBriefRequest,
@@ -35,7 +35,8 @@ from app.agents.campaiagncreation.create_campaign import (
     get_campaign_brief_by_id,
     get_campaign_briefs,
     update_campaign_brief_service,
-    delete_campaign_brief_service
+    delete_campaign_brief_service,
+    update_campaign_brief_logo_service,
 )
 
 router = APIRouter()
@@ -200,3 +201,21 @@ async def get_campaign_brief_detail_endpoint(id: str):
     No user_id required.
     """
     return await get_campaign_brief_by_id(id)
+
+
+@router.post(
+    "/update-brief-logo/{brief_id}",
+    response_model=CampaignBriefDBResponse,
+    tags=["Company"],
+)
+async def update_campaign_brief_logo_endpoint(
+    brief_id: str,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(require_company_user_access),
+):
+    try:
+        return await update_campaign_brief_logo_service(brief_id, file)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
