@@ -14,10 +14,9 @@ s3_client = boto3.client(
 
 client = OpenAI(api_key=config.OPENAI_API_KEY)
 
+
 async def generate_campaign_logo(
-    title: str, 
-    overview: str, 
-    brand_name_influencer_campaign_brief: str
+    title: str, overview: str, brand_name_influencer_campaign_brief: str
 ) -> str | None:
     """
     Generate a majestic, circular campaign logo using OpenAI Images
@@ -25,26 +24,35 @@ async def generate_campaign_logo(
     """
     try:
         prompt = f"""
-        Create a high-quality, circular campaign logo.
+        Create a premium, photorealistic circular brand logo for a campaign.
 
         Campaign Title: {title}
         Campaign Description: {overview}
         Brand / Influencer Campaign Context: {brand_name_influencer_campaign_brief}
 
-        Requirements:
-        - Circular / round design inside a square 1024x1024 canvas
-        - Modern, elegant, and professional
-        - Minimal text or subtle campaign initials
-        - Visually represents the brand and campaign identity
-        - Color palette inspired by fashion and lifestyle aesthetics
-        - Suitable for social media cards, dashboards, and app listings
-        - Clean lines, vector-style look, recognizable at small size
+        CRITICAL REQUIREMENTS:
+        - **ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO TYPOGRAPHY** - pure visual symbol only
+        - Photorealistic, professional corporate identity style
+        - NOT cartoon, NOT animated, NOT illustrated - real luxury brand aesthetic
+        - Circular emblem design centered on 1024x1024 canvas
+        - High-end, premium, sophisticated visual language
+        - Think Apple, Nike, Mercedes - iconic symbol only
+        - Clean, minimalist, timeless design
+        - Professional gradient or solid color palette
+        - Suitable for Fortune 500 brand identity
+        - Sharp, crisp edges with depth and dimension
+        - Metallic, glass, or premium material effects
+        - Studio lighting, professional photography quality
+        - Symbol must relate to campaign theme through abstract shapes, icons, or imagery
+        - Recognizable and memorable at any size
+
+        STYLE REFERENCES: Corporate logo design, luxury brand identity, premium product photography, high-end advertising
+        
+        AVOID: Cartoons, comics, hand-drawn, sketches, childish, playful, text overlays, words, letters
         """
 
         result = client.images.generate(
-            model="gpt-image-1",
-            prompt=prompt,
-            size="1024x1024"
+            model="gpt-image-1", prompt=prompt, size="1024x1024"
         )
 
         image_base64 = result.data[0].b64_json
