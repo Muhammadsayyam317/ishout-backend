@@ -241,12 +241,58 @@ async def update_campaign_brief_logo_service(
 ) -> CampaignBriefDBResponse:
     """
     Replace the auto-generated campaign logo with a user-uploaded image.
-    - Uploads the provided image to S3
+    - Validates and reads the uploaded file
+    - Deletes any existing logo from S3 (best-effort)
+    - Uploads the new logo to S3 with a fresh key
     - Updates response.campaign_logo_url in CampaignBriefGeneration
     - Returns the updated brief document
     """
     print(f"[update_campaign_brief_logo_service] Starting logo update for brief_id={brief_id}")
 
+    file_bytes = await _validate_and_read_logo_file(file)
+
+    db = get_db()
+    collection = db.get_collection("CampaignBriefGeneration")
+
+    existing_brief = await collection.find_one({"_id": brief_id})
+    if not existing_brief:
+        print(f"[update_campaign_brief_logo_service] No brief found for _id={brief_id}")
+        raise HTTPException(status_code=404, detail="Campaign brief not found")
+
+    existing_logo_url = (existing_brief.get("response") or {}).get("campaign_logo_url")
+    _delete_old_logo_if_exists(existing_logo_url)
+
+    new_logo_url = await _upload_new_logo_to_s3(
+        brief_id=brief_id,
+        file=file,
+        file_bytes=file_bytes,
+        previous_logo_url=existing_logo_url,
+    )
+
+    update_result = await collection.update_one(
+        {"_id": brief_id},
+        {
+            "$set": {
+                "response.campaign_logo_url": new_logo_url,
+                "updated_at": datetime.now(timezone.utc),
+            }
+        },
+    )
+
+    print(
+        "[update_campaign_brief_logo_service] Mongo update result: "
+        f"matched_count={update_result.matched_count}, modified_count={update_result.modified_count}"
+    )
+
+    updated = await get_campaign_brief_by_id(brief_id)
+    print(
+        "[update_campaign_brief_logo_service] Updated brief response.campaign_logo_url="
+        f"{updated.response.campaign_logo_url}"
+    )
+    return updated
+
+
+async def _validate_and_read_logo_file(file: UploadFile) -> bytes:
     if file.content_type not in ["image/png", "image/jpeg"]:
         print(
             f"[update_campaign_brief_logo_service] Invalid content_type={file.content_type}"
@@ -261,19 +307,10 @@ async def update_campaign_brief_logo_service(
         print("[update_campaign_brief_logo_service] Empty file uploaded")
         raise HTTPException(status_code=400, detail="Empty file uploaded")
 
-    db = get_db()
-    collection = db.get_collection("CampaignBriefGeneration")
+    return file_bytes
 
-    existing = await collection.find_one({"_id": brief_id})
-    if not existing:
-        print(f"[update_campaign_brief_logo_service] No brief found for _id={brief_id}")
-        raise HTTPException(status_code=404, detail="Campaign brief not found")
 
-    # If a logo already exists, delete the old object first, then create
-    # a brand new S3 key so the URL clearly changes.
-    existing_logo_url = (
-        (existing.get("response") or {}).get("campaign_logo_url") if existing else None
-    )
+def _delete_old_logo_if_exists(existing_logo_url: Optional[str]) -> None:
     prefix = (
         f"https://{config.S3_BUCKET_NAME}.s3."
         f"{config.AWS_REGION}.amazonaws.com/"
@@ -297,12 +334,24 @@ async def update_campaign_brief_logo_service(
                 f"{e}"
             )
 
+
+async def _upload_new_logo_to_s3(
+    brief_id: str,
+    file: UploadFile,
+    file_bytes: bytes,
+    previous_logo_url: Optional[str],
+) -> str:
+    prefix = (
+        f"https://{config.S3_BUCKET_NAME}.s3."
+        f"{config.AWS_REGION}.amazonaws.com/"
+    )
+
     extension = file.filename.split(".")[-1].lower()
     unique_id = str(uuid.uuid4())
     s3_key = f"campaign_logos/{brief_id}_{unique_id}.{extension}"
     print(
         "[update_campaign_brief_logo_service] Using new S3 key for uploaded logo: "
-        f"{s3_key} (previous_logo_url={existing_logo_url})"
+        f"{s3_key} (previous_logo_url={previous_logo_url})"
     )
 
     try:
@@ -321,26 +370,4 @@ async def update_campaign_brief_logo_service(
         "[update_campaign_brief_logo_service] Uploaded new logo to S3 "
         f"Bucket={config.S3_BUCKET_NAME}, Key={s3_key}, url={logo_url}"
     )
-
-    update_result = await collection.update_one(
-        {"_id": brief_id},
-        {
-            "$set": {
-                "response.campaign_logo_url": logo_url,
-                "updated_at": datetime.now(timezone.utc),
-            }
-        },
-    )
-
-    print(
-        "[update_campaign_brief_logo_service] Mongo update result: "
-        f"matched_count={update_result.matched_count}, modified_count={update_result.modified_count}"
-    )
-
-    updated = await get_campaign_brief_by_id(brief_id)
-    print(
-        "[update_campaign_brief_logo_service] Updated brief response.campaign_logo_url="
-        f"{updated.response.campaign_logo_url}"
-    )
-
-    return updated
+    return logo_url

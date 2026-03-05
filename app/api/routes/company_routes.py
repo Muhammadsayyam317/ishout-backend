@@ -213,9 +213,10 @@ async def update_campaign_brief_logo_endpoint(
     file: UploadFile = File(...),
     current_user: dict = Depends(require_company_user_access),
 ):
-    try:
-        return await update_campaign_brief_logo_service(brief_id, file)
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    """
+    Update a campaign brief's logo by uploading a new image file.
+
+    All business logic (S3 upload, DB update, logging) lives in
+    update_campaign_brief_logo_service.
+    """
+    return await update_campaign_brief_logo_service(brief_id, file)
