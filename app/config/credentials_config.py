@@ -47,6 +47,8 @@ class Config(BaseModel):
     )
     OPENAI_API_KEY: str = Field(default=os.getenv("OPENAI_API_KEY"))
     OPENAI_MODEL_NAME: str = Field(default=os.getenv("OPENAI_MODEL_NAME"))
+    OPENAI_GPT_IMAGE_MODEL: str = Field(default=os.getenv("OPENAI_GPT_IMAGE_MODEL"))
+
     EMBEDDING_MODEL: str = Field(default=os.getenv("EMBEDDING_MODEL"))
     PORT: int = Field(default=int(os.getenv("PORT", "8000")))
 
