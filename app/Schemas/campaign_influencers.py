@@ -92,6 +92,11 @@ class CampaignBriefDBResponse(BaseModel):
     regenerated_from: Optional[str] = None
     created_at: Optional[datetime] = None
 
+
+class CampaignBriefLogoUpdateResponse(BaseModel):
+    message: str
+    logo_url: str
+
 class UpdateCampaignBriefRequest(BaseModel):
     campaign_overview: Optional[List[str]] = None
     campaign_objectives: Optional[List[str]] = None

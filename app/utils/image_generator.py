@@ -33,7 +33,7 @@ async def generate_campaign_logo(
         image_bytes = base64.b64decode(image_base64)
 
         unique_id = str(uuid.uuid4())
-        s3_key = f"campaign_logos/{unique_id}.png"
+        s3_key = f"campaign_logos/{brief_id}_{unique_id}.png"
 
         upload_to_s3(s3_client, s3_key, image_bytes)
         logo_url = f"https://{config.S3_BUCKET_NAME}.s3.{config.AWS_REGION}.amazonaws.com/{s3_key}"

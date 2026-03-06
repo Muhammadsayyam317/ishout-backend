@@ -1,7 +1,7 @@
 from typing import List, Optional
 from bson import ObjectId
 from bson.errors import InvalidId
-from fastapi import HTTPException
+from fastapi import HTTPException, UploadFile
 from agents import Runner, Agent
 from app.Guardails.CampaignCreation.campaignInput_guardrails import (
     CampaignCreationInputGuardrail,
@@ -25,6 +25,11 @@ from app.db.connection import get_db
 from agents.exceptions import InputGuardrailTripwireTriggered
 import json
 from app.utils.image_generator import generate_campaign_logo
+from app.utils.campaign_helpers import (
+    validate_and_read_logo_file,
+    delete_old_logo_if_exists,
+    upload_new_logo_to_s3,
+)
 
 
 async def validate_user(user_id: str):
@@ -232,3 +237,41 @@ async def get_campaign_brief_by_id(campaign_id: str):
         regenerated_from=campaign.get("regenerated_from"),
         created_at=campaign.get("created_at"),
     )
+
+
+async def update_campaign_brief_logo_service(
+    brief_id: str, file: UploadFile
+) -> Dict[str, str]:
+
+    file_bytes = await validate_and_read_logo_file(file)
+
+    db = get_db()
+    collection = db.get_collection("CampaignBriefGeneration")
+
+    existing_brief = await collection.find_one({"_id": brief_id})
+    if not existing_brief:
+        raise HTTPException(status_code=404, detail="Campaign brief not found")
+
+    existing_logo_url = (existing_brief.get("response") or {}).get("campaign_logo_url")
+    delete_old_logo_if_exists(existing_logo_url)
+
+    new_logo_url = await upload_new_logo_to_s3(
+        brief_id=brief_id,
+        file=file,
+        file_bytes=file_bytes,
+    )
+
+    await collection.update_one(
+        {"_id": brief_id},
+        {
+            "$set": {
+                "response.campaign_logo_url": new_logo_url,
+                "updated_at": datetime.now(timezone.utc),
+            }
+        },
+    )
+
+    return {
+        "message": "Campaign brief logo updated successfully",
+        "logo_url": new_logo_url,
+    }
