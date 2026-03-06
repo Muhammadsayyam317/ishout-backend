@@ -5,6 +5,7 @@ from app.Schemas.campaign_influencers import (
     CampaignBriefRequest,
     CampaignBriefResponse,
     UpdateCampaignBriefRequest,
+    CampaignBriefLogoUpdateResponse,
 )
 from app.api.controllers.admin.approved_campaign import (
     companyApprovedSingleInfluencer,
@@ -205,7 +206,7 @@ async def get_campaign_brief_detail_endpoint(id: str):
 
 @router.post(
     "/update-brief-logo/{brief_id}",
-    response_model=CampaignBriefDBResponse,
+    response_model=CampaignBriefLogoUpdateResponse,
     tags=["Company"],
 )
 async def update_campaign_brief_logo_endpoint(
@@ -215,8 +216,5 @@ async def update_campaign_brief_logo_endpoint(
 ):
     """
     Update a campaign brief's logo by uploading a new image file.
-
-    All business logic (S3 upload, DB update, logging) lives in
-    update_campaign_brief_logo_service.
     """
     return await update_campaign_brief_logo_service(brief_id, file)
