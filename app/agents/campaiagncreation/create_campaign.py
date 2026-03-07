@@ -26,9 +26,9 @@ from agents.exceptions import InputGuardrailTripwireTriggered
 import json
 from app.utils.image_generator import generate_campaign_logo
 from app.utils.campaign_helpers import (
-    validate_and_read_logo_file,
-    delete_old_logo_if_exists,
-    upload_new_logo_to_s3,
+    validate_and_read_image_file,
+    delete_s3_object_if_exists,
+    upload_file_to_s3_with_prefix,
 )
 
 
@@ -163,6 +163,33 @@ async def update_campaign_brief_service(
     return response_obj
 
 
+async def update_campaign_brief_with_files(
+    brief_id: str,
+    data: str,
+    file: Optional[UploadFile] = None,
+) -> CampaignBriefResponse:
+
+    try:
+        payload = json.loads(data)
+        update_request = UpdateCampaignBriefRequest(**payload)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid brief payload: {e}")
+
+    if file:
+        file_bytes = await validate_and_read_image_file(file)
+        url = await upload_file_to_s3_with_prefix(
+            prefix_folder="campaign_products",
+            object_id=brief_id,
+            file=file,
+            file_bytes=file_bytes,
+        )
+        
+        existing_urls = update_request.product_image_urls or []
+        update_request.product_image_urls = existing_urls + [url]
+
+    return await update_campaign_brief_service(brief_id, update_request)
+
+
 async def get_campaign_briefs(
     user_id: str, skip: int = 0, limit: int = 10
 ) -> List[CampaignBriefDBResponse]:
@@ -243,7 +270,7 @@ async def update_campaign_brief_logo_service(
     brief_id: str, file: UploadFile
 ) -> Dict[str, str]:
 
-    file_bytes = await validate_and_read_logo_file(file)
+    file_bytes = await validate_and_read_image_file(file)
 
     db = get_db()
     collection = db.get_collection("CampaignBriefGeneration")
@@ -253,10 +280,11 @@ async def update_campaign_brief_logo_service(
         raise HTTPException(status_code=404, detail="Campaign brief not found")
 
     existing_logo_url = (existing_brief.get("response") or {}).get("campaign_logo_url")
-    delete_old_logo_if_exists(existing_logo_url)
+    delete_s3_object_if_exists(existing_logo_url)
 
-    new_logo_url = await upload_new_logo_to_s3(
-        brief_id=brief_id,
+    new_logo_url = await upload_file_to_s3_with_prefix(
+        prefix_folder="campaign_logos",
+        object_id=brief_id,
         file=file,
         file_bytes=file_bytes,
     )
