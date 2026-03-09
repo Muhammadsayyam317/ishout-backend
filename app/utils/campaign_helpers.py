@@ -7,7 +7,7 @@ from app.utils.image_generator import s3_client
 import uuid
 
 
-async def validate_and_read_logo_file(file: UploadFile) -> bytes:
+async def validate_and_read_image_file(file: UploadFile) -> bytes:
     if file.content_type not in ["image/png", "image/jpeg"]:
         raise HTTPException(
             status_code=400,
@@ -21,7 +21,7 @@ async def validate_and_read_logo_file(file: UploadFile) -> bytes:
     return file_bytes
 
 
-def delete_old_logo_if_exists(existing_logo_url: Optional[str]) -> None:
+def delete_s3_object_if_exists(existing_logo_url: Optional[str]) -> None:
     prefix = (
         f"https://{config.S3_BUCKET_NAME}.s3."
         f"{config.AWS_REGION}.amazonaws.com/"
@@ -42,8 +42,9 @@ def delete_old_logo_if_exists(existing_logo_url: Optional[str]) -> None:
             )
 
 
-async def upload_new_logo_to_s3(
-    brief_id: str,
+async def upload_file_to_s3_with_prefix(
+    prefix_folder: str,
+    object_id: str,
     file: UploadFile,
     file_bytes: bytes,
 ) -> str:
@@ -54,7 +55,7 @@ async def upload_new_logo_to_s3(
 
     extension = file.filename.split(".")[-1].lower()
     unique_id = str(uuid.uuid4())
-    s3_key = f"campaign_logos/{brief_id}_{unique_id}.{extension}"
+    s3_key = f"{prefix_folder}/{object_id}_{unique_id}.{extension}"
 
     try:
         s3_client.put_object(

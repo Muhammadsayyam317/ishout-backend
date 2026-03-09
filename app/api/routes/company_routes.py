@@ -1,5 +1,5 @@
-from typing import Optional
-from fastapi import APIRouter, HTTPException, Depends, Path, UploadFile, File
+from typing import Optional, List
+from fastapi import APIRouter, HTTPException, Depends, Path, UploadFile, File, Form
 from app.Schemas.campaign_influencers import (
     CampaignBriefDBResponse,
     CampaignBriefRequest,
@@ -27,7 +27,6 @@ from app.Schemas.campaign import (
     CreateCampaignRequest,
     UserRejectInfluencersRequest,
 )
-from typing import List
 from app.services.whatsapp.send_text import send_message_from_ishout_to_user
 from app.tools.search_influencers import search_influencers
 from app.api.controllers.company.profile import get_user_profile, update_user_profile,change_user_password
@@ -36,9 +35,11 @@ from app.agents.campaiagncreation.create_campaign import (
     get_campaign_brief_by_id,
     get_campaign_briefs,
     update_campaign_brief_service,
+    update_campaign_brief_with_files,
     delete_campaign_brief_service,
     update_campaign_brief_logo_service,
 )
+import json
 
 router = APIRouter()
 
@@ -173,9 +174,11 @@ async def delete_campaign_brief_endpoint(brief_id: str):
 )
 async def update_campaign_brief(
     brief_id: str = Path(..., description="ID of the campaign brief to update"),
-    request: UpdateCampaignBriefRequest = None,
+    data: str = Form(..., description="JSON-encoded UpdateCampaignBriefRequest payload"),
+    file: Optional[UploadFile] = File(None),
+    current_user: dict = Depends(require_company_user_access),
 ):
-    return await update_campaign_brief_service(brief_id, request)
+    return await update_campaign_brief_with_files(brief_id, data, file)
 
 
 @router.get(
