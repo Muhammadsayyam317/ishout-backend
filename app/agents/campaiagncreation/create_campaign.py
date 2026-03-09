@@ -97,24 +97,26 @@ async def create_campaign_brief(user_input: str, user_id: str) -> CampaignBriefR
         else:
             response_obj = CampaignBriefResponse(**json.loads(result.final_output))
 
-        logo_url = await generate_campaign_logo(
-            title=response_obj.title,
-            overview=" ".join(response_obj.campaign_overview),
-            brand_name_influencer_campaign_brief=response_obj.brand_name_influencer_campaign_brief,
-        )
-        response_obj.campaign_logo_url = logo_url
-
         stored_doc = await store_campaign_brief(
             prompt=user_input,
             response=response_obj,
             user_doc=user_doc,
         )
-
         response_obj.id = stored_doc.id
+        logo_url = await generate_campaign_logo(
+            brief_id=response_obj.id,
+            title=response_obj.title,
+            overview=" ".join(response_obj.campaign_overview or []),
+            brand_name_influencer_campaign_brief=response_obj.brand_name_influencer_campaign_brief,
+        )
+
+        response_obj.campaign_logo_url = logo_url
+
         return response_obj
 
     except InputGuardrailTripwireTriggered:
         raise HTTPException(status_code=400, detail="Invalid campaign request.")
+
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Campaign generation failed: {str(e)}"

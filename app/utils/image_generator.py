@@ -11,6 +11,7 @@ s3_client = get_s3_client()
 
 
 async def generate_campaign_logo(
+    brief_id: str,
     title: str,
     overview: str,
     brand_name_influencer_campaign_brief: str,
@@ -28,7 +29,7 @@ async def generate_campaign_logo(
         )
         if not result.data or not result.data[0].b64_json:
             raise HTTPException(status_code=500, detail="OpenAI returned no image")
-        
+
         image_base64 = result.data[0].b64_json
         image_bytes = base64.b64decode(image_base64)
 
