@@ -103,6 +103,7 @@ async def create_campaign_brief(user_input: str, user_id: str) -> CampaignBriefR
             user_doc=user_doc,
         )
         response_obj.id = stored_doc.id
+
         logo_url = await generate_campaign_logo(
             brief_id=response_obj.id,
             title=response_obj.title,
@@ -111,6 +112,22 @@ async def create_campaign_brief(user_input: str, user_id: str) -> CampaignBriefR
         )
 
         response_obj.campaign_logo_url = logo_url
+
+        try:
+            db = get_db()
+            collection = db.get_collection("CampaignBriefGeneration")
+            await collection.update_one(
+                {"_id": response_obj.id},
+                {
+                    "$set": {
+                        "response.campaign_logo_url": logo_url,
+                        "updated_at": datetime.now(timezone.utc),
+                    }
+                },
+            )
+        except Exception as e:
+            # Log but don't fail the whole brief creation if logo persistence fails
+            print(f"[create_campaign_brief] Failed to persist campaign_logo_url: {e}")
 
         return response_obj
 
