@@ -10,6 +10,7 @@ from app.utils.message_context import (
     set_history_list,
     history_to_agent_messages,
 )
+import json
 
 
 async def generate_reply_node(state: WhatsappNegotiationState):
@@ -22,6 +23,7 @@ async def generate_reply_node(state: WhatsappNegotiationState):
     user_message = state.get("user_message", "")
     intent = state.get("intent")
     next_action = state.get("next_action")
+    campaign_brief = state.get("campaign_brief")
 
     # Build a single prompt using state + history
     context_lines = [
@@ -30,6 +32,14 @@ async def generate_reply_node(state: WhatsappNegotiationState):
         f"Model intent: {intent}",
         f"Recommended next action: {next_action}",
     ]
+
+    if campaign_brief:
+        # Attach a serialized view of the brief so the model can answer
+        brief_snippet = json.dumps(campaign_brief, ensure_ascii=False)
+        context_lines.append(
+            "Campaign brief JSON (use for questions):"
+        )
+        context_lines.append(brief_snippet)
 
     prompt = "\n".join(context_lines) + "\n\n" + WHATSAPP_GENERATE_REPLY_RULES
 
