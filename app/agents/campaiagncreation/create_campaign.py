@@ -1,7 +1,7 @@
 from typing import List, Optional
 from bson import ObjectId
 from bson.errors import InvalidId
-from fastapi import HTTPException
+from fastapi import HTTPException, UploadFile
 from agents import Runner, Agent
 from app.Guardails.CampaignCreation.campaignInput_guardrails import (
     CampaignCreationInputGuardrail,
@@ -24,6 +24,12 @@ from app.utils.prompts import CREATECAMPAIGNBREAKDOWN_PROMPT
 from app.db.connection import get_db
 from agents.exceptions import InputGuardrailTripwireTriggered
 import json
+from app.utils.image_generator import generate_campaign_logo
+from app.utils.campaign_helpers import (
+    validate_and_read_image_file,
+    delete_s3_object_if_exists,
+    upload_file_to_s3_with_prefix,
+)
 
 
 async def validate_user(user_id: str):
@@ -96,12 +102,38 @@ async def create_campaign_brief(user_input: str, user_id: str) -> CampaignBriefR
             response=response_obj,
             user_doc=user_doc,
         )
-
         response_obj.id = stored_doc.id
+
+        logo_url = await generate_campaign_logo(
+            brief_id=response_obj.id,
+            title=response_obj.title,
+            overview=" ".join(response_obj.campaign_overview or []),
+            brand_name_influencer_campaign_brief=response_obj.brand_name_influencer_campaign_brief,
+        )
+
+        response_obj.campaign_logo_url = logo_url
+
+        try:
+            db = get_db()
+            collection = db.get_collection("CampaignBriefGeneration")
+            await collection.update_one(
+                {"_id": response_obj.id},
+                {
+                    "$set": {
+                        "response.campaign_logo_url": logo_url,
+                        "updated_at": datetime.now(timezone.utc),
+                    }
+                },
+            )
+        except Exception as e:
+            # Log but don't fail the whole brief creation if logo persistence fails
+            print(f"[create_campaign_brief] Failed to persist campaign_logo_url: {e}")
+
         return response_obj
 
     except InputGuardrailTripwireTriggered:
         raise HTTPException(status_code=400, detail="Invalid campaign request.")
+
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Campaign generation failed: {str(e)}"
@@ -148,6 +180,33 @@ async def update_campaign_brief_service(
     response_obj.id = str(updated_brief["_id"])
 
     return response_obj
+
+
+async def update_campaign_brief_with_files(
+    brief_id: str,
+    data: str,
+    file: Optional[UploadFile] = None,
+) -> CampaignBriefResponse:
+
+    try:
+        payload = json.loads(data)
+        update_request = UpdateCampaignBriefRequest(**payload)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid brief payload: {e}")
+
+    if file:
+        file_bytes = await validate_and_read_image_file(file)
+        url = await upload_file_to_s3_with_prefix(
+            prefix_folder="campaign_products",
+            object_id=brief_id,
+            file=file,
+            file_bytes=file_bytes,
+        )
+        
+        existing_urls = update_request.product_image_urls or []
+        update_request.product_image_urls = existing_urls + [url]
+
+    return await update_campaign_brief_service(brief_id, update_request)
 
 
 async def get_campaign_briefs(
@@ -224,3 +283,42 @@ async def get_campaign_brief_by_id(campaign_id: str):
         regenerated_from=campaign.get("regenerated_from"),
         created_at=campaign.get("created_at"),
     )
+
+
+async def update_campaign_brief_logo_service(
+    brief_id: str, file: UploadFile
+) -> Dict[str, str]:
+
+    file_bytes = await validate_and_read_image_file(file)
+
+    db = get_db()
+    collection = db.get_collection("CampaignBriefGeneration")
+
+    existing_brief = await collection.find_one({"_id": brief_id})
+    if not existing_brief:
+        raise HTTPException(status_code=404, detail="Campaign brief not found")
+
+    existing_logo_url = (existing_brief.get("response") or {}).get("campaign_logo_url")
+    delete_s3_object_if_exists(existing_logo_url)
+
+    new_logo_url = await upload_file_to_s3_with_prefix(
+        prefix_folder="campaign_logos",
+        object_id=brief_id,
+        file=file,
+        file_bytes=file_bytes,
+    )
+
+    await collection.update_one(
+        {"_id": brief_id},
+        {
+            "$set": {
+                "response.campaign_logo_url": new_logo_url,
+                "updated_at": datetime.now(timezone.utc),
+            }
+        },
+    )
+
+    return {
+        "message": "Campaign brief logo updated successfully",
+        "logo_url": new_logo_url,
+    }

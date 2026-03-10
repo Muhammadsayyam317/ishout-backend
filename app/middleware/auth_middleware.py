@@ -141,6 +141,22 @@ async def require_company_user_access(
     return current_user
 
 
+async def require_company_or_admin_access(
+    current_user: Dict[str, Any] = Depends(get_authenticated_user),
+) -> Dict[str, Any]:
+    """Dependency for requiring company OR admin access"""
+    if inspect.iscoroutine(current_user):
+        current_user = await current_user
+
+    if current_user.get("role") not in ["company", "admin"]:
+        raise HTTPException(
+            status_code=403,
+            detail="This endpoint is only accessible by company or admin users",
+        )
+
+    return current_user
+
+
 def validate_user_access(user_id: str):
     """Dependency factory for validating user access to specific resources"""
 

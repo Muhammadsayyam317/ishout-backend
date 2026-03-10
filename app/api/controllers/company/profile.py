@@ -3,8 +3,8 @@ from typing import Any, Dict
 from bson import ObjectId
 from fastapi import HTTPException
 from app.db.connection import get_db
-from app.Schemas.user_model import UserResponse, UserUpdateRequest
-from app.core.security.password import hash_password
+from app.Schemas.user_model import UserResponse, UserUpdateRequest,ChangePasswordRequest
+from app.core.security.password import hash_password,verify_password
 
 async def get_user_profile(user_id: str) -> Dict[str, Any]:
     try:
@@ -68,4 +68,41 @@ async def update_user_profile(
             "contact_person": updated_user.get("contact_person"),
             "phone": updated_user.get("phone"),
         },
+    }
+
+async def change_user_password(
+    user_id: str,
+    request_data: ChangePasswordRequest
+) -> Dict[str, Any]:
+
+    db = get_db()
+    users_collection = db.get_collection("users")
+
+    user = await users_collection.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if not verify_password(request_data.old_password, user.get("password", "")):
+        raise HTTPException(status_code=400, detail="Old password is incorrect")
+
+    if len(request_data.new_password) < 6:
+        raise HTTPException(
+            status_code=400,
+            detail="New password must be at least 6 characters long"
+        )
+
+    hashed_password = hash_password(request_data.new_password)
+
+    await users_collection.update_one(
+        {"_id": ObjectId(user_id)},
+        {
+            "$set": {
+                "password": hashed_password,
+                "updated_at": datetime.now(timezone.utc),
+            }
+        }
+    )
+
+    return {
+        "status_code": 200,
+        "message": "Password updated successfully",
     }

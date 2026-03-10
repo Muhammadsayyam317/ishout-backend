@@ -1,10 +1,11 @@
-from typing import Optional
-from fastapi import APIRouter, HTTPException, Depends, Path
+from typing import Optional, List
+from fastapi import APIRouter, HTTPException, Depends, Path, UploadFile, File, Form
 from app.Schemas.campaign_influencers import (
     CampaignBriefDBResponse,
     CampaignBriefRequest,
     CampaignBriefResponse,
     UpdateCampaignBriefRequest,
+    CampaignBriefLogoUpdateResponse,
 )
 from app.api.controllers.admin.approved_campaign import (
     companyApprovedSingleInfluencer,
@@ -17,7 +18,10 @@ from app.api.controllers.company.all_campaign import (
 from app.api.controllers.company.approved_influencers import (
     ReviewPendingInfluencersByCampaignId,
 )
-from app.middleware.auth_middleware import require_company_user_access
+from app.middleware.auth_middleware import (
+    require_company_user_access,
+    require_company_or_admin_access,
+)
 from app.api.controllers.admin.campaign_controller import (
     create_campaign,
     user_reject_influencers,
@@ -26,17 +30,23 @@ from app.Schemas.campaign import (
     CreateCampaignRequest,
     UserRejectInfluencersRequest,
 )
-from typing import List
 from app.services.whatsapp.send_text import send_message_from_ishout_to_user
 from app.tools.search_influencers import search_influencers
-from app.api.controllers.company.profile import get_user_profile, update_user_profile
+from app.api.controllers.company.profile import (
+    get_user_profile,
+    update_user_profile,
+    change_user_password,
+)
 from app.agents.campaiagncreation.create_campaign import (
     create_campaign_brief,
     get_campaign_brief_by_id,
     get_campaign_briefs,
     update_campaign_brief_service,
-    delete_campaign_brief_service
+    update_campaign_brief_with_files,
+    delete_campaign_brief_service,
+    update_campaign_brief_logo_service,
 )
+import json
 
 router = APIRouter()
 
@@ -62,21 +72,6 @@ async def get_user_campaigns_route(
 ):
     try:
         return await all_campaigns(current_user["user_id"], status, page, page_size)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.put("/campaigns/reject-influencers", tags=["Company"])
-async def reject_influencers_route(
-    request_data: UserRejectInfluencersRequest,
-    current_user: dict = Depends(require_company_user_access),
-):
-    try:
-        return await user_reject_influencers(
-            request_data.campaign_id,
-            request_data.influencer_ids,
-            current_user["user_id"],
-        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -108,13 +103,16 @@ router.add_api_route(
     tags=["Company"],
 )
 
-
 # PROFILE ROUTES
 router.add_api_route(
     path="/update-profile/{user_id}",
     endpoint=update_user_profile,
     methods=["PATCH"],
     tags=["User"],
+)
+
+router.add_api_route(
+    "/change-password/{user_id}", change_user_password, methods=["PATCH"], tags=["User"]
 )
 
 router.add_api_route(
@@ -151,6 +149,7 @@ async def create_campaign_brief_endpoint(request: CampaignBriefRequest):
         user_input=request.user_input, user_id=request.user_id
     )
 
+
 @router.delete("/campaign-brief/{brief_id}", tags=["Company"])
 async def delete_campaign_brief_endpoint(brief_id: str):
     return await delete_campaign_brief_service(brief_id)
@@ -163,9 +162,13 @@ async def delete_campaign_brief_endpoint(brief_id: str):
 )
 async def update_campaign_brief(
     brief_id: str = Path(..., description="ID of the campaign brief to update"),
-    request: UpdateCampaignBriefRequest = None,
+    data: str = Form(
+        ..., description="JSON-encoded UpdateCampaignBriefRequest payload"
+    ),
+    file: Optional[UploadFile] = File(None),
+    current_user: dict = Depends(require_company_or_admin_access),
 ):
-    return await update_campaign_brief_service(brief_id, request)
+    return await update_campaign_brief_with_files(brief_id, data, file)
 
 
 @router.get(
@@ -192,3 +195,19 @@ async def get_campaign_brief_detail_endpoint(id: str):
     No user_id required.
     """
     return await get_campaign_brief_by_id(id)
+
+
+@router.post(
+    "/update-brief-logo/{brief_id}",
+    response_model=CampaignBriefLogoUpdateResponse,
+    tags=["Company"],
+)
+async def update_campaign_brief_logo_endpoint(
+    brief_id: str,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(require_company_user_access),
+):
+    """
+    Update a campaign brief's logo by uploading a new image file.
+    """
+    return await update_campaign_brief_logo_service(brief_id, file)

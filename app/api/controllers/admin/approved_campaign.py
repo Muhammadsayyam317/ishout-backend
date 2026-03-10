@@ -44,6 +44,7 @@ async def approved_campaign(
             "pricing": 1,
             "created_at": 1,
             "updated_at": 1,
+            "brief_id": 1, 
         }
 
         total = await campaigns_collection.count_documents(query)
@@ -91,6 +92,7 @@ async def approved_campaign(
                     "created_at": doc.get("created_at"),
                     "updated_at": doc.get("updated_at"),
                     "logo_url": user_logo_map.get(user_id_str),
+                    "brief_id": doc.get("brief_id"),
                 }
             )
 

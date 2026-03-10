@@ -378,3 +378,31 @@ Use the recent conversation history to keep the tone consistent, confirm that th
 and set the expectation that the brand will follow up with any remaining operational details if needed.
 Do not introduce new terms, prices, or deliverables that were not already agreed in the conversation.
 """
+
+CAMPAIGN_LOGO_PROMPT = """
+Create a premium, photorealistic circular brand logo for a campaign.
+
+Campaign Title: {title}
+Campaign Description: {overview}
+Brand / Influencer Campaign Context: {brand_name_influencer_campaign_brief}
+
+CRITICAL REQUIREMENTS:
+- ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO TYPOGRAPHY - pure visual symbol only
+- Photorealistic, professional corporate identity style
+- NOT cartoon, NOT animated, NOT illustrated - real luxury brand aesthetic
+- Circular emblem design centered on 1024x1024 canvas
+- High-end, premium, sophisticated visual language
+- Think Apple, Nike, Mercedes - iconic symbol only
+- Clean, minimalist, timeless design
+- Professional gradient or solid color palette
+- Suitable for Fortune 500 brand identity
+- Sharp, crisp edges with depth and dimension
+- Metallic, glass, or premium material effects
+- Studio lighting, professional photography quality
+- Symbol must relate to campaign theme through abstract shapes, icons, or imagery
+- Recognizable and memorable at any size
+
+STYLE REFERENCES: Corporate logo design, luxury brand identity, premium product photography, high-end advertising
+
+AVOID: Cartoons, comics, hand-drawn, sketches, childish, playful, text overlays, words, letters
+"""
