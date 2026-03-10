@@ -13,6 +13,9 @@ async def accept_negotiation_node(state: WhatsappNegotiationState):
     state["negotiation_completed"] = True
     # Mark the conversation as handed over / completed for dashboard purposes.
     state["conversation_mode"] = "HUMAN_TAKEOVER"
+    state["human_takeover"] = True
+    # Pause the negotiation agent so further messages don't re-trigger the flow.
+    state["agent_paused"] = True
 
     final_price = state.get("last_offered_price")
     if final_price is None:
@@ -69,6 +72,8 @@ async def accept_negotiation_node(state: WhatsappNegotiationState):
                     "last_offered_price": state.get("last_offered_price"),
                     "next_action": state["next_action"],
                     "conversation_mode": state.get("conversation_mode"),
+                    "human_takeover": state.get("human_takeover"),
+                    "agent_paused": state.get("agent_paused"),
                 }
             },
         )
