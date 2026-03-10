@@ -44,10 +44,7 @@ async def delete_campaign_ById(
 
         if result.deleted_count == 0:
             raise NotFoundException(message="Campaign not found")
-        if generated_result.deleted_count == 0:
-            raise NotFoundException(message="Generated influencers not found")
-        if campaign_influencers_result.deleted_count == 0:
-            raise NotFoundException(message="Campaign influencers not found")
+
         return {"message": "Campaign deleted successfully"}
     except Exception as e:
         raise InternalServerErrorException(
