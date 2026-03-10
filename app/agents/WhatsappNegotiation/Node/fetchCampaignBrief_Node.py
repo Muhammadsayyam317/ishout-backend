@@ -25,25 +25,63 @@ async def fetch_campaign_brief_node(state: WhatsappNegotiationState):
         print("--------------------------------")
         return state
 
-    campaign_id = state.get("campaign_id")
-    if not campaign_id:
-        print(
-            f"{Colors.YELLOW}[fetch_campaign_brief_node] No campaign_id on state; cannot fetch brief"
-        )
-        print("--------------------------------")
-        return state
-
     try:
         db = get_db()
+        # 1) Resolve campaign_id from influencer_id via campaign_influencers
+        influencer_id = state.get("influencer_id")
+        if not influencer_id:
+            print(
+                f"{Colors.YELLOW}[fetch_campaign_brief_node] No influencer_id on state; cannot resolve campaign"
+            )
+            print("--------------------------------")
+            return state
+
+        try:
+            influencer_object_id = ObjectId(str(influencer_id))
+        except Exception:
+            print(
+                f"{Colors.RED}[fetch_campaign_brief_node] Invalid influencer_id on state: {influencer_id}"
+            )
+            print("--------------------------------")
+            return state
+
+        campaign_influencers_collection = db.get_collection("campaign_influencers")
+        influencer_doc: Dict[str, Any] = await campaign_influencers_collection.find_one(
+            {"_id": influencer_object_id}
+        )
+
+        if not influencer_doc:
+            print(
+                f"{Colors.YELLOW}[fetch_campaign_brief_node] No campaign_influencer found for id={influencer_object_id}"
+            )
+            print("--------------------------------")
+            return state
+
+        campaign_id = influencer_doc.get("campaign_id")
+        if not campaign_id:
+            print(
+                f"{Colors.YELLOW}[fetch_campaign_brief_node] Influencer has no campaign_id; skipping brief fetch"
+            )
+            print("--------------------------------")
+            return state
+
+        try:
+            campaign_object_id = (
+                campaign_id
+                if isinstance(campaign_id, ObjectId)
+                else ObjectId(str(campaign_id))
+            )
+        except Exception:
+            print(
+                f"{Colors.RED}[fetch_campaign_brief_node] Invalid campaign_id on influencer doc: {campaign_id}"
+            )
+            print("--------------------------------")
+            return state
+
+        # 2) Fetch campaign and its brief_id
         campaigns_collection = db.get_collection("campaigns")
         campaign_doc: Dict[str, Any] = await campaigns_collection.find_one(
-            {
-                "_id": (
-                    campaign_id
-                    if isinstance(campaign_id, ObjectId)
-                    else ObjectId(str(campaign_id))
-                )
-            }
+            {"_id": campaign_object_id}
         )
 
         if not campaign_doc:
