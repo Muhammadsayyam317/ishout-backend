@@ -171,6 +171,10 @@ Intent rules:
   on price or terms as well (e.g. "that's too low", "not enough for me", "can you do more?", "need a higher rate").
 - REJECT: clear refusal or lack of interest in collaborating at all (e.g. "I'm not interested", "no collaborations",
   "this is not for me"), even if price is mentioned.
+  - Do NOT treat messages that only reject the current price as REJECT (e.g. "I can't work with this rate",
+    "this is too low", "I can't do it for that much") unless the influencer also clearly says they do not want
+    to collaborate at all.
+  - When you are unsure between NEGOTIATE and REJECT, prefer NEGOTIATE so the agent can continue the discussion.
 - ACCEPT: explicit agreement to proposed terms (e.g. "ok deal", "that works", "I agree", "let's do it").
 - QUESTION: asking for missing details.
 - UNCLEAR: vague or ambiguous responses.

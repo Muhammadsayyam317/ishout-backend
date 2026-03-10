@@ -35,6 +35,7 @@ async def generate_reply_node(state: WhatsappNegotiationState):
 
     if campaign_brief:
         # Attach a serialized view of the brief so the model can answer
+        # deliverable/timeline/platform questions accurately.
         brief_snippet = json.dumps(campaign_brief, ensure_ascii=False)
         context_lines.append(
             "Campaign brief JSON (use for questions):"

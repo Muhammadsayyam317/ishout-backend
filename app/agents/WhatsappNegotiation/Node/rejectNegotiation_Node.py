@@ -8,6 +8,11 @@ async def reject_negotiation_node(state: WhatsappNegotiationState):
     print(f"{Colors.GREEN}Entering reject_negotiation_node")
     print("--------------------------------")
     state["negotiation_status"] = "rejected"
+    state["negotiation_completed"] = True
+    state["conversation_mode"] = "HUMAN_TAKEOVER"
+    state["human_takeover"] = True
+    # Pause the negotiation agent so further messages don't re-trigger the flow.
+    state["agent_paused"] = True
     state["final_reply"] = (
         "Thanks for your time! We understand this isn’t a fit at the moment. "
         "We’ll keep you in mind for future campaigns."
@@ -22,6 +27,10 @@ async def reject_negotiation_node(state: WhatsappNegotiationState):
             {
                 "$set": {
                     "negotiation_status": state["negotiation_status"],
+                    "negotiation_completed": state.get("negotiation_completed"),
+                    "conversation_mode": state.get("conversation_mode"),
+                    "human_takeover": state.get("human_takeover"),
+                    "agent_paused": state.get("agent_paused"),
                     "final_reply": state["final_reply"],
                     "next_action": state["next_action"],
                 }
