@@ -40,6 +40,7 @@ class WhatsappNegotiationState(TypedDict):
     name: Optional[str]
     sender_id: Optional[str]
     campaign_id: Optional[str]
+    campaign_brief: Optional[dict]
     conversation_mode: Optional[str]
     human_takeover: Optional[bool]
     negotiation_completed: Optional[bool]
