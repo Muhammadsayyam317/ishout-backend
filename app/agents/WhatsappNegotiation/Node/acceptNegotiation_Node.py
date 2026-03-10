@@ -23,34 +23,53 @@ async def accept_negotiation_node(state: WhatsappNegotiationState):
     else:
         final_price_text = f" at ${final_price:.2f}"
 
-    # If we have a campaign brief, append a short summary to the acceptance message.
+    # If we have a campaign brief, append a structured summary to the acceptance message.
     campaign_brief = state.get("campaign_brief") or {}
     brand_overview = campaign_brief.get("brand_name_influencer_campaign_brief")
     deliverables = campaign_brief.get("deliverables_per_influencer") or []
     timeline = campaign_brief.get("timeline") or []
     hashtags = campaign_brief.get("hashtags_mentions") or []
 
-    brief_parts = []
-    if brand_overview:
-        brief_parts.append(brand_overview)
-    if deliverables:
-        deliverables_text = "; ".join(deliverables)
-        brief_parts.append(f"Key deliverables: {deliverables_text}.")
-    if timeline:
-        timeline_text = "; ".join(timeline)
-        brief_parts.append(f"High-level timeline: {timeline_text}.")
-    if hashtags:
-        hashtags_text = ", ".join(hashtags)
-        brief_parts.append(f"Hashtags and mentions: {hashtags_text}.")
+    has_brief_content = any([brand_overview, deliverables, timeline, hashtags])
 
-    brief_summary = " ".join(brief_parts)
+    if has_brief_content:
+        lines = []
+        # Intro line
+        lines.append(f"Great! We're happy to proceed{final_price_text}.")
+        lines.append("")  # blank line before brief
 
-    if brief_summary:
-        state["final_reply"] = (
-            f"Great! We're happy to proceed{final_price_text}. "
-            f"{brief_summary} "
-            "We'll share any remaining operational details shortly."
+        # Campaign brief heading + overview
+        lines.append("Campaign brief:")
+        if brand_overview:
+            lines.append(brand_overview.strip())
+
+        # Deliverables
+        if deliverables:
+            lines.append("")
+            lines.append("Key deliverables:")
+            for item in deliverables:
+                lines.append(f"- {item}")
+
+        # Timeline
+        if timeline:
+            lines.append("")
+            lines.append("Timeline:")
+            for item in timeline:
+                lines.append(f"- {item}")
+
+        # Hashtags / mentions
+        if hashtags:
+            lines.append("")
+            lines.append("Hashtags and mentions:")
+            for tag in hashtags:
+                lines.append(f"- {tag}")
+
+        lines.append("")
+        lines.append(
+            "We'll share any remaining operational details and next steps shortly."
         )
+
+        state["final_reply"] = "\n".join(lines)
     else:
         state["final_reply"] = (
             f"Great! We're happy to proceed{final_price_text}. "
