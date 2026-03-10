@@ -34,23 +34,16 @@ async def fetch_campaign_brief_node(state: WhatsappNegotiationState):
         return state
 
     try:
-        campaign_object_id = (
-            campaign_id
-            if isinstance(campaign_id, ObjectId)
-            else ObjectId(str(campaign_id))
-        )
-    except Exception:
-        print(
-            f"{Colors.RED}[fetch_campaign_brief_node] Invalid campaign_id on state: {campaign_id}"
-        )
-        print("--------------------------------")
-        return state
-
-    try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
         campaign_doc: Dict[str, Any] = await campaigns_collection.find_one(
-            {"_id": campaign_object_id}
+            {
+                "_id": (
+                    campaign_id
+                    if isinstance(campaign_id, ObjectId)
+                    else ObjectId(str(campaign_id))
+                )
+            }
         )
 
         if not campaign_doc:
@@ -67,25 +60,13 @@ async def fetch_campaign_brief_node(state: WhatsappNegotiationState):
             )
             print("--------------------------------")
             return state
-
-        try:
-            brief_object_id = (
-                brief_id if isinstance(brief_id, ObjectId) else ObjectId(str(brief_id))
-            )
-        except Exception:
-            print(
-                f"{Colors.RED}[fetch_campaign_brief_node] Invalid brief_id on campaign: {brief_id}"
-            )
-            print("--------------------------------")
-            return state
-
         briefs_collection = db.get_collection("CampaignBriefGeneration")
         brief_doc: Dict[str, Any] = await briefs_collection.find_one(
-            {"_id": brief_object_id}
+            {"_id": str(brief_id)}
         )
         if not brief_doc:
             print(
-                f"{Colors.YELLOW}[fetch_campaign_brief_node] No brief found for id={brief_object_id}"
+                f"{Colors.YELLOW}[fetch_campaign_brief_node] No brief found for id={brief_id}"
             )
             print("--------------------------------")
             return state
@@ -95,7 +76,7 @@ async def fetch_campaign_brief_node(state: WhatsappNegotiationState):
         state["campaign_brief"] = brief_payload
 
         print(
-            f"{Colors.CYAN}[fetch_campaign_brief_node] Attached campaign_brief to state for campaign_id={campaign_object_id}"
+            f"{Colors.CYAN}[fetch_campaign_brief_node] Attached campaign_brief to state for campaign_id={campaign_id}"
         )
         print("--------------------------------")
         return state
