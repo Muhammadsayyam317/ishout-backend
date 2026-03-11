@@ -148,7 +148,7 @@ async def get_all_campaigns(
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
-        users_collection = db.get_collection("users")
+        briefs_collection = db.get_collection("CampaignBriefGeneration")
 
         query = {}
 
@@ -190,28 +190,27 @@ async def get_all_campaigns(
             .to_list(length=None)
         )
 
-        # Collect unique user_ids
-        user_ids = list(
-            {
-                campaign.get("user_id")
-                for campaign in campaigns
-                if campaign.get("user_id")
+        # Preload campaign brief logos
+        brief_ids = [
+            campaign.get("brief_id")
+            for campaign in campaigns
+            if campaign.get("brief_id")
+        ]
+        brief_logo_map = {}
+        if brief_ids:
+            briefs = await briefs_collection.find(
+                {"_id": {"$in": [str(bid) for bid in brief_ids]}}
+            ).to_list(length=None)
+            brief_logo_map = {
+                str(doc["_id"]): (doc.get("response") or {}).get("campaign_logo_url")
+                for doc in briefs
             }
-        )
-        object_user_ids = []
-        for uid in user_ids:
-            try:
-                object_user_ids.append(ObjectId(uid))
-            except Exception:
-                continue
 
-        users = await users_collection.find(
-            {"_id": {"$in": object_user_ids}}, {"logo_url": 1}
-        ).to_list(length=None)
-
-        user_logo_map = {str(user["_id"]): user.get("logo_url") for user in users}
         for campaign in campaigns:
-            campaign["logo_url"] = user_logo_map.get(campaign.get("user_id"))
+            brief_id = campaign.get("brief_id")
+            campaign["campaign_logo_url"] = (
+                brief_logo_map.get(str(brief_id)) if brief_id else None
+            )
         campaigns = [convert_objectid(doc) for doc in campaigns]
 
         total_pages = (total_count + page_size - 1) // page_size
