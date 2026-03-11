@@ -18,7 +18,8 @@ async def get_all_negotiation_controls(
         total_count = await collection.count_documents({})
         negotiation_controls = (
             await collection.find({})
-            .sort("created_at", -1)
+            # Sort by latest activity (most recently updated) first
+            .sort("_updated_at", -1)
             .skip(skip)
             .limit(page_size)
             .to_list(length=None)
