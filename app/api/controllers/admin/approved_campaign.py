@@ -67,13 +67,6 @@ async def approved_campaign(
             except Exception:
                 continue
 
-        users = await users_collection.find(
-            {"_id": {"$in": object_user_ids}},
-            {"logo_url": 1},
-        ).to_list(length=None)
-
-        user_logo_map = {str(user["_id"]): user.get("logo_url") for user in users}
-
         # Preload campaign brief logos
         brief_ids = [doc.get("brief_id") for doc in docs if doc.get("brief_id")]
         brief_logo_map = {}
@@ -105,7 +98,6 @@ async def approved_campaign(
                     "limit": doc.get("limit"),
                     "created_at": doc.get("created_at"),
                     "updated_at": doc.get("updated_at"),
-                    "logo_url": user_logo_map.get(user_id_str),
                     "brief_id": brief_id,
                     "campaign_logo_url": brief_logo_map.get(str(brief_id))
                     if brief_id
