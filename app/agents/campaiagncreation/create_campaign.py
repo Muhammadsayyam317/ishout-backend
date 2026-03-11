@@ -79,10 +79,17 @@ async def create_campaign_brief(user_input: str, user_id: str) -> CampaignBriefR
     user_doc = await validate_user(user_id)
 
     try:
+        # Inject today's date into the instructions so the model can generate future-oriented timelines.
+        today_str = datetime.now(timezone.utc).date().isoformat()
+        instructions = (
+            CREATECAMPAIGNBREAKDOWN_PROMPT
+            + f"\n\nToday's date is {today_str}. When generating the timeline, prefer milestones that are on or after today and avoid dates that are clearly in the past."
+        )
+
         result = await Runner.run(
             Agent(
                 name="create_campaign",
-                instructions=CREATECAMPAIGNBREAKDOWN_PROMPT,
+                instructions=instructions,
                 input_guardrails=[CampaignCreationInputGuardrail],
                 output_guardrails=[CampaignCreationOutputGuardrail],
                 output_type=CampaignBriefResponse,
