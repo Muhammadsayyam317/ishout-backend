@@ -165,10 +165,13 @@ async def update_campaign_brief(
     data: str = Form(
         ..., description="JSON-encoded UpdateCampaignBriefRequest payload"
     ),
-    file: Optional[UploadFile] = File(None),
+    files: Optional[List[UploadFile]] = File(
+        default=None,
+        description="Optional list of product images to upload",
+    ),
     current_user: dict = Depends(require_company_or_admin_access),
 ):
-    return await update_campaign_brief_with_files(brief_id, data, file)
+    return await update_campaign_brief_with_files(brief_id, data, files)
 
 
 @router.get(

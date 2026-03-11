@@ -192,7 +192,7 @@ async def update_campaign_brief_service(
 async def update_campaign_brief_with_files(
     brief_id: str,
     data: str,
-    file: Optional[UploadFile] = None,
+    files: Optional[List[UploadFile]] = None,
 ) -> CampaignBriefResponse:
 
     try:
@@ -201,17 +201,21 @@ async def update_campaign_brief_with_files(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid brief payload: {e}")
 
-    if file:
-        file_bytes = await validate_and_read_image_file(file)
-        url = await upload_file_to_s3_with_prefix(
-            prefix_folder="campaign_products",
-            object_id=brief_id,
-            file=file,
-            file_bytes=file_bytes,
-        )
-        
+    # Handle optional multiple product image uploads
+    if files:
+        new_urls: List[str] = []
+        for file in files:
+            file_bytes = await validate_and_read_image_file(file)
+            url = await upload_file_to_s3_with_prefix(
+                prefix_folder="campaign_products",
+                object_id=brief_id,
+                file=file,
+                file_bytes=file_bytes,
+            )
+            new_urls.append(url)
+
         existing_urls = update_request.product_image_urls or []
-        update_request.product_image_urls = existing_urls + [url]
+        update_request.product_image_urls = existing_urls + new_urls
 
     return await update_campaign_brief_service(brief_id, update_request)
 

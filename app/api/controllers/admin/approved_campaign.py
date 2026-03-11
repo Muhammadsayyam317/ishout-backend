@@ -26,6 +26,7 @@ async def approved_campaign(
             config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS
         )
         users_collection = db.get_collection("users")
+        briefs_collection = db.get_collection("CampaignBriefGeneration")
 
         status_value = CampaignStatus.APPROVED
         query = {"status": status_value}
@@ -72,9 +73,22 @@ async def approved_campaign(
         ).to_list(length=None)
 
         user_logo_map = {str(user["_id"]): user.get("logo_url") for user in users}
+
+        # Preload campaign brief logos
+        brief_ids = [doc.get("brief_id") for doc in docs if doc.get("brief_id")]
+        brief_logo_map = {}
+        if brief_ids:
+            briefs = await briefs_collection.find(
+                {"_id": {"$in": [str(bid) for bid in brief_ids]}}
+            ).to_list(length=None)
+            brief_logo_map = {
+                str(doc["_id"]): (doc.get("response") or {}).get("campaign_logo_url")
+                for doc in briefs
+            }
         formatted = []
         for doc in docs:
             user_id_str = str(doc.get("user_id")) if doc.get("user_id") else None
+            brief_id = doc.get("brief_id")
 
             formatted.append(
                 {
@@ -92,7 +106,10 @@ async def approved_campaign(
                     "created_at": doc.get("created_at"),
                     "updated_at": doc.get("updated_at"),
                     "logo_url": user_logo_map.get(user_id_str),
-                    "brief_id": doc.get("brief_id"),
+                    "brief_id": brief_id,
+                    "campaign_logo_url": brief_logo_map.get(str(brief_id))
+                    if brief_id
+                    else None,
                 }
             )
 
