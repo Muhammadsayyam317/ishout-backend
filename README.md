@@ -1,6 +1,25 @@
 # iShout Backend
 
-API backend for finding and managing social media influencers across WhatsApp and Instagram. Powers AI-driven onboarding, negotiation, and campaign creation.
+API backend for finding and managing social media influencers across WhatsApp and Instagram. Powers AI-driven onboarding, negotiation, campaign creation, and brief generation.
+
+---
+
+## AI Agents
+
+| Agent | Purpose |
+|-------|---------|
+| **WhatsApp Onboarding** | Onboard influencers via WhatsApp – verify user, collect requirements, create campaign |
+| **WhatsApp Negotiation** | Negotiate with influencers on WhatsApp – intent classification, pricing, counter-offer, accept/reject |
+| **Instagram** | Handle Instagram DMs – pricing rules, negotiation, AI replies |
+| **Campaign Creation** | Create campaigns from user input – store briefs, generate logos |
+| **Brief Generation** | Generate structured campaign briefs from natural language prompts |
+
+---
+
+## Meta Integration
+
+- **WhatsApp** – Webhooks at `/api/meta/whatsapp-webhook` for incoming messages
+- **Instagram** – Webhooks at `/api/meta/meta` for DMs and conversations
 
 ---
 
@@ -38,8 +57,8 @@ sequenceDiagram
 ```
 
 1. **Connect to MongoDB** – Database connection established
-2. **Initialize Redis** – Session storage for LangGraph checkpoints
-3. **Compile LangGraph agents** – WhatsApp onboarding + negotiation graphs ready
+2. **Initialize Redis** – Session storage for LangGraph checkpoints (WhatsApp, Negotiation)
+3. **Compile LangGraph agents** – WhatsApp onboarding, WhatsApp negotiation graphs ready
 
 ### Request Flow
 
@@ -64,8 +83,8 @@ flowchart TD
     B --> C[Save message to DB]
     C --> D[Broadcast to WebSocket]
     D --> E{Negotiation?}
-    E -->|Yes| F[Negotiation Graph]
-    E -->|No| G[WhatsApp Onboarding Graph]
+    E -->|Yes| F[WhatsApp Negotiation Agent]
+    E -->|No| G[WhatsApp Onboarding Agent]
     F --> H[Send reply]
     G --> H
 ```
@@ -74,8 +93,43 @@ flowchart TD
 2. Extract message, thread_id, profile
 3. Save message to MongoDB
 4. Broadcast to Admin WebSocket
-5. If negotiation thread → **Negotiation Graph**; else → **WhatsApp Onboarding Graph**
+5. If negotiation thread → **WhatsApp Negotiation Agent**; else → **WhatsApp Onboarding Agent**
 6. Agent sends reply
+
+### Instagram Webhook Flow
+
+```mermaid
+flowchart TD
+    A[POST /api/meta/meta] --> B[handle_webhook]
+    B --> C[Instagram Agent]
+    C --> D[normalize_state]
+    D --> E[store_conversation]
+    E --> F[analyze_intent]
+    F --> G[ask_missing_info]
+    G --> H{route}
+    H -->|Need pricing| I[fetch_pricing_rules]
+    H -->|Ready| J[generate_ai_reply]
+    I --> K[pricing_negotiation]
+    K --> L{result}
+    L -->|CONFIRMED| M[finalize_negotiation]
+    L -->|MANUAL| N[manual_negotiation_required]
+    M --> J
+    N --> J
+    J --> O[send_reply]
+```
+
+### Campaign & Brief Generation Flow
+
+```mermaid
+flowchart LR
+    A[User input] --> B[Brief Generation Agent]
+    B --> C[create_campaign_brief]
+    C --> D[CampaignBriefResponse]
+    D --> E[Store in MongoDB]
+    E --> F[generate_campaign_logo]
+    F --> G[Campaign Creation Agent]
+    G --> H[Create/update campaign]
+```
 
 ### WhatsApp Onboarding Graph
 
@@ -122,11 +176,12 @@ ishout-backend/
 │   │   ├── routes/             # auth, company, admin, meta, ws
 │   │   └── controllers/
 │   │
-│   ├── agents/                 # LangGraph AI agents
-│   │   ├── Whatsapp/           # WhatsApp onboarding
-│   │   ├── WhatsappNegotiation/# Influencer negotiation
-│   │   ├── Instagram/          # Instagram DMs & pricing
-│   │   └── campaiagncreation/  # Campaign creation
+│   ├── agents/                 # AI agents
+│   │   ├── Whatsapp/           # WhatsApp Onboarding Agent
+│   │   ├── WhatsappNegotiation/# WhatsApp Negotiation Agent
+│   │   ├── Instagram/          # Instagram Agent (DMs, pricing)
+│   │   ├── campaiagncreation/  # Campaign Creation & Brief Generation
+│   │   └── flow/
 │   │
 │   ├── core/                   # Redis, errors, security
 │   ├── db/                     # MongoDB connection
@@ -134,7 +189,7 @@ ishout-backend/
 │   ├── middleware/             # Auth middleware (JWT)
 │   ├── model/                  # Data models
 │   ├── Schemas/                # Pydantic schemas
-│   ├── services/               # WhatsApp, IG, email, etc.
+│   ├── services/               # Meta (WhatsApp, IG), email, etc.
 │   └── tools/                  # Influencer search tools
 │
 ├── nginx/
@@ -150,7 +205,7 @@ ishout-backend/
 | `/api/auth` | Register, login, forgot-password, verify-email |
 | `/api/company` | Campaigns, briefs, influencer search, messaging |
 | `/api/admin` | Campaign management, users, WhatsApp/IG sessions, negotiations |
-| `/api/meta` | WhatsApp & Instagram webhooks |
+| `/api/meta` | Meta integration – WhatsApp webhook, Instagram webhook |
 | `/api/ws` | Admin WebSocket notifications |
 
 ---
