@@ -1,11 +1,36 @@
+# Setup Guide
+
+## Mac / Linux
+
+# Create virtual environment (use your installed Python version)
+python3 -m venv .venv
+
+# Activate it
+source .venv/bin/activate
+
+# Upgrade pip
+python -m pip install --upgrade pip
+
+# Install requirements
+pip install -r requirements.txt
+
+# Run the app
+uvicorn main:app --reload
+
+
+## Windows (PowerShell)
+
 # Create virtual environment (use your installed Python version)
 py -m venv .venv
 
 # Activate it
 .\.venv\Scripts\Activate.ps1
 
-# Upgrade pip and 
+# Upgrade pip
 python -m pip install --upgrade pip
 
-# install requirements txt dependencies
+# Install requirements
 pip install -r requirements.txt
+
+# Run the app
+uvicorn main:app --reload
