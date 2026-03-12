@@ -60,6 +60,7 @@ async def all_campaigns(
             brief_id = campaign.get("brief_id")
             campaign_dict = {
                 "campaign_id": str(campaign["_id"]),
+                "brief_id": brief_id,
                 "name": campaign["name"],
                 "platform": campaign["platform"],
                 "category": campaign["category"],
