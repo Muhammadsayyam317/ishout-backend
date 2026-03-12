@@ -37,6 +37,7 @@ async def get_all_users(page: int = 1, page_size: int = 10) -> Dict[str, Any]:
                 status=UserStatus(user["status"]),
                 created_at=user["created_at"],
                 updated_at=user["updated_at"],
+                logo_url=user.get("logo_url"),
             ).model_dump()
             for user in user
         ]
@@ -88,6 +89,7 @@ async def update_user_status(user_id: str, status: str) -> Dict[str, Any]:
             phone=updated_user["phone"],
             role=UserRole(updated_user["role"]),
             status=UserStatus(updated_user["status"]),
+            logo_url=updated_user.get("logo_url"),
         ).model_dump()
         return {
             "status_code": 200,
@@ -182,7 +184,9 @@ async def Whatsapp_Users_Sessions_management(
                     "status": (
                         "COMPLETED"
                         if user.get("done")
-                        else "WAITING" if user.get("reply_sent") else "ACTIVE"
+                        else "WAITING"
+                        if user.get("reply_sent")
+                        else "ACTIVE"
                     ),
                 }
             )

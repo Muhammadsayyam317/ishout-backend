@@ -56,7 +56,10 @@ from app.services.instagram.list_on_conversations import (
     instagram_conversations_list,
 )
 from app.services.negotiation.InitialMessage import NegotiationInitialMessage
-from app.services.negotiation.negotiation import get_all_negotiation_controls
+from app.services.negotiation.negotiation import (
+    get_all_negotiation_controls,
+    get_negotiation_control_detail,
+)
 from app.tools.regenerate_influencer import reject_and_regenerate
 
 
@@ -352,3 +355,18 @@ async def negotiation_controls_route(
         return await get_all_negotiation_controls(page, page_size)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/negotiation-chat-detail", tags=["Admin"])
+async def negotiation_control_detail_route(_id: str):
+    """
+    Get a single negotiation control's key details by _id:
+    - name
+    - phone
+    - history
+    - conversation_mode
+    """
+    detail = await get_negotiation_control_detail(_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail="Negotiation control not found")
+    return detail

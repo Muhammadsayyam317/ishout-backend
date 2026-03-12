@@ -24,7 +24,7 @@ class CompanyRegistrationRequest(BaseModel):
     password: str
     phone: str
 
-# ---- contact_person ----
+    # ---- contact_person ----
     @field_validator("contact_person")
     @classmethod
     def validate_contact_person(cls, value: str) -> str:
@@ -58,7 +58,9 @@ class CompanyRegistrationRequest(BaseModel):
         normalized = normalize_phone(value)
 
         if not normalized:
-            raise ValueError("Invalid phone number")
+            raise ValueError(
+                "Invalid phone number. Must be 7-15 digits and not start with '+'"
+            )
 
         return normalized
 
@@ -76,7 +78,8 @@ class UserResponse(BaseModel):
     phone: str
     role: UserRole
     status: UserStatus
-    
+    logo_url: Optional[str] = None 
+
 
 class LoginResponse(BaseModel):
     access_token: str
@@ -102,7 +105,7 @@ class UserUpdateRequest(BaseModel):
     company_name: Optional[str] = None
     contact_person: Optional[str] = None
     phone: Optional[str] = None
-    password: Optional[str] = None  
+    password: Optional[str] = None
 
     @field_validator("password")
     @classmethod
@@ -110,7 +113,7 @@ class UserUpdateRequest(BaseModel):
         if len(value) < 6:
             raise ValueError("Password must be at least 6 characters long")
         return value
-    
+
     @field_validator("phone")
     @classmethod
     def validate_phone(cls, value: str) -> str:
@@ -125,6 +128,27 @@ class UserUpdateRequest(BaseModel):
         return normalized
 
 
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
+
+    @field_validator("old_password")
+    @classmethod
+    def validate_old_password(cls, value: str) -> str:
+        if not value or not value.strip():
+            raise ValueError("Old password is required")
+        return value
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, value: str) -> str:
+        if not value or not value.strip():
+            raise ValueError("New password is required")
+
+        if len(value) < 6:
+            raise ValueError("New password must be at least 6 characters long")
+
+        return value
 
 class UserCampaignResponse(BaseModel):
     campaign_id: str

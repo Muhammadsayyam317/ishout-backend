@@ -198,6 +198,7 @@ You are an AI assistant that creates a detailed influencer campaign breakdown fo
 
 - Generate meaningful content for all campaign sections (overview, objectives, target audience, influencer profile, key campaign message, content direction, deliverables, hashtags, timeline, approval process, KPIs, usage rights, dos/donts) based on the user prompt.
 - For the following fields ONLY: platform, category, limit, followers, country — extract values only if explicitly mentioned in the user input. If not mentioned, return empty array [] (for lists) or null (for limit/followers).
+- For the "timeline" field, use milestones that are in the present or future relative to now. Do NOT generate dates that are obviously in the past; if you need specific dates, choose reasonable upcoming dates instead of outdated ones.
 
 Return ONLY a valid JSON object.
 
@@ -377,4 +378,32 @@ Generate a WhatsApp negotiation reply for completing the negotiation with the in
 Use the recent conversation history to keep the tone consistent, confirm that the negotiation is complete,
 and set the expectation that the brand will follow up with any remaining operational details if needed.
 Do not introduce new terms, prices, or deliverables that were not already agreed in the conversation.
+"""
+
+CAMPAIGN_LOGO_PROMPT = """
+Create a premium, photorealistic circular brand logo for a campaign.
+
+Campaign Title: {title}
+Campaign Description: {overview}
+Brand / Influencer Campaign Context: {brand_name_influencer_campaign_brief}
+
+CRITICAL REQUIREMENTS:
+- ABSOLUTELY NO TEXT, NO LETTERS, NO WORDS, NO TYPOGRAPHY - pure visual symbol only
+- Photorealistic, professional corporate identity style
+- NOT cartoon, NOT animated, NOT illustrated - real luxury brand aesthetic
+- Circular emblem design centered on 1024x1024 canvas
+- High-end, premium, sophisticated visual language
+- Think Apple, Nike, Mercedes - iconic symbol only
+- Clean, minimalist, timeless design
+- Professional gradient or solid color palette
+- Suitable for Fortune 500 brand identity
+- Sharp, crisp edges with depth and dimension
+- Metallic, glass, or premium material effects
+- Studio lighting, professional photography quality
+- Symbol must relate to campaign theme through abstract shapes, icons, or imagery
+- Recognizable and memorable at any size
+
+STYLE REFERENCES: Corporate logo design, luxury brand identity, premium product photography, high-end advertising
+
+AVOID: Cartoons, comics, hand-drawn, sketches, childish, playful, text overlays, words, letters
 """

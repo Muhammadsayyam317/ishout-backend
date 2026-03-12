@@ -19,6 +19,7 @@ class CreateCampaignRequest(BaseModel):
     limit: Optional[int] = 10
     company_name: Optional[str] = None
     generated: Optional[bool] = False
+    brief_id: Optional[str] = None
 
 
 class CampaignResponse(BaseModel):

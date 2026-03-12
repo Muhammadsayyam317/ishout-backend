@@ -80,6 +80,11 @@ class CampaignBriefResponse(BaseModel):
     followers: Optional[str] = None
     country: List[str] = []
 
+    product_image_urls: Optional[List[str]] = None
+    video_links: Optional[List[str]] = None
+
+    campaign_logo_url: Optional[str] = None
+
 class CampaignBriefDBResponse(BaseModel):
     id: str
     user_id: str
@@ -90,7 +95,14 @@ class CampaignBriefDBResponse(BaseModel):
     regenerated_from: Optional[str] = None
     created_at: Optional[datetime] = None
 
+
+class CampaignBriefLogoUpdateResponse(BaseModel):
+    message: str
+    logo_url: str
+
 class UpdateCampaignBriefRequest(BaseModel):
+    title: Optional[str] = None
+    brand_name_influencer_campaign_brief: Optional[str] = None
     campaign_overview: Optional[List[str]] = None
     campaign_objectives: Optional[List[str]] = None
     target_audience: Optional[List[str]] = None
@@ -104,3 +116,6 @@ class UpdateCampaignBriefRequest(BaseModel):
     kpis_success_metrics: Optional[List[str]] = None
     usage_rights: Optional[List[str]] = None
     dos_donts: Optional[List[str]] = None
+
+    product_image_urls: Optional[List[str]] = None
+    video_links: Optional[List[str]] = None

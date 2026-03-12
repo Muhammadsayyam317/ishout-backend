@@ -20,6 +20,7 @@ async def all_campaigns(
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
+        briefs_collection = db.get_collection("CampaignBriefGeneration")
         query = {"user_id": user_id}
 
         if status:
@@ -37,11 +38,29 @@ async def all_campaigns(
             .to_list(length=page_size)
         )
 
+        # Preload brief logo URLs for campaigns that have a brief_id
+        brief_ids = [
+            campaign.get("brief_id")
+            for campaign in campaigns
+            if campaign.get("brief_id")
+        ]
+        brief_logo_map = {}
+        if brief_ids:
+            briefs = await briefs_collection.find(
+                {"_id": {"$in": [str(bid) for bid in brief_ids]}}
+            ).to_list(length=None)
+            brief_logo_map = {
+                str(doc["_id"]): (doc.get("response") or {}).get("campaign_logo_url")
+                for doc in briefs
+            }
+
         user_campaigns = []
         for campaign in campaigns:
             campaign = convert_objectid(campaign)
+            brief_id = campaign.get("brief_id")
             campaign_dict = {
                 "campaign_id": str(campaign["_id"]),
+                "brief_id": brief_id,
                 "name": campaign["name"],
                 "platform": campaign["platform"],
                 "category": campaign["category"],
@@ -54,6 +73,7 @@ async def all_campaigns(
                 ),
                 "created_at": campaign["created_at"],
                 "updated_at": campaign["updated_at"],
+                "campaign_logo_url": brief_logo_map.get(str(brief_id)) if brief_id else None,
             }
             user_campaigns.append(campaign_dict)
 

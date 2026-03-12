@@ -15,7 +15,10 @@ from app.Schemas.campaign import (
     CampaignStatusUpdateRequest,
     CampaignStatus,
 )
-from app.Schemas.influencers import AddInfluencerNumberRequest, FindInfluencerRequest
+from app.Schemas.influencers import (
+    FindInfluencerRequest,
+    UpdateCampaignInfluencerRequest,
+)
 from app.core.exception import (
     BadRequestException,
     InternalServerErrorException,
@@ -122,6 +125,7 @@ async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]
             "status": CampaignStatus.PENDING,
             "limit": request_data.limit,
             "generated": False,
+            "brief_id": request_data.brief_id,
             "created_at": datetime.now(timezone.utc),
             "updated_at": datetime.now(timezone.utc),
         }
@@ -144,7 +148,10 @@ async def get_all_campaigns(
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaigns")
+        briefs_collection = db.get_collection("CampaignBriefGeneration")
+
         query = {}
+
         if status:
             try:
                 valid_status = {
@@ -154,16 +161,19 @@ async def get_all_campaigns(
                     CampaignStatus.COMPLETED,
                     CampaignStatus.REJECTED,
                 }
+
                 if status not in valid_status and status not in {
                     s.value for s in valid_status
                 }:
                     raise BadRequestException(
                         message="Invalid status. Use pending, processing, approved, completed, or rejected.",
                     )
+
                 normalized = (
                     status.value if isinstance(status, CampaignStatus) else str(status)
                 )
                 query["status"] = normalized
+
             except Exception as e:
                 raise BadRequestException(
                     message=f"Invalid status: {str(e)}",
@@ -171,6 +181,7 @@ async def get_all_campaigns(
 
         skip = (page - 1) * page_size
         total_count = await campaigns_collection.count_documents(query)
+
         campaigns = (
             await campaigns_collection.find(query)
             .sort("created_at", -1)
@@ -178,7 +189,30 @@ async def get_all_campaigns(
             .limit(page_size)
             .to_list(length=None)
         )
+
+        # Preload campaign brief logos
+        brief_ids = [
+            campaign.get("brief_id")
+            for campaign in campaigns
+            if campaign.get("brief_id")
+        ]
+        brief_logo_map = {}
+        if brief_ids:
+            briefs = await briefs_collection.find(
+                {"_id": {"$in": [str(bid) for bid in brief_ids]}}
+            ).to_list(length=None)
+            brief_logo_map = {
+                str(doc["_id"]): (doc.get("response") or {}).get("campaign_logo_url")
+                for doc in briefs
+            }
+
+        for campaign in campaigns:
+            brief_id = campaign.get("brief_id")
+            campaign["campaign_logo_url"] = (
+                brief_logo_map.get(str(brief_id)) if brief_id else None
+            )
         campaigns = [convert_objectid(doc) for doc in campaigns]
+
         total_pages = (total_count + page_size - 1) // page_size
 
         return {
@@ -209,7 +243,6 @@ async def AdminApprovedSingleInfluencer(
         influencer_id_str = request_data.influencer_id
         influencer_id_obj = ObjectId(request_data.influencer_id)
         is_admin_approved = request_data.status == CampaignInfluencerStatus.APPROVED
-
         update_fields = {
             "username": request_data.username,
             "picture": request_data.picture,
@@ -251,7 +284,6 @@ async def AdminApprovedSingleInfluencer(
                     "company_approved": False,
                 }
             )
-
         result = await generated_collection.update_one(
             {
                 "campaign_id": campaign_id,
@@ -266,12 +298,10 @@ async def AdminApprovedSingleInfluencer(
                 }
             },
         )
-
         if result.matched_count == 0:
             raise NotFoundException(
                 message="Generated influencer not found",
             )
-
         return {
             "message": "Influencer approved and synced successfully",
         }
@@ -284,87 +314,69 @@ async def AdminApprovedSingleInfluencer(
         )
 
 
-async def storeInfluencerNumber(
-    request_data: AddInfluencerNumberRequest,
-):
+async def storeInfluencerNumber(request_data: UpdateCampaignInfluencerRequest):
     try:
         db = get_db()
-        instagram_collection = db.get_collection(
-            config.MONGODB_ATLAS_COLLECTION_INSTAGRAM
+        collection = db.get_collection("campaign_influencers")
+        try:
+            campaign_object_id = ObjectId(request_data.campaign_influencer_id)
+        except Exception:
+            raise HTTPException(
+                status_code=400, detail="Invalid campaign_influencer_id"
+            )
+        update_payload = {
+            "phone_number": request_data.phone_number,
+            "max_price": request_data.max_price,
+            "min_price": request_data.min_price,
+            "updated_at": datetime.now(timezone.utc),
+        }
+        update_payload = {k: v for k, v in update_payload.items() if v is not None}
+        if not update_payload:
+            raise HTTPException(status_code=400, detail="No fields provided for update")
+        result = await collection.update_one(
+            {"_id": campaign_object_id},
+            {"$set": update_payload},
         )
-        tiktok_collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_TIKTOK)
-        youtube_collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_YOUTUBE)
-        if request_data.platform == "instagram":
-            result = await instagram_collection.insert_one(
-                {
-                    "influencer_id": ObjectId(request_data.influencer_id),
-                    "phone_number": request_data.phone_number,
-                }
-            )
-        elif request_data.platform == "tiktok":
-            result = await tiktok_collection.insert_one(
-                {
-                    "influencer_id": ObjectId(request_data.influencer_id),
-                    "phone_number": request_data.phone_number,
-                }
-            )
-        elif request_data.platform == "youtube":
-            result = await youtube_collection.insert_one(
-                {
-                    "influencer_id": ObjectId(request_data.influencer_id),
-                    "phone_number": request_data.phone_number,
-                }
-            )
-        if result.inserted_id:
-            return {"message": "Influencer number stored successfully"}
-        else:
-            raise NotFoundException(message="Failed to store influencer number")
+
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Campaign influencer not found")
+
+        return {
+            "success": True,
+            "message": "Campaign influencer updated successfully",
+            "campaign_influencer_id": request_data.campaign_influencer_id,
+        }
+
     except HTTPException:
         raise
     except Exception as e:
         raise InternalServerErrorException(
-            message=f"Error in store influencer number: {str(e)}"
+            message=f"Error updating campaign influencer: {str(e)}"
         ) from e
 
 
-async def add_influencer_Number(
-    request_data: AddInfluencerNumberRequest,
-    background_tasks: BackgroundTasks,
-):
+async def add_influencer_Number(request_data: UpdateCampaignInfluencerRequest):
     try:
         db = get_db()
         campaigns_collection = db.get_collection("campaign_influencers")
-        campaign = await campaigns_collection.find_one(
-            {"influencer_id": ObjectId(request_data.influencer_id)}
-        )
-        if not campaign:
-            raise NotFoundException(message="Influencer not found")
-        campaign["phone_number"] = request_data.phone_number
-        result = await campaigns_collection.update_one(
-            {"influencer_id": ObjectId(request_data.influencer_id)},
-            {
-                "$set": {
-                    "phone_number": request_data.phone_number,
-                    "max_price": request_data.max_price,
-                    "min_price": request_data.min_price,
-                    "updated_at": datetime.now(timezone.utc),
-                }
-            },
-        )
-        if result.modified_count == 0:
-            raise HTTPException(status_code=404, detail="Failed to update influencer")
-        if request_data.phone_number and request_data.platform:
-            background_tasks.add_task(
-                storeInfluencerNumber,
-                request_data,
-            )
-        return {
-            "message": "Influencer details updated successfully",
-            "influencer_id": request_data.influencer_id,
+        campaign_object_id = ObjectId(request_data.campaign_influencer_id)
+        update_payload = {
             "phone_number": request_data.phone_number,
-            "platform": request_data.platform,
             "max_price": request_data.max_price,
             "min_price": request_data.min_price,
+            "updated_at": datetime.now(timezone.utc),
+        }
+        update_payload = {k: v for k, v in update_payload.items() if v is not None}
+        result = await campaigns_collection.update_one(
+            {"_id": campaign_object_id},
+            {"$set": update_payload},
+        )
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Campaign influencer not found")
+        return {
+            "success": True,
+            "message": "Influencer updated successfully",
+            "campaign_influencer_id": request_data.campaign_influencer_id,
         }
     except HTTPException:
         raise
@@ -695,7 +707,7 @@ async def company_approved_campaign_influencers(
     try:
         db = get_db()
         collection = db.get_collection("campaign_influencers")
-        base_query = {
+        query = {
             "campaign_id": campaign_object_id,
             "admin_approved": True,
             "company_approved": True,
@@ -703,7 +715,7 @@ async def company_approved_campaign_influencers(
         }
 
         cursor = (
-            collection.find(base_query)
+            collection.find(query)
             .sort("updated_at", -1)
             .skip((page - 1) * page_size)
             .limit(page_size)
@@ -711,8 +723,7 @@ async def company_approved_campaign_influencers(
 
         influencers = await cursor.to_list(length=page_size)
         influencers = [convert_objectid(doc) for doc in influencers]
-
-        total = await collection.count_documents(base_query)
+        total = await collection.count_documents(query)
         total_pages = (total + page_size - 1) // page_size
 
         return {

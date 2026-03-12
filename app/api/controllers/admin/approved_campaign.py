@@ -25,8 +25,12 @@ async def approved_campaign(
         campaigns_collection = db.get_collection(
             config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS
         )
+        users_collection = db.get_collection("users")
+        briefs_collection = db.get_collection("CampaignBriefGeneration")
+
         status_value = CampaignStatus.APPROVED
         query = {"status": status_value}
+
         projection = {
             "company_name": 1,
             "name": 1,
@@ -41,17 +45,44 @@ async def approved_campaign(
             "pricing": 1,
             "created_at": 1,
             "updated_at": 1,
+            "brief_id": 1, 
         }
+
         total = await campaigns_collection.count_documents(query)
+
         cursor = (
             campaigns_collection.find(query, projection)
             .sort("created_at", -1)
             .skip((page - 1) * page_size)
             .limit(page_size)
         )
+
         docs = await cursor.to_list(length=None)
+        user_ids = list({doc.get("user_id") for doc in docs if doc.get("user_id")})
+
+        object_user_ids = []
+        for uid in user_ids:
+            try:
+                object_user_ids.append(ObjectId(uid))
+            except Exception:
+                continue
+
+        # Preload campaign brief logos
+        brief_ids = [doc.get("brief_id") for doc in docs if doc.get("brief_id")]
+        brief_logo_map = {}
+        if brief_ids:
+            briefs = await briefs_collection.find(
+                {"_id": {"$in": [str(bid) for bid in brief_ids]}}
+            ).to_list(length=None)
+            brief_logo_map = {
+                str(doc["_id"]): (doc.get("response") or {}).get("campaign_logo_url")
+                for doc in briefs
+            }
         formatted = []
         for doc in docs:
+            user_id_str = str(doc.get("user_id")) if doc.get("user_id") else None
+            brief_id = doc.get("brief_id")
+
             formatted.append(
                 {
                     "campaign_id": str(doc.get("_id")),
@@ -61,15 +92,21 @@ async def approved_campaign(
                     "category": doc.get("category"),
                     "followers": doc.get("followers"),
                     "country": doc.get("country"),
-                    "user_id": str(doc.get("user_id")) if doc.get("user_id") else None,
+                    "user_id": user_id_str,
                     "user_type": doc.get("user_type"),
                     "status": doc.get("status"),
                     "limit": doc.get("limit"),
                     "created_at": doc.get("created_at"),
                     "updated_at": doc.get("updated_at"),
+                    "brief_id": brief_id,
+                    "campaign_logo_url": brief_logo_map.get(str(brief_id))
+                    if brief_id
+                    else None,
                 }
             )
-        total_pages = total + page_size - 1
+
+        total_pages = (total + page_size - 1) // page_size
+
         return {
             "campaigns": formatted,
             "total": total,
@@ -79,6 +116,7 @@ async def approved_campaign(
             "has_next": page < total_pages,
             "has_prev": page > 1,
         }
+
     except Exception as e:
         raise InternalServerErrorException(
             message=f"Error in approved campaign: {str(e)}"
