@@ -1,5 +1,6 @@
 from app.Schemas.instagram.negotiation_schema import NextAction
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
+from app.utils.campaign_helpers import upload_file_to_s3_with_prefix
 from app.utils.message_context import build_campaign_brief_pdf_bytes, upload_media_to_meta
 from app.utils.printcolors import Colors
 from app.db.connection import get_db
@@ -31,6 +32,7 @@ async def accept_negotiation_node(state: WhatsappNegotiationState):
     campaign_brief = state.get("campaign_brief") or {}
     media_id = None
     pdf_filename = None
+    s3_url = None
 
     if campaign_brief:
         try:
@@ -41,9 +43,26 @@ async def accept_negotiation_node(state: WhatsappNegotiationState):
                     c for c in title if c.isalnum() or c in (" ", "_", "-")
                 ).strip() or "campaign_brief"
                 pdf_filename = f"{safe_title}.pdf"
+
+                # Upload to Meta (for WhatsApp delivery)
                 media_id = await upload_media_to_meta(
                     pdf_bytes, "application/pdf", pdf_filename
                 )
+
+                # Also upload to S3 so dashboards can show the exact PDF via URL.
+                try:
+                    s3_url = await upload_file_to_s3_with_prefix(
+                        prefix_folder="campaign_briefs",
+                        object_id=str(state.get("_id") or ""),
+                        filename=pdf_filename,
+                        content_type="application/pdf",
+                        file_bytes=pdf_bytes,
+                    )
+                except Exception as e:
+                    print(
+                        f"{Colors.RED}[accept_negotiation_node] S3 upload failed: {e}"
+                    )
+
             else:
                 print(
                     f"{Colors.YELLOW}[accept_negotiation_node] Skipping PDF upload: brief did not produce content"
@@ -65,6 +84,11 @@ async def accept_negotiation_node(state: WhatsappNegotiationState):
     state.setdefault("history", []).append(
         {"sender_type": "AI", "message": state["final_reply"]}
     )
+
+    # If we have an S3 URL for the PDF, store it as a separate AI message so
+    # frontends can detect it and render a direct PDF download/preview.
+    if s3_url:
+        state["history"].append({"sender_type": "AI", "message": s3_url})
 
     try:
         db = get_db()
