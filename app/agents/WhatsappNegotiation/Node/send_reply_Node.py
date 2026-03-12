@@ -1,3 +1,4 @@
+from app.Schemas.instagram.negotiation_schema import NextAction
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
 from app.config.credentials_config import config
 import httpx
@@ -44,9 +45,10 @@ async def send_whatsapp_reply_node(state: WhatsappNegotiationState):
 
             print("[send_whatsapp_reply_node] Text response:", text_response.json())
 
-            # If we have a brief PDF uploaded to Meta, send it as a document message.
+            # If we have a brief PDF uploaded to Meta, and this is the final
+            # CLOSE_CONVERSATION accept step, send it as a one-shot document message.
             brief_media_id = state.get("brief_media_id")
-            if brief_media_id:
+            if brief_media_id and state.get("next_action") == NextAction.CLOSE_CONVERSATION:
                 filename = state.get("brief_media_filename") or "campaign_brief.pdf"
                 document_payload = {
                     "messaging_product": "whatsapp",
@@ -68,6 +70,10 @@ async def send_whatsapp_reply_node(state: WhatsappNegotiationState):
                     "[send_whatsapp_reply_node] Document response:",
                     document_response.json(),
                 )
+
+                # Make this one-shot so we don't resend the PDF on future replies.
+                state.pop("brief_media_id", None)
+                state.pop("brief_media_filename", None)
 
         print(f"{Colors.YELLOW} Exiting from send_whatsapp_reply_node")
         print("--------------------------------")
