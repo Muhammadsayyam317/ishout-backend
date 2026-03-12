@@ -208,7 +208,7 @@ async def get_campaign_brief_detail_endpoint(id: str):
 async def update_campaign_brief_logo_endpoint(
     brief_id: str,
     file: UploadFile = File(...),
-    current_user: dict = Depends(require_company_user_access),
+    current_user: dict = Depends(require_company_or_admin_access),
 ):
     """
     Update a campaign brief's logo by uploading a new image file.
