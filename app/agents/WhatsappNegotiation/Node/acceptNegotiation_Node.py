@@ -53,7 +53,7 @@ async def accept_negotiation_node(state: WhatsappNegotiationState):
                 try:
                     s3_url = await upload_file_to_s3_with_prefix(
                         prefix_folder="campaign_briefs",
-                        object_id=str(state.get("_id") or ""),
+                        object_id=str(state.get("influencer_id") or ""),
                         filename=pdf_filename,
                         content_type="application/pdf",
                         file_bytes=pdf_bytes,
@@ -90,26 +90,30 @@ async def accept_negotiation_node(state: WhatsappNegotiationState):
     if s3_url:
         state["history"].append({"sender_type": "AI", "message": s3_url})
 
-    try:
-        db = get_db()
-        collection = db.get_collection("campaign_influencers")
-        await collection.update_one(
-            {"_id": ObjectId(state["_id"])},
-            {
-                "$set": {
-                    "negotiation_status": state["negotiation_status"],
-                    "negotiation_completed": True,
-                    "final_reply": state["final_reply"],
-                    "last_offered_price": state.get("last_offered_price"),
-                    "next_action": state["next_action"],
-                    "conversation_mode": state.get("conversation_mode"),
-                    "human_takeover": state.get("human_takeover"),
-                    "agent_paused": state.get("agent_paused"),
-                }
-            },
-        )
-    except Exception as e:
-        print(f"[accept_negotiation_node] Mongo persistence failed: {e}")
+    influencer_id = state.get("influencer_id")
+    if not influencer_id:
+        print(f"{Colors.RED}[accept_negotiation_node] Missing influencer_id; skip campaign_influencers update")
+    else:
+        try:
+            db = get_db()
+            collection = db.get_collection("campaign_influencers")
+            await collection.update_one(
+                {"_id": ObjectId(influencer_id)},
+                {
+                    "$set": {
+                        "negotiation_status": state["negotiation_status"],
+                        "negotiation_completed": True,
+                        "final_reply": state["final_reply"],
+                        "last_offered_price": state.get("last_offered_price"),
+                        "next_action": state["next_action"],
+                        "conversation_mode": state.get("conversation_mode"),
+                        "human_takeover": state.get("human_takeover"),
+                        "agent_paused": state.get("agent_paused"),
+                    }
+                },
+            )
+        except Exception as e:
+            print(f"[accept_negotiation_node] Mongo persistence failed: {e}")
 
     print(f"{Colors.CYAN}Negotiation accepted. Reply: {state['final_reply']}")
     print(f"{Colors.YELLOW}Exiting from accept_negotiation_node")
