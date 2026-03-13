@@ -1,5 +1,6 @@
 from fastapi import HTTPException
-from app.models.influencers_model import GenerateInfluencersRequest
+
+from app.Schemas.influencers import GenerateInfluencersRequest
 from app.tools.search_influencers import search_influencers
 
 
