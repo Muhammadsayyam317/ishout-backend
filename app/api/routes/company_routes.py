@@ -17,6 +17,7 @@ from app.api.controllers.company.all_campaign import (
 )
 from app.api.controllers.company.approved_influencers import (
     ReviewPendingInfluencersByCampaignId,
+    get_company_campaign_influencers,
 )
 from app.middleware.auth_middleware import (
     require_company_user_access,
@@ -72,6 +73,28 @@ async def get_user_campaigns_route(
 ):
     try:
         return await all_campaigns(current_user["user_id"], status, page, page_size)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get(
+    "/campaigns/{campaign_id}/campaign-influencers",
+    tags=["Company"],
+)
+async def get_company_campaign_influencers_route(
+    campaign_id: str,
+    page: int = 1,
+    page_size: int = 10,
+    current_user: dict = Depends(require_company_user_access),
+):
+    try:
+        return await get_company_campaign_influencers(
+            campaign_id=campaign_id,
+            page=page,
+            page_size=page_size,
+        )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
