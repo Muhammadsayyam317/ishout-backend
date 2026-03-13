@@ -45,21 +45,26 @@ async def close_conversation_node(state: WhatsappNegotiationState):
     state.setdefault("history", []).append({"sender_type": "AI", "message": ai_reply})
     state["next_action"] = None
 
-    try:
-        db = get_db()
-        collection = db.get_collection("campaign_influencers")
-        await collection.update_one(
-            {"_id": ObjectId(state["_id"])},
-            {
-                "$set": {
-                    "negotiation_status": state["negotiation_status"],
-                    "final_reply": state["final_reply"],
-                    "history": state["history"],
-                }
-            },
-        )
-    except Exception as e:
-        print(f"[close_conversation_node] Mongo persistence failed: {e}")
+    influencer_id = state.get("influencer_id")
+    if not influencer_id:
+        print(f"{Colors.RED}[close_conversation_node] Missing influencer_id; skip campaign_influencers update")
+    else:
+        try:
+            db = get_db()
+            collection = db.get_collection("campaign_influencers")
+            await collection.update_one(
+                {"_id": ObjectId(influencer_id)},
+                {
+                    "$set": {
+                        "negotiation_status": state["negotiation_status"],
+                        "final_reply": state["final_reply"],
+                        "history": state["history"],
+                        "last_offered_price": state.get("last_offered_price"),
+                    }
+                },
+            )
+        except Exception as e:
+            print(f"[close_conversation_node] Mongo persistence failed: {e}")
 
     print(f"{Colors.CYAN}AI Generated Reply: {ai_reply}")
     print(f"{Colors.YELLOW}Exiting from close_conversation_node")
