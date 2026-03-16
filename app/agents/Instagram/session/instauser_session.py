@@ -7,6 +7,7 @@ from app.Schemas.instagram.negotiation_schema import (
 )
 from app.core.exception import InternalServerErrorException
 from app.db.connection import get_db
+from app.config.credentials_config import config
 
 
 async def instauser_session(state: InstagramConversationState):
@@ -16,8 +17,10 @@ async def instauser_session(state: InstagramConversationState):
     print("--------------------------------")
     try:
         db = get_db()
-        session_collection = db.get_collection("instagram_sessions")
-        campaign_collection = db.get_collection("campaign_influencers")
+        session_collection = db.get_collection(config.MONGODB_INSTAGRAM_SESSIONS)
+        campaign_collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS
+        )
 
         campaign_doc = await campaign_collection.find_one(
             {
@@ -99,7 +102,7 @@ async def instauser_session(state: InstagramConversationState):
 async def all_instagram_user_sessions(page: int = 1, page_size: int = 20):
     try:
         db = get_db()
-        session_collection = db.get_collection("instagram_sessions")
+        session_collection = db.get_collection(config.MONGODB_INSTAGRAM_SESSIONS)
         skip = (page - 1) * page_size
 
         sessions = (

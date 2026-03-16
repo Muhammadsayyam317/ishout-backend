@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from app.core.exception import InternalServerErrorException
 from app.db.connection import get_db
 from app.utils.printcolors import Colors
+from app.config.credentials_config import config
 
 
 async def save_negotiation_message(
@@ -28,7 +29,7 @@ async def save_negotiation_message(
         }
 
         db = get_db()
-        collection = db.get_collection("whatsapp_negotiation")
+        collection = db.get_collection(config.MONGODB_WHATSAPP_NEGOTIATION)
         await collection.insert_one(payload)
 
         print("--------------------------------")

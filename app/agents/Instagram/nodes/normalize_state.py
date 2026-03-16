@@ -1,13 +1,16 @@
 from app.Schemas.instagram.negotiation_schema import InstagramConversationState
 from app.Schemas.instagram.negotiation_schema import MessageIntent, NextAction
 from app.db.connection import get_db
+from app.config.credentials_config import config
 
 
 async def normalize_state(state: dict) -> InstagramConversationState:
     print("Entering into Node Normalize State")
     print("--------------------------------")
     db = get_db()
-    existing_session = await db.get_collection("instagram_sessions").find_one(
+    existing_session = await db.get_collection(
+        config.MONGODB_INSTAGRAM_SESSIONS
+    ).find_one(
         {"thread_id": state.get("thread_id")}
     )
     print("Existing Session: ", existing_session)

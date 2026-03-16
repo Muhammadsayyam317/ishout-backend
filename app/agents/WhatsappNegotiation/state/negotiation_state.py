@@ -3,6 +3,7 @@ from app.db.connection import get_db
 from typing import Optional
 from app.utils.printcolors import Colors
 from app.core.exception import InternalServerErrorException
+from app.config.credentials_config import config
 
 
 async def update_negotiation_state(thread_id: str, data: dict) -> Optional[dict]:
@@ -11,7 +12,7 @@ async def update_negotiation_state(thread_id: str, data: dict) -> Optional[dict]
 
     try:
         db = get_db()
-        collection = db.get_collection("negotiation_agent_controls")
+        collection = db.get_collection(config.MONGODB_NEGOTIATION_AGENT_CONTROLS)
         data.pop("_id", None)
         data["_updated_at"] = datetime.now(timezone.utc)
 
@@ -43,7 +44,7 @@ async def get_negotiation_state(thread_id: str) -> Optional[dict]:
     print("--------------------------------")
     try:
         db = get_db()
-        collection = db.get_collection("negotiation_agent_controls")
+        collection = db.get_collection(config.MONGODB_NEGOTIATION_AGENT_CONTROLS)
         doc = await collection.find_one({"thread_id": thread_id})
         print(f"{Colors.CYAN}[get_negotiation_state] Document: {doc}")
         print(f"{Colors.YELLOW}Exiting get_negotiation_state")

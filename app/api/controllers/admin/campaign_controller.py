@@ -38,7 +38,7 @@ async def _populate_user_details(user_id: str) -> Dict[str, Any]:
         if not user_id:
             return None
         db = get_db()
-        users_collection = db.get_collection("users")
+        users_collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_USERS)
         user = await users_collection.find_one({"_id": ObjectId(user_id)})
         if not user:
             raise NotFoundException(message="User not found")
@@ -108,7 +108,9 @@ async def _populate_influencer_details(
 async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]:
     try:
         db = get_db()
-        campaigns_collection = db.get_collection("campaigns")
+        campaigns_collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS
+        )
         campaign_name = request_data.name
         if not campaign_name:
             campaign_name = f"Campaign - {', '.join(request_data.category)} - {', '.join(request_data.platform)}"
@@ -147,8 +149,10 @@ async def get_all_campaigns(
 ) -> Dict[str, Any]:
     try:
         db = get_db()
-        campaigns_collection = db.get_collection("campaigns")
-        briefs_collection = db.get_collection("CampaignBriefGeneration")
+        campaigns_collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS
+        )
+        briefs_collection = db.get_collection(config.MONGODB_CAMPAIGN_BRIEF_GENERATION)
 
         query = {}
 
@@ -236,7 +240,9 @@ async def AdminApprovedSingleInfluencer(
 ):
     try:
         db = get_db()
-        campaign_collection = db.get_collection("campaign_influencers")
+        campaign_collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS
+        )
         generated_collection = db.get_collection("generated_influencers")
 
         campaign_id = ObjectId(request_data.campaign_id)
@@ -317,7 +323,9 @@ async def AdminApprovedSingleInfluencer(
 async def storeInfluencerNumber(request_data: UpdateCampaignInfluencerRequest):
     try:
         db = get_db()
-        collection = db.get_collection("campaign_influencers")
+        collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS
+        )
         try:
             campaign_object_id = ObjectId(request_data.campaign_influencer_id)
         except Exception:
@@ -358,7 +366,9 @@ async def storeInfluencerNumber(request_data: UpdateCampaignInfluencerRequest):
 async def add_influencer_Number(request_data: UpdateCampaignInfluencerRequest):
     try:
         db = get_db()
-        campaigns_collection = db.get_collection("campaign_influencers")
+        campaigns_collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS
+        )
         campaign_object_id = ObjectId(request_data.campaign_influencer_id)
         update_payload = {
             "phone_number": request_data.phone_number,
@@ -393,7 +403,9 @@ async def user_reject_influencers(
         if not influencer_ids:
             raise BadRequestException(message="No influencer IDs provided")
         db = get_db()
-        campaigns_collection = db.get_collection("campaigns")
+        campaigns_collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS
+        )
         campaign = await campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
         if not campaign:
             raise NotFoundException(message="Campaign not found")
@@ -463,7 +475,9 @@ async def add_rejected_influencers(
         if not rejected_ids:
             raise BadRequestException(message="No rejected ids provided")
         db = get_db()
-        campaigns_collection = db.get_collection("campaigns")
+        campaigns_collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS
+        )
         campaign = await campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
         if not campaign:
             raise HTTPException(status_code=404, detail="Campaign not found")
@@ -498,7 +512,9 @@ async def admin_generate_influencers(
 ):
     try:
         db = get_db()
-        campaigns_collection = db.get_collection("campaigns")
+        campaigns_collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS
+        )
         campaign = await campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
         if not campaign:
             raise NotFoundException(message="Campaign not found")
@@ -528,7 +544,9 @@ async def store_generated_influencers(
     try:
         db = get_db()
         collection = db.get_collection("generated_influencers")
-        campaign_collection = db.get_collection("campaigns")
+        campaign_collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS
+        )
         documents = []
 
         for inf in influencers:
@@ -569,8 +587,12 @@ async def update_campaignstatus_with_background_task(
 ) -> Dict[str, Any]:
     try:
         db = get_db()
-        campaigns_collection = db.get_collection("campaigns")
-        influencers_collection = db.get_collection("campaign_influencers")
+        campaigns_collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS
+        )
+        influencers_collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS
+        )
         result = await campaigns_collection.update_one(
             {"_id": ObjectId(request_data.campaign_id)},
             {
@@ -632,7 +654,9 @@ async def update_campaignstatus_with_background_task(
 async def update_status(request_data: CampaignStatusUpdateRequest) -> Dict[str, Any]:
     try:
         db = get_db()
-        campaigns_collection = db.get_collection("campaigns")
+        campaigns_collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS
+        )
         result = await campaigns_collection.update_one(
             {"_id": ObjectId(request_data.campaign_id)},
             {
@@ -660,7 +684,9 @@ async def update_status(request_data: CampaignStatusUpdateRequest) -> Dict[str, 
 async def get_campaign_generated_influencers(campaign_id: str) -> Dict[str, Any]:
     try:
         db = get_db()
-        campaigns_collection = db.get_collection("campaigns")
+        campaigns_collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS
+        )
         campaign = await campaigns_collection.find_one({"_id": ObjectId(campaign_id)})
         if not campaign:
             raise NotFoundException(message="Campaign not found")
@@ -706,7 +732,9 @@ async def company_approved_campaign_influencers(
 
     try:
         db = get_db()
-        collection = db.get_collection("campaign_influencers")
+        collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS
+        )
         query = {
             "campaign_id": campaign_object_id,
             "admin_approved": True,

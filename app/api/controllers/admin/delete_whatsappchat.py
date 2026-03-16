@@ -15,7 +15,7 @@ async def delete_whatsapp_chat(
         whatsapp_sessions_collection = db.get_collection(
             config.MONGODB_ATLAS_COLLECTION_WHATSAPP_SESSIONS
         )
-        Whatsapp_agentcontrol = db.get_collection("agent_controls")
+        Whatsapp_agentcontrol = db.get_collection(config.MONGODB_AGENT_CONTROL)
         result = await whatsapp_collection.delete_many({"thread_id": thread_id})
         whatsapp_sessions_result = await whatsapp_sessions_collection.delete_one(
             {"thread_id": thread_id}

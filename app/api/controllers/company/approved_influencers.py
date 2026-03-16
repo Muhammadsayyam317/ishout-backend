@@ -11,6 +11,7 @@ from app.Schemas.campaign_influencers import (
     CampaignInfluencersRequest,
 )
 from app.utils.helpers import convert_objectid
+from app.config.credentials_config import config
 
 
 async def get_company_campaign_influencers(
@@ -31,7 +32,7 @@ async def get_company_campaign_influencers(
 
     try:
         db = get_db()
-        coll = db.get_collection("campaign_influencers")
+        coll = db.get_collection(config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS)
         query = {"campaign_id": campaign_oid}
         skip = (page - 1) * page_size
 
@@ -69,7 +70,9 @@ async def ReviewPendingInfluencersByCampaignId(
 ):
     try:
         db = get_db()
-        collection = db.get_collection("campaign_influencers")
+        collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS
+        )
         cursor = collection.find(
             {
                 "campaign_id": ObjectId(campaign_id),
@@ -104,7 +107,9 @@ async def InfluencerApprovedByCompany(
 ):
     try:
         db = get_db()
-        collection = db.get_collection("campaign_influencers")
+        collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS
+        )
         existing = await collection.find_one(
             {
                 "campaign_id": ObjectId(request_data.campaign_id),

@@ -5,6 +5,7 @@ from bson import ObjectId
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
 from app.db.connection import get_db
 from app.utils.printcolors import Colors
+from app.config.credentials_config import config
 
 
 async def fetch_campaign_brief_node(state: WhatsappNegotiationState):
@@ -35,7 +36,9 @@ async def fetch_campaign_brief_node(state: WhatsappNegotiationState):
 
     try:
         db = get_db()
-        campaigns_collection = db.get_collection("campaigns")
+        campaigns_collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS
+        )
         campaign_doc: Dict[str, Any] = await campaigns_collection.find_one(
             {
                 "_id": (
@@ -60,7 +63,7 @@ async def fetch_campaign_brief_node(state: WhatsappNegotiationState):
             )
             print("--------------------------------")
             return state
-        briefs_collection = db.get_collection("CampaignBriefGeneration")
+        briefs_collection = db.get_collection(config.MONGODB_CAMPAIGN_BRIEF_GENERATION)
         brief_doc: Dict[str, Any] = await briefs_collection.find_one(
             {"_id": str(brief_id)}
         )

@@ -5,6 +5,7 @@ from fastapi import Depends
 from app.core.exception import InternalServerErrorException, NotFoundException
 from app.db.connection import get_db
 from app.middleware.auth_middleware import require_admin_access
+from app.config.credentials_config import config
 
 
 async def delete_campaign_ById(
@@ -13,10 +14,16 @@ async def delete_campaign_ById(
 ) -> Dict[str, Any]:
     try:
         db = get_db()
-        campaigns_collection = db.get_collection("campaigns")
-        generated_collection = db.get_collection("generated_influencers")
-        campaign_influencers_collection = db.get_collection("campaign_influencers")
-        briefs_collection = db.get_collection("CampaignBriefGeneration")
+        campaigns_collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS
+        )
+        generated_collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_GENERATED_INFLUENCERS
+        )
+        campaign_influencers_collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS
+        )
+        briefs_collection = db.get_collection(config.MONGODB_CAMPAIGN_BRIEF_GENERATION)
 
         # First, fetch the campaign so we can see if it has an attached brief_id.
         campaign = await campaigns_collection.find_one(

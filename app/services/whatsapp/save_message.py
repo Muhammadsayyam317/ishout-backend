@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from app.core.exception import InternalServerErrorException
 from app.db.connection import get_db
 from app.utils.printcolors import Colors
+from app.config.credentials_config import config
 
 
 async def save_conversation_message(
@@ -26,7 +27,7 @@ async def save_conversation_message(
         }
 
         db = get_db()
-        collection = db.get_collection("whatsapp_messages")
+        collection = db.get_collection(config.MONGODB_COLLECTION_WHATSAPP_MESSAGES)
         await collection.insert_one(payload)
         print(f"{Colors.GREEN}Whatsapp Conversation message saved")
         print("--------------------------------")
