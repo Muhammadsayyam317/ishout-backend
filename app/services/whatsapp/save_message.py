@@ -2,6 +2,8 @@ from datetime import datetime, timezone
 from app.core.exception import InternalServerErrorException
 from app.db.connection import get_db
 from app.utils.printcolors import Colors
+from app.config.credentials_config import config
+from app.services.websocket_manager import ws_manager
 
 
 async def save_conversation_message(
@@ -15,6 +17,7 @@ async def save_conversation_message(
     print(f"{Colors.GREEN}Entering into save_conversation_message")
     print("--------------------------------")
     try:
+        timestamp = datetime.now(timezone.utc).isoformat()
         payload = {
             "thread_id": thread_id,
             "username": username,
@@ -22,12 +25,16 @@ async def save_conversation_message(
             "message": message,
             "agent_paused": agent_paused,
             "human_takeover": human_takeover,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": timestamp,
+            "conversation_mode": "DEFAULT",
         }
 
         db = get_db()
-        collection = db.get_collection("whatsapp_messages")
+        collection = db.get_collection(config.MONGODB_COLLECTION_WHATSAPP_MESSAGES)
         await collection.insert_one(payload)
+
+        await ws_manager.broadcast_event("whatsapp.message", payload)
+
         print(f"{Colors.GREEN}Whatsapp Conversation message saved")
         print("--------------------------------")
         print(f"{Colors.RESET}Exiting from save_conversation_message")

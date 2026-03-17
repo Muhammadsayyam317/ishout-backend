@@ -2,6 +2,8 @@ from datetime import datetime, timezone
 from app.core.exception import InternalServerErrorException
 from app.db.connection import get_db
 from app.utils.printcolors import Colors
+from app.config.credentials_config import config
+from app.services.websocket_manager import ws_manager
 
 
 async def save_negotiation_message(
@@ -16,6 +18,7 @@ async def save_negotiation_message(
     print(f"{Colors.GREEN}Entering into save Negotiation message")
     print("--------------------------------")
     try:
+        timestamp = datetime.now(timezone.utc).isoformat()
         payload = {
             "thread_id": thread_id,
             "username": username,
@@ -24,12 +27,14 @@ async def save_negotiation_message(
             "agent_paused": agent_paused,
             "human_takeover": human_takeover,
             "conversation_mode": conversation_mode,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": timestamp,
         }
 
         db = get_db()
-        collection = db.get_collection("whatsapp_negotiation")
+        collection = db.get_collection(config.MONGODB_WHATSAPP_NEGOTIATION)
         await collection.insert_one(payload)
+
+        await ws_manager.broadcast_event("whatsapp.message", payload)
 
         print("--------------------------------")
         print("Whatsapp Conversation message saved")
@@ -43,4 +48,3 @@ async def save_negotiation_message(
         raise InternalServerErrorException(
             message=f"Error in saving conversation message: {str(e)}"
         ) from e
-        print("--------------------------------")
