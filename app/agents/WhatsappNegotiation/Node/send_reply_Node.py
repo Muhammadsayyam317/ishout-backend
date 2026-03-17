@@ -71,6 +71,16 @@ async def send_whatsapp_reply_node(state: WhatsappNegotiationState):
                     document_response.json(),
                 )
 
+                # Also log and broadcast the S3 URL for the brief (if present on state)
+                s3_url = state.get("brief_s3_url")
+                if s3_url:
+                    await save_conversation_message(
+                        thread_id=state["thread_id"],
+                        username="AI Negotiator",
+                        sender=SenderType.AI.value,
+                        message=s3_url,
+                    )
+
                 # Make this one-shot so we don't resend the PDF on future replies.
                 state.pop("brief_media_id", None)
                 state.pop("brief_media_filename", None)

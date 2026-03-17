@@ -89,6 +89,7 @@ async def accept_negotiation_node(state: WhatsappNegotiationState):
     # frontends can detect it and render a direct PDF download/preview.
     if s3_url:
         state["history"].append({"sender_type": "AI", "message": s3_url})
+        state["brief_s3_url"] = s3_url
 
     influencer_id = state.get("influencer_id")
     if not influencer_id:

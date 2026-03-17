@@ -48,6 +48,7 @@ class WhatsappNegotiationState(TypedDict):
     admin_takeover: Optional[bool]
     brief_media_id: Optional[str]
     brief_media_filename: Optional[str]
+    brief_s3_url: Optional[str]
 
 
 class InfluencersNegotiation(TypedDict):
