@@ -1,13 +1,16 @@
 from app.model.whatsappconversation import AgentControl
 from app.db.connection import get_db
 from app.utils.printcolors import Colors
+from app.config.credentials_config import config
 
 
 async def node_check_agent_control(state):
     print(f"{Colors.GREEN}Entering into node_check_agent_control")
     print("--------------------------------")
     db = get_db()
-    control: AgentControl = await db.get_collection("agent_controls").find_one(
+    control: AgentControl = await db.get_collection(
+        config.MONGODB_AGENT_CONTROL
+    ).find_one(
         {"thread_id": state["sender_id"]}
     )
 

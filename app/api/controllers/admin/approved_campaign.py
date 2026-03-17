@@ -25,8 +25,8 @@ async def approved_campaign(
         campaigns_collection = db.get_collection(
             config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS
         )
-        users_collection = db.get_collection("users")
-        briefs_collection = db.get_collection("CampaignBriefGeneration")
+        users_collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_USERS)
+        briefs_collection = db.get_collection(config.MONGODB_CAMPAIGN_BRIEF_GENERATION)
 
         status_value = CampaignStatus.APPROVED
         query = {"status": status_value}
@@ -132,7 +132,9 @@ async def approvedAdminCampaignById(
 
     try:
         db = get_db()
-        campaigns_collection = db.get_collection("campaign_influencers")
+        campaigns_collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS
+        )
         cursor = campaigns_collection.find(
             {
                 "campaign_id": ObjectId(campaign_id),
@@ -155,7 +157,9 @@ async def companyApprovedSingleInfluencer(
 ):
     try:
         db = get_db()
-        collection = db.get_collection("campaign_influencers")
+        collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS
+        )
         existing = await collection.find_one(
             {
                 "campaign_id": ObjectId(request_data.campaign_id),

@@ -30,11 +30,14 @@ from app.utils.campaign_helpers import (
     delete_s3_object_if_exists,
     upload_file_to_s3_with_prefix,
 )
+from app.config.credentials_config import config
 
 
 async def validate_user(user_id: str):
     db = get_db()
-    user = await db.get_collection("users").find_one({"_id": ObjectId(user_id)})
+    user = await db.get_collection(
+        config.MONGODB_ATLAS_COLLECTION_USERS
+    ).find_one({"_id": ObjectId(user_id)})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
@@ -48,7 +51,7 @@ async def store_campaign_brief(
 ) -> CampaignBriefGeneration:
     try:
         db = get_db()
-        collection = db.get_collection("CampaignBriefGeneration")
+        collection = db.get_collection(config.MONGODB_CAMPAIGN_BRIEF_GENERATION)
         user_id = str(user_doc["_id"])
         last_brief = await collection.find_one(
             {"user_id": user_id}, sort=[("version", -1)]
@@ -149,7 +152,7 @@ async def create_campaign_brief(user_input: str, user_id: str) -> CampaignBriefR
 
 async def delete_campaign_brief_service(brief_id: str):
     db = get_db()
-    collection = db.get_collection("CampaignBriefGeneration")
+    collection = db.get_collection(config.MONGODB_CAMPAIGN_BRIEF_GENERATION)
 
     existing = await collection.find_one({"_id": brief_id})
 
@@ -166,7 +169,7 @@ async def update_campaign_brief_service(
 ) -> CampaignBriefResponse:
 
     db = get_db()
-    collection = db.get_collection("CampaignBriefGeneration")
+    collection = db.get_collection(config.MONGODB_CAMPAIGN_BRIEF_GENERATION)
 
     existing_brief = await collection.find_one({"_id": brief_id})
     if not existing_brief:
@@ -226,7 +229,7 @@ async def get_campaign_briefs(
 
     user_doc = await validate_user(user_id)
     db = get_db()
-    collection = db.get_collection("CampaignBriefGeneration")
+    collection = db.get_collection(config.MONGODB_CAMPAIGN_BRIEF_GENERATION)
 
     cursor = (
         collection.find({"user_id": str(user_doc["_id"])})
@@ -266,7 +269,7 @@ async def get_campaign_briefs(
 
 async def get_campaign_brief_by_id(campaign_id: str):
     db = get_db()
-    collection = db.get_collection("CampaignBriefGeneration")
+    collection = db.get_collection(config.MONGODB_CAMPAIGN_BRIEF_GENERATION)
 
     campaign = await collection.find_one({"_id": campaign_id})
 
@@ -303,7 +306,7 @@ async def update_campaign_brief_logo_service(
     file_bytes = await validate_and_read_image_file(file)
 
     db = get_db()
-    collection = db.get_collection("CampaignBriefGeneration")
+    collection = db.get_collection(config.MONGODB_CAMPAIGN_BRIEF_GENERATION)
 
     existing_brief = await collection.find_one({"_id": brief_id})
     if not existing_brief:

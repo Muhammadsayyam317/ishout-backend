@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from app.db.connection import get_db
 from app.Schemas.campaign import CampaignStatus
 from app.utils.helpers import convert_objectid
+from app.config.credentials_config import config
 
 
 def _get_status_message(status: str) -> str:
@@ -19,8 +20,8 @@ async def all_campaigns(
 ) -> Dict[str, Any]:
     try:
         db = get_db()
-        campaigns_collection = db.get_collection("campaigns")
-        briefs_collection = db.get_collection("CampaignBriefGeneration")
+        campaigns_collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS)
+        briefs_collection = db.get_collection(config.MONGODB_CAMPAIGN_BRIEF_GENERATION)
         query = {"user_id": user_id}
 
         if status:
@@ -96,8 +97,8 @@ async def CompaignwithAdminApprovedInfluencersById(
 ):
     try:
         db = get_db()
-        campaigns_collection = db.get_collection("campaigns")
-        briefs_collection = db.get_collection("CampaignBriefGeneration")
+        campaigns_collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS)
+        briefs_collection = db.get_collection(config.MONGODB_CAMPAIGN_BRIEF_GENERATION)
 
         skip = (page - 1) * page_size
 

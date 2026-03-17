@@ -1,12 +1,13 @@
 from fastapi import HTTPException
 from app.db.connection import get_db
 from bson import ObjectId
+from app.config.credentials_config import config
 
 
 async def company_data(user_id: str):
     try:
         db = get_db()
-        users_collection = db.get_collection("users")
+        users_collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_USERS)
         user = await users_collection.find_one({"_id": ObjectId(user_id)})
         if not user:
             raise HTTPException(status_code=404, detail="User not found")

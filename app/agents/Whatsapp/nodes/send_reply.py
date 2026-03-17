@@ -8,6 +8,7 @@ from app.services.whatsapp.save_message import save_conversation_message
 from app.utils.Enums.user_enum import SenderType
 from app.db.connection import get_db
 from app.utils.printcolors import Colors
+from app.config.credentials_config import config
 
 
 async def node_send_reply(state):
@@ -18,7 +19,7 @@ async def node_send_reply(state):
     if not sender_id or not reply:
         return state
     db = get_db()
-    control = await db.get_collection("agent_controls").find_one(
+    control = await db.get_collection(config.MONGODB_AGENT_CONTROL).find_one(
         {"thread_id": sender_id}
     )
     if control and control.get("human_takeover"):
