@@ -23,7 +23,11 @@ async def reject_negotiation_node(state: WhatsappNegotiationState):
     # Append the final reply to in-memory history so negotiation dashboards
     # see the last AI message in the conversation thread.
     state.setdefault("history", []).append(
-        {"sender_type": "AI", "message": state["final_reply"]}
+        {
+            "sender_type": "AI",
+            "message": state["final_reply"],
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
     )
 
     influencer_id = state.get("influencer_id")

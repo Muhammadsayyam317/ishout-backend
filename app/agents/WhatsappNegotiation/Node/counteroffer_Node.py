@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from agents import Agent, Runner
 from agents.agent_output import AgentOutputSchema
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
@@ -47,7 +48,13 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
         state["next_action"] = NextAction.WAIT_OR_ACKNOWLEDGE
         hist = get_history_list(state)
         set_history_list(state, hist)
-        state["history"].append({"sender_type": "AI", "message": handoff_message})
+        state["history"].append(
+            {
+                "sender_type": "AI",
+                "message": handoff_message,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        )
         if checkpointer:
             await checkpointer.save_checkpoint(
                 key=f"negotiation:{thread_id}:last_message",
@@ -127,7 +134,13 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
         state["next_action"] = NextAction.ASK_RATE
 
     state["final_reply"] = ai_message
-    state["history"].append({"sender_type": "AI", "message": ai_message})
+    state["history"].append(
+        {
+            "sender_type": "AI",
+            "message": ai_message,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+    )
 
     if checkpointer:
         await checkpointer.save_checkpoint(
