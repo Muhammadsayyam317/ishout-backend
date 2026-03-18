@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from app.Schemas.instagram.negotiation_schema import NextAction
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
 from app.utils.campaign_helpers import upload_file_to_s3_with_prefix
@@ -83,13 +84,23 @@ async def accept_negotiation_node(state: WhatsappNegotiationState):
     # Append the final reply to in-memory history so negotiation dashboards
     # see the last AI message in the conversation thread.
     state.setdefault("history", []).append(
-        {"sender_type": "AI", "message": state["final_reply"]}
+        {
+            "sender_type": "AI",
+            "message": state["final_reply"],
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
     )
 
     # If we have an S3 URL for the PDF, store it as a separate AI message so
     # frontends can detect it and render a direct PDF download/preview.
     if s3_url:
-        state["history"].append({"sender_type": "AI", "message": s3_url})
+        state["history"].append(
+            {
+                "sender_type": "AI",
+                "message": s3_url,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        )
         state["brief_s3_url"] = s3_url
 
     influencer_id = state.get("influencer_id")

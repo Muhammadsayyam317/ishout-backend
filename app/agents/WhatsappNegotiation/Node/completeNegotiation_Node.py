@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from agents.agent_output import AgentOutputSchema
 from app.Schemas.instagram.negotiation_schema import GenerateReplyOutput
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
@@ -47,7 +48,13 @@ async def complete_negotiation_node(state: WhatsappNegotiationState):
         ai_reply = "Thanks for your time! We'll follow up shortly."
 
     state["final_reply"] = ai_reply
-    state.setdefault("history", []).append({"sender_type": "AI", "message": ai_reply})
+    state.setdefault("history", []).append(
+        {
+            "sender_type": "AI",
+            "message": ai_reply,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+    )
     state["next_action"] = None
 
     influencer_id = state.get("influencer_id")

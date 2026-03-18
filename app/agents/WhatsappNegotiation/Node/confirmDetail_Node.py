@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from agents.agent_output import AgentOutputSchema
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
 from app.Schemas.instagram.negotiation_schema import GenerateReplyOutput, NextAction
@@ -77,7 +78,13 @@ async def confirm_details_node(state: WhatsappNegotiationState):
         )
 
     state["final_reply"] = ai_reply
-    state.setdefault("history", []).append({"sender_type": "AI", "message": ai_reply})
+    state.setdefault("history", []).append(
+        {
+            "sender_type": "AI",
+            "message": ai_reply,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+    )
 
     try:
         db = get_db()

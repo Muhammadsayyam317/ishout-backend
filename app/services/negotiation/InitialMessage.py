@@ -113,7 +113,11 @@ async def NegotiationInitialMessage(influencer_id: str):
             "human_takeover": False,
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "history": [
-                {"sender_type": "AI", "message": personalized_message},
+                {
+                    "sender_type": "AI",
+                    "message": personalized_message,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                },
             ],
         },
     )

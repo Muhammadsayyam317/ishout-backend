@@ -101,7 +101,13 @@ async def handle_negotiation_agent(request, thread_id, msg_text, profile_name):
     # Maintain a rolling window of recent conversation history (USER + AI).
     # Normalize to list (Mongo may return history as dict or other type).
     history = get_history_list(negotiation_state)
-    history.append({"sender_type": "USER", "message": msg_text})
+    history.append(
+        {
+            "sender_type": "USER",
+            "message": msg_text,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+    )
     # Keep only the last N messages to avoid unbounded growth
     MAX_HISTORY_LENGTH = 20
     if len(history) > MAX_HISTORY_LENGTH:
