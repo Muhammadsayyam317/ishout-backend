@@ -5,11 +5,11 @@ from fastapi import HTTPException
 from app.db.connection import get_db
 from app.Schemas.user_model import UserResponse, UserUpdateRequest,ChangePasswordRequest
 from app.core.security.password import hash_password,verify_password
-
+from app.config.credentials_config import config
 async def get_user_profile(user_id: str) -> Dict[str, Any]:
     try:
         db = get_db()
-        users_collection = db.get_collection("users")
+        users_collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_USERS)
         user = await users_collection.find_one({"_id": ObjectId(user_id)})
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
@@ -37,7 +37,7 @@ async def update_user_profile(
 ) -> Dict[str, Any]:
 
     db = get_db()
-    users_collection = db.get_collection("users")
+    users_collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_USERS)
 
     user = await users_collection.find_one({"_id": ObjectId(user_id)})
     if not user:
@@ -76,7 +76,7 @@ async def change_user_password(
 ) -> Dict[str, Any]:
 
     db = get_db()
-    users_collection = db.get_collection("users")
+    users_collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_USERS)
 
     user = await users_collection.find_one({"_id": ObjectId(user_id)})
     if not user:

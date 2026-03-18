@@ -12,6 +12,7 @@ from app.utils.message_context import (
     set_history_list,
     history_to_agent_messages,
 )
+from app.config.credentials_config import config
 
 
 async def confirm_details_node(state: WhatsappNegotiationState):
@@ -80,7 +81,9 @@ async def confirm_details_node(state: WhatsappNegotiationState):
 
     try:
         db = get_db()
-        collection = db.get_collection("campaign_influencers")
+        collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS
+        )
         influencer_id = state.get("influencer_id")
         if influencer_id:
             payload = {

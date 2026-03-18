@@ -40,10 +40,30 @@ class Config(BaseModel):
         default=os.getenv("MONGODB_COLLECTION_WHATSAPP_MESSAGES")
     )
     MONGODB_ATLAS_COLLECTION_GENERATED_INFLUENCERS: str = Field(
-        default=os.getenv("MONGODB_ATLAS_COLLECTION_GENERATED_INFLUENCERS")
+        default=os.getenv("MONGO_ATLAS_GENERATED_INFLUENCER")
     )
     INSTAGRAM_MESSAGE_COLLECTION: str = Field(
         default=os.getenv("MONGODB_COLLECTION_INSTAGRAM_MESSAGES")
+    )
+    MONGODB_AGENT_CONTROL: str = Field(
+        default=os.getenv("MONGODB_AGENT_CONTROL", "agent_controls")
+    )
+    MONGODB_NEGOTIATION_AGENT_CONTROLS: str = Field(
+        default=os.getenv(
+            "MONGODB_NEGOTIATION_AGENT_CONTROLS", "negotiation_agent_controls"
+        )
+    )
+    MONGODB_CAMPAIGN_BRIEF_GENERATION: str = Field(
+        default=os.getenv("MONGODB_CAMPAIGN_BRIEF_GENERATION", "CampaignBriefGeneration")
+    )
+    MONGODB_WHATSAPP_NEGOTIATION: str = Field(
+        default=os.getenv("MONGODB_WHATSAPP_NEGOTIATION", "whatsapp_negotiation")
+    )
+    MONGODB_INSTAGRAM_SESSIONS: str = Field(
+        default=os.getenv("MONGODB_INSTAGRAM_SESSIONS", "instagram_sessions")
+    )
+    MONGODB_GUARDRAIL_LOGS: str = Field(
+        default=os.getenv("MONGODB_GUARDRAIL_LOGS", "guardrail_logs")
     )
     OPENAI_API_KEY: str = Field(default=os.getenv("OPENAI_API_KEY"))
     OPENAI_MODEL_NAME: str = Field(default=os.getenv("OPENAI_MODEL_NAME"))

@@ -107,9 +107,13 @@ async def delete_user(user_id: str) -> Dict[str, Any]:
     try:
         db = get_db()
         user_object_id = ObjectId(user_id)
-        users_collection = db.get_collection("users")
-        campaigns_collection = db.get_collection("campaigns")
-        campaign_influencers_collection = db.get_collection("campaign_influencers")
+        users_collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_USERS)
+        campaigns_collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS
+        )
+        campaign_influencers_collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS
+        )
         generated_influencers_collection = db.get_collection("generated_influencers")
 
         campaigns_result = await campaigns_collection.delete_many(
@@ -149,7 +153,7 @@ async def Whatsapp_Users_Sessions_management(
         collection = db.get_collection(
             config.MONGODB_ATLAS_COLLECTION_WHATSAPP_SESSIONS
         )
-        agent_control_collection = db.get_collection("agent_controls")
+        agent_control_collection = db.get_collection(config.MONGODB_AGENT_CONTROL)
 
         skip = (page - 1) * page_size
         cursor = collection.find().sort("last_active", -1).skip(skip).limit(page_size)

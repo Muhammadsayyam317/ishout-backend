@@ -2,6 +2,7 @@ from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
 from app.utils.printcolors import Colors
 from app.db.connection import get_db
 from bson import ObjectId
+from app.config.credentials_config import config
 
 
 async def reject_negotiation_node(state: WhatsappNegotiationState):
@@ -31,7 +32,7 @@ async def reject_negotiation_node(state: WhatsappNegotiationState):
     else:
         try:
             db = get_db()
-            collection = db.get_collection("campaign_influencers")
+            collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS)
             await collection.update_one(
                 {"_id": ObjectId(influencer_id)},
                 {

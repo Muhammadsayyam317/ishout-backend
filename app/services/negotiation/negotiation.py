@@ -4,6 +4,7 @@ from app.utils.printcolors import Colors
 from app.core.exception import InternalServerErrorException
 from app.utils.mongo_serializer import serialize_mongo_data
 from bson import ObjectId
+from app.config.credentials_config import config
 
 
 async def get_all_negotiation_controls(
@@ -12,7 +13,7 @@ async def get_all_negotiation_controls(
 ) -> Dict[str, Any]:
     try:
         db = get_db()
-        collection = db.get_collection("negotiation_agent_controls")
+        collection = db.get_collection(config.MONGODB_NEGOTIATION_AGENT_CONTROLS)
         skip = (page - 1) * page_size
 
         total_count = await collection.count_documents({})
@@ -50,7 +51,7 @@ async def get_all_negotiation_controls(
 async def get_negotiation_control_detail(_id: str) -> Dict[str, Any]:
     try:
         db = get_db()
-        collection = db.get_collection("negotiation_agent_controls")
+        collection = db.get_collection(config.MONGODB_NEGOTIATION_AGENT_CONTROLS)
         try:
             object_id = ObjectId(_id)
         except Exception:

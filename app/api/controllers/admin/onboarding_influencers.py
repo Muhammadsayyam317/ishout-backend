@@ -5,6 +5,7 @@ from app.middleware.auth_middleware import require_admin_access
 from app.Schemas.campaign_influencers import CampaignInfluencerStatus
 from app.utils.helpers import convert_objectid
 from bson import ObjectId
+from app.config.credentials_config import config
 
 
 async def onboarding_campaigns(
@@ -17,10 +18,14 @@ async def onboarding_campaigns(
 
     try:
         db = get_db()
-        campaign_influencers_collection = db.get_collection("campaign_influencers")
-        campaigns_collection = db.get_collection("campaigns")
-        users_collection = db.get_collection("users")
-        briefs_collection = db.get_collection("CampaignBriefGeneration")
+        campaign_influencers_collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS
+        )
+        campaigns_collection = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS
+        )
+        users_collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_USERS)
+        briefs_collection = db.get_collection(config.MONGODB_CAMPAIGN_BRIEF_GENERATION)
 
         cursor = campaign_influencers_collection.find(
             {

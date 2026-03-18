@@ -3,6 +3,7 @@ from fastapi import HTTPException
 from app.db.connection import get_db
 from app.Schemas.campaign import CampaignStatus
 from app.utils.helpers import convert_objectid
+from app.config.credentials_config import config
 
 
 def _get_status_message(status: str) -> str:
@@ -19,8 +20,8 @@ async def all_campaigns(
 ) -> Dict[str, Any]:
     try:
         db = get_db()
-        campaigns_collection = db.get_collection("campaigns")
-        briefs_collection = db.get_collection("CampaignBriefGeneration")
+        campaigns_collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS)
+        briefs_collection = db.get_collection(config.MONGODB_CAMPAIGN_BRIEF_GENERATION)
         query = {"user_id": user_id}
 
         if status:
@@ -96,7 +97,8 @@ async def CompaignwithAdminApprovedInfluencersById(
 ):
     try:
         db = get_db()
-        campaigns_collection = db.get_collection("campaigns")
+        campaigns_collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS)
+        briefs_collection = db.get_collection(config.MONGODB_CAMPAIGN_BRIEF_GENERATION)
 
         skip = (page - 1) * page_size
 
@@ -136,12 +138,33 @@ async def CompaignwithAdminApprovedInfluencersById(
 
         campaigns = await campaigns_collection.aggregate(pipeline).to_list(length=None)
 
+        # Preload campaign brief logos for these campaigns
+        brief_ids = [c.get("brief_id") for c in campaigns if c.get("brief_id")]
+        brief_logo_map = {}
+        if brief_ids:
+            briefs = await briefs_collection.find(
+                {"_id": {"$in": [str(bid) for bid in brief_ids]}}
+            ).to_list(length=None)
+            brief_logo_map = {
+                str(doc["_id"]): (doc.get("response") or {}).get("campaign_logo_url")
+                for doc in briefs
+            }
+
         total = await campaigns_collection.count_documents(
             {"user_id": user_id, "status": CampaignStatus.APPROVED.value}
         )
 
+        formatted_campaigns = []
+        for campaign in campaigns:
+            campaign = convert_objectid(campaign)
+            brief_id = campaign.get("brief_id")
+            campaign["campaign_logo_url"] = (
+                brief_logo_map.get(str(brief_id)) if brief_id else None
+            )
+            formatted_campaigns.append(campaign)
+
         return {
-            "campaigns": [convert_objectid(c) for c in campaigns],
+            "campaigns": formatted_campaigns,
             "pagination": {
                 "page": page,
                 "page_size": page_size,

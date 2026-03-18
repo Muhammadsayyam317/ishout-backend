@@ -12,6 +12,7 @@ from app.utils.message_context import (
     set_history_list,
     history_to_agent_messages,
 )
+from app.config.credentials_config import config
 
 
 async def complete_negotiation_node(state: WhatsappNegotiationState):
@@ -55,7 +56,7 @@ async def complete_negotiation_node(state: WhatsappNegotiationState):
     else:
         try:
             db = get_db()
-            collection = db.get_collection("campaign_influencers")
+            collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS)
             await collection.update_one(
                 {"_id": ObjectId(influencer_id)},
                 {

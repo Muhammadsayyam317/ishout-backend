@@ -2,14 +2,17 @@ from bson import ObjectId
 from app.db.connection import get_db
 from app.Schemas.campaign_influencers import CampaignInfluencerStatus
 from app.services.whatsapp.send_text import send_whatsapp_text_message
+from app.config.credentials_config import config
 
 
 async def check_and_send_campaign_summary(campaign_id: str, sender_id: str):
     try:
         print("Entering into check_and_send_campaign_summary")
         db = get_db()
-        influencers_col = db.get_collection("campaign_influencers")
-        campaigns_col = db.get_collection("campaigns")
+        influencers_col = db.get_collection(
+            config.MONGODB_ATLAS_COLLECTION_CAMPAIGN_INFLUENCERS
+        )
+        campaigns_col = db.get_collection(config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS)
         total = await influencers_col.count_documents(
             {
                 "campaign_id": campaign_id,

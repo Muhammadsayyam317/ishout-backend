@@ -7,6 +7,7 @@ from app.services.websocket_manager import ws_manager
 from app.services.whatsapp.save_message import save_conversation_message
 from app.services.whatsapp.send_text import send_whatsapp_text_message
 from app.core.exception import InternalServerErrorException
+from app.config.credentials_config import config
 
 router = APIRouter()
 
@@ -15,7 +16,7 @@ async def toggle_human_takeover(thread_id: str, payload: HumanTakeoverRequest):
     enabled: bool = payload.enabled
     try:
         db = get_db()
-        controls = db.get_collection("agent_controls")
+        controls = db.get_collection(config.MONGODB_AGENT_CONTROL)
         existing = await controls.find_one({"thread_id": thread_id})
         current_state = existing.get("human_takeover") if existing else False
         if enabled == current_state:
@@ -123,7 +124,7 @@ async def toggle_human_takeover(thread_id: str, payload: HumanTakeoverRequest):
 async def takeover_value(thread_id: str):
     try:
         db = get_db()
-        control = await db.get_collection("agent_controls").find_one(
+        control = await db.get_collection(config.MONGODB_AGENT_CONTROL).find_one(
             {"thread_id": thread_id}
         )
         if control:
@@ -145,7 +146,7 @@ async def takeover_value(thread_id: str):
 async def send_human_message(thread_id: str, payload: HumanMessageRequest):
     try:
         db = get_db()
-        control = await db.get_collection("agent_controls").find_one(
+        control = await db.get_collection(config.MONGODB_AGENT_CONTROL).find_one(
             {"thread_id": thread_id}
         )
         if not control or not control.get("human_takeover"):
