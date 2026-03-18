@@ -86,15 +86,19 @@ async def confirm_details_node(state: WhatsappNegotiationState):
         )
         influencer_id = state.get("influencer_id")
         if influencer_id:
+            payload = {
+                "final_reply": state["final_reply"],
+                "history": state["history"],
+                "next_action": state["next_action"],
+            }
+            if rate is not None:
+                try:
+                    payload["last_offered_price"] = float(rate)
+                except (TypeError, ValueError):
+                    pass
             await collection.update_one(
                 {"_id": ObjectId(influencer_id)},
-                {
-                    "$set": {
-                        "final_reply": state["final_reply"],
-                        "history": state["history"],
-                        "next_action": state["next_action"],
-                    }
-                },
+                {"$set": payload},
             )
     except Exception as e:
         print(f"[confirm_details_node] Mongo persistence failed: {e}")

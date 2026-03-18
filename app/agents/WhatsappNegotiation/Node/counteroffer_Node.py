@@ -9,6 +9,8 @@ from app.utils.message_context import (
     set_history_list,
     history_to_agent_messages,
 )
+from app.db.connection import get_db
+from bson import ObjectId
 
 
 async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None):
@@ -136,4 +138,23 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
         f"{Colors.CYAN}[counter_offer_node] AI chose price=${ai_price:.2f} "
         f"(min={min_price}, max={max_price}, last={last_price}, user_offer={user_offer})"
     )
+
+    influencer_id = state.get("influencer_id")
+    if influencer_id:
+        try:
+            db = get_db()
+            collection = db.get_collection("campaign_influencers")
+            await collection.update_one(
+                {"_id": ObjectId(influencer_id)},
+                {
+                    "$set": {
+                        "last_offered_price": ai_price,
+                        "negotiation_status": state.get("negotiation_status"),
+                        "negotiation_round": new_round,
+                    }
+                },
+            )
+        except Exception as e:
+            print(f"{Colors.RED}[counter_offer_node] Mongo persistence failed: {e}")
+
     return state
