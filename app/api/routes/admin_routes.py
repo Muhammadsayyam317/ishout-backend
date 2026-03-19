@@ -36,6 +36,9 @@ from app.api.controllers.admin.takeover import (
     send_human_message,
     takeover_value,
     toggle_human_takeover,
+    toggle_negotiation_takeover,
+    negotiation_takeover_value,
+    send_negotiation_human_message,
 )
 from app.api.controllers.admin.user_managment import (
     Whatsapp_Users_Sessions_management,
@@ -309,6 +312,24 @@ router.add_api_route(
     path="/whatsapp/takeover-value/{thread_id}",
     endpoint=takeover_value,
     methods=["GET"],
+    tags=["Admin"],
+)
+router.add_api_route(
+    path="/negotiation/toggle-takeover/{thread_id}",
+    endpoint=toggle_negotiation_takeover,
+    methods=["POST"],
+    tags=["Admin"],
+)
+router.add_api_route(
+    path="/negotiation/takeover-value/{thread_id}",
+    endpoint=negotiation_takeover_value,
+    methods=["GET"],
+    tags=["Admin"],
+)
+router.add_api_route(
+    path="/negotiation/send-human-message/{thread_id}",
+    endpoint=send_negotiation_human_message,
+    methods=["POST"],
     tags=["Admin"],
 )
 
