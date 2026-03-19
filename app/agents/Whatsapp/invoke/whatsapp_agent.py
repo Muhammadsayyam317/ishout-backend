@@ -19,6 +19,12 @@ from app.services.websocket_manager import ws_manager
 from app.services.whatsapp.reply_button import handle_button_reply
 from app.services.whatsapp.save_message import save_conversation_message
 from app.utils.Enums.user_enum import SenderType
+from app.services.whatsapp.save_admin_influencer_message import (
+    save_admin_influencer_message,
+)
+from app.services.whatsapp.save_admin_company_message import (
+    save_admin_company_message,
+)
 
 
 def extract_whatsapp_message(event: dict):
@@ -79,8 +85,43 @@ async def handle_negotiation_agent(request, thread_id, msg_text, profile_name):
         return False
 
     if negotiation_state.get("agent_paused"):
-        print(
-            f"[handle_negotiation_agent] Negotiation is paused for thread {thread_id} "
+        # When paused, we must still store + broadcast the absorbed USER message
+        # into the negotiation control doc history (so frontend timestamps stay correct).
+        timestamp = datetime.now(timezone.utc).isoformat()
+        history = get_history_list(negotiation_state)
+        history.append(
+            {
+                "sender_type": "USER",
+                "message": msg_text,
+                "timestamp": timestamp,
+            }
+        )
+
+        await update_negotiation_state(
+            thread_id,
+            {
+                "user_message": msg_text,
+                "thread_id": thread_id,
+                "sender_id": thread_id,
+                "name": profile_name,
+                "history": history,
+                # keep the state flags as-is (update_negotiation_state uses $set)
+                "agent_paused": negotiation_state.get("agent_paused"),
+                "human_takeover": negotiation_state.get("human_takeover", False),
+            },
+        )
+
+        await ws_manager.broadcast_event(
+            "whatsapp.message",
+            {
+                "thread_id": thread_id,
+                "sender": SenderType.USER.value,
+                "message": msg_text,
+                "timestamp": timestamp,
+                "conversation_mode": "NEGOTIATION",
+                "agent_paused": True,
+                "human_takeover": negotiation_state.get("human_takeover", False),
+            },
         )
         return True
 
@@ -94,10 +135,6 @@ async def handle_negotiation_agent(request, thread_id, msg_text, profile_name):
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
     )
-    # Keep only the last N messages to avoid unbounded growth
-    MAX_HISTORY_LENGTH = 20
-    if len(history) > MAX_HISTORY_LENGTH:
-        history = history[-MAX_HISTORY_LENGTH:]
 
     negotiation_state.update(
         {
@@ -169,7 +206,30 @@ async def handle_whatsapp_events(request: Request):
             await handle_button_reply(first_message)
             return {"status": "ok"}
 
-        # Save + broadcast
+        # Admin flow routing first: if this thread already has admin<->influencer/company chat
+        # activity, store incoming messages in the correct dedicated collection and avoid
+        # running negotiation/default agents.
+        admin_influencer_saved = await save_admin_influencer_message(
+            thread_id=thread_id,
+            username=profile_name,
+            sender=SenderType.USER.value,
+            message=msg_text,
+            create_if_missing=False,
+        )
+        if admin_influencer_saved:
+            return {"status": "ok"}
+
+        admin_company_saved = await save_admin_company_message(
+            thread_id=thread_id,
+            username=profile_name,
+            sender=SenderType.USER.value,
+            message=msg_text,
+            create_if_missing=False,
+        )
+        if admin_company_saved:
+            return {"status": "ok"}
+
+        # Otherwise: default WhatsApp message persistence + broadcast
         await process_incoming_message(thread_id, profile_name, msg_text)
 
         # negotiation agent

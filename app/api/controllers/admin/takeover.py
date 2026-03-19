@@ -6,6 +6,12 @@ from app.model.takeover import HumanTakeoverRequest
 from app.services.websocket_manager import ws_manager
 from app.services.whatsapp.save_message import save_conversation_message
 from app.services.whatsapp.save_negotiation_message import save_negotiation_message
+from app.services.whatsapp.save_admin_influencer_message import (
+    save_admin_influencer_message,
+)
+from app.services.whatsapp.save_admin_company_message import (
+    save_admin_company_message,
+)
 from app.services.whatsapp.send_text import send_whatsapp_text_message
 from app.core.exception import InternalServerErrorException
 from app.config.credentials_config import config
@@ -176,6 +182,52 @@ async def send_human_message(thread_id: str, payload: HumanMessageRequest):
             },
         )
         print("ws_manager.broadcast_event payload", payload)
+        return {"success": True, "message": "Message sent successfully"}
+    except Exception as e:
+        raise InternalServerErrorException(message=str(e)) from e
+
+
+async def send_admin_influencer_message(
+    thread_id: str,
+    payload: HumanMessageRequest,
+):
+    """
+    Admin sends a human message to influencer (admin<->influencer flow).
+    Persist into `whatsapp_admin_influencer` collection.
+    """
+    try:
+        await send_whatsapp_text_message(to=thread_id, text=payload.message)
+        await save_admin_influencer_message(
+            thread_id=thread_id,
+            username="ADMIN",
+            sender="ADMIN",
+            message=payload.message,
+            agent_paused=True,
+            human_takeover=True,
+        )
+        return {"success": True, "message": "Message sent successfully"}
+    except Exception as e:
+        raise InternalServerErrorException(message=str(e)) from e
+
+
+async def send_admin_company_message(
+    thread_id: str,
+    payload: HumanMessageRequest,
+):
+    """
+    Admin sends a human message to company (admin<->company flow).
+    Persist into `whatsapp_admin_company` collection.
+    """
+    try:
+        await send_whatsapp_text_message(to=thread_id, text=payload.message)
+        await save_admin_company_message(
+            thread_id=thread_id,
+            username="ADMIN",
+            sender="ADMIN",
+            message=payload.message,
+            agent_paused=True,
+            human_takeover=True,
+        )
         return {"success": True, "message": "Message sent successfully"}
     except Exception as e:
         raise InternalServerErrorException(message=str(e)) from e

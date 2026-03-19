@@ -53,6 +53,16 @@ class Config(BaseModel):
             "MONGODB_NEGOTIATION_AGENT_CONTROLS", "negotiation_agent_controls"
         )
     )
+    MONGODB_WHATSAPP_ADMIN_INFLUENCER: str = Field(
+        default=os.getenv(
+            "MONGODB_WHATSAPP_ADMIN_INFLUENCER", "whatsapp_admin_influencer"
+        )
+    )
+    MONGODB_WHATSAPP_ADMIN_COMPANY: str = Field(
+        default=os.getenv(
+            "MONGODB_WHATSAPP_ADMIN_COMPANY", "whatsapp_admin_company"
+        )
+    )
     MONGODB_CAMPAIGN_BRIEF_GENERATION: str = Field(
         default=os.getenv("MONGODB_CAMPAIGN_BRIEF_GENERATION", "CampaignBriefGeneration")
     )

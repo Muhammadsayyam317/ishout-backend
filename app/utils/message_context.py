@@ -92,8 +92,13 @@ def history_to_agent_messages(history: list[dict]) -> list[dict]:
     Convert our history (sender_type: 'USER'|'AI', message: str) to the format
     expected by the agents API: role 'user'|'assistant', content: str.
     """
+    # IMPORTANT:
+    # - We keep full history in Mongo/state for the frontend.
+    # - For LLM context, we only send the most recent window.
+    recent_history = history[-20:] if isinstance(history, list) else []
+
     out = []
-    for msg in history:
+    for msg in recent_history:
         if not isinstance(msg, dict):
             continue
         role = "user" if (msg.get("sender_type") or "").upper() == "USER" else "assistant"

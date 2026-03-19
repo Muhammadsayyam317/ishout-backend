@@ -264,6 +264,100 @@ async def Whatsapp_messages_management(
         ) from e
 
 
+async def whatsapp_admin_influencer_messages_management(
+    thread_id: str,
+    page: int = 1,
+    page_size: int = 20,
+) -> Dict[str, Any]:
+    try:
+        db = get_db()
+        collection = db.get_collection(config.MONGODB_WHATSAPP_ADMIN_INFLUENCER)
+        skip = (page - 1) * page_size
+        cursor = (
+            collection.find({"thread_id": thread_id})
+            .sort("timestamp", -1)
+            .skip(skip)
+            .limit(page_size)
+        )
+        messages = await cursor.to_list(length=page_size)
+        messages = [convert_objectid(m) for m in messages]
+        messages.reverse()
+
+        total = await collection.count_documents({"thread_id": thread_id})
+        total_pages = (total + page_size - 1) // page_size
+
+        return {
+            "messages": [
+                WhatsappConversationMessage(
+                    _id=message["_id"],
+                    thread_id=message["thread_id"],
+                    username=message.get("username"),
+                    sender=message["sender"],
+                    message=message["message"],
+                    timestamp=message["timestamp"],
+                )
+                for message in messages
+            ],
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages,
+            "has_next": page < total_pages,
+            "has_prev": page > 1,
+        }
+    except Exception as e:
+        raise InternalServerErrorException(
+            message=f"Error retrieving whatsapp admin influencer messages: {str(e)}"
+        ) from e
+
+
+async def whatsapp_admin_company_messages_management(
+    thread_id: str,
+    page: int = 1,
+    page_size: int = 20,
+) -> Dict[str, Any]:
+    try:
+        db = get_db()
+        collection = db.get_collection(config.MONGODB_WHATSAPP_ADMIN_COMPANY)
+        skip = (page - 1) * page_size
+        cursor = (
+            collection.find({"thread_id": thread_id})
+            .sort("timestamp", -1)
+            .skip(skip)
+            .limit(page_size)
+        )
+        messages = await cursor.to_list(length=page_size)
+        messages = [convert_objectid(m) for m in messages]
+        messages.reverse()
+
+        total = await collection.count_documents({"thread_id": thread_id})
+        total_pages = (total + page_size - 1) // page_size
+
+        return {
+            "messages": [
+                WhatsappConversationMessage(
+                    _id=message["_id"],
+                    thread_id=message["thread_id"],
+                    username=message.get("username"),
+                    sender=message["sender"],
+                    message=message["message"],
+                    timestamp=message["timestamp"],
+                )
+                for message in messages
+            ],
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages,
+            "has_next": page < total_pages,
+            "has_prev": page > 1,
+        }
+    except Exception as e:
+        raise InternalServerErrorException(
+            message=f"Error retrieving whatsapp admin company messages: {str(e)}"
+        ) from e
+
+
 async def whatsapp_messages_cursor(
     thread_id: str,
     before: Optional[str] = None,
