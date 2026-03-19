@@ -17,17 +17,12 @@ from app.config.credentials_config import config
 
 
 async def confirm_details_node(state: WhatsappNegotiationState):
-    print(f"{Colors.GREEN}Entering confirm_details_node")
-    print("--------------------------------")
-
     history = get_history_list(state)
     set_history_list(state, history)
 
     rate = state.get("analysis", {}).get("budget_amount") or state.get(
         "last_offered_price"
     )
-    print(f"{Colors.CYAN}Rate: {rate}")
-    print("--------------------------------")
 
     # If we don't have a rate yet, stay in ASK_RATE; otherwise we've noted the rate
     # and now we should acknowledge and move towards closing or sharing details.
@@ -109,9 +104,5 @@ async def confirm_details_node(state: WhatsappNegotiationState):
             )
     except Exception as e:
         print(f"[confirm_details_node] Mongo persistence failed: {e}")
-
-    print(f"{Colors.CYAN}AI Generated Reply: {ai_reply}")
-    print(f"{Colors.YELLOW}Exiting from confirm_details_node")
-    print("--------------------------------")
 
     return state

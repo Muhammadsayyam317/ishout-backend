@@ -15,8 +15,6 @@ import json
 
 
 async def generate_reply_node(state: WhatsappNegotiationState):
-    print(f"{Colors.GREEN}Entering generate_reply_node")
-    print("--------------------------------")
 
     history = get_history_list(state)
     set_history_list(state, history)
@@ -74,8 +72,4 @@ async def generate_reply_node(state: WhatsappNegotiationState):
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
     )
-
-    print(f"{Colors.CYAN}Generated AI Reply: {ai_message}")
-    print(f"{Colors.YELLOW}Exiting generate_reply_node")
-    print("--------------------------------")
     return state

@@ -1,16 +1,12 @@
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
-from app.utils.printcolors import Colors
 from app.db.connection import get_db
 from bson import ObjectId
 
 
 async def admin_takeover_node(state: WhatsappNegotiationState):
-    print(f"{Colors.GREEN}Entering admin_takeover_node")
-    print("--------------------------------")
-
     thread_id = state.get("thread_id")
     if not thread_id:
-        print(f"{Colors.RED}[admin_takeover_node] Missing thread_id")
+        print("[admin_takeover_node] Missing thread_id")
         return state
 
     state["admin_takeover"] = True
@@ -22,7 +18,7 @@ async def admin_takeover_node(state: WhatsappNegotiationState):
 
     influencer_id = state.get("influencer_id")
     if not influencer_id:
-        print(f"{Colors.RED}[admin_takeover_node] Missing influencer_id; skip campaign_influencers update")
+        print("[admin_takeover_node] Missing influencer_id; skip campaign_influencers update")
     else:
         try:
             db = get_db()
@@ -44,9 +40,4 @@ async def admin_takeover_node(state: WhatsappNegotiationState):
         except Exception as e:
             print(f"[admin_takeover_node] Mongo persistence failed: {e}")
 
-    print(
-        f"{Colors.CYAN}[admin_takeover_node] Admin takeover triggered for thread {thread_id}"
-    )
-    print(f"{Colors.YELLOW}Exiting from admin_takeover_node")
-    print("--------------------------------")
     return state

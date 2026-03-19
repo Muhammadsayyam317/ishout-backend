@@ -10,9 +10,6 @@ from app.config.credentials_config import config
 
 
 async def accept_negotiation_node(state: WhatsappNegotiationState):
-    print(f"{Colors.GREEN}Entering accept_negotiation_node")
-    print("--------------------------------")
-
     state["negotiation_status"] = "agreed"
     state["negotiation_completed"] = True
     # Mark the conversation as handed over / completed for dashboard purposes.
@@ -61,16 +58,14 @@ async def accept_negotiation_node(state: WhatsappNegotiationState):
                         file_bytes=pdf_bytes,
                     )
                 except Exception as e:
-                    print(
-                        f"{Colors.RED}[accept_negotiation_node] S3 upload failed: {e}"
-                    )
+                    print(f"[accept_negotiation_node] S3 upload failed: {e}")
 
             else:
                 print(
-                    f"{Colors.YELLOW}[accept_negotiation_node] Skipping PDF upload: brief did not produce content"
+                    "[accept_negotiation_node] Skipping PDF upload: brief did not produce content"
                 )
         except Exception as e:
-            print(f"{Colors.RED}[accept_negotiation_node] PDF build/upload failed: {e}")
+            print(f"[accept_negotiation_node] PDF build/upload failed: {e}")
 
     if media_id:
         state["final_reply"] = (
@@ -105,7 +100,7 @@ async def accept_negotiation_node(state: WhatsappNegotiationState):
 
     influencer_id = state.get("influencer_id")
     if not influencer_id:
-        print(f"{Colors.RED}[accept_negotiation_node] Missing influencer_id; skip campaign_influencers update")
+        print("[accept_negotiation_node] Missing influencer_id; skip campaign_influencers update")
     else:
         try:
             db = get_db()
@@ -127,8 +122,4 @@ async def accept_negotiation_node(state: WhatsappNegotiationState):
             )
         except Exception as e:
             print(f"[accept_negotiation_node] Mongo persistence failed: {e}")
-
-    print(f"{Colors.CYAN}Negotiation accepted. Reply: {state['final_reply']}")
-    print(f"{Colors.YELLOW}Exiting from accept_negotiation_node")
-    print("--------------------------------")
     return state

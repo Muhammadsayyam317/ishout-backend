@@ -9,7 +9,6 @@ from datetime import datetime, timezone
 from app.agents.WhatsappNegotiation.state.negotiation_state import (
     update_negotiation_state,
 )
-from app.utils.printcolors import Colors
 
 # Template – will be formatted with the influencer's name.
 INITIAL_OUTREACH_MESSAGE = (
@@ -21,8 +20,6 @@ INITIAL_OUTREACH_MESSAGE = (
 
 
 async def NegotiationInitialMessage(influencer_id: str):
-    print(f"{Colors.GREEN}Entering into NegotiationInitialMessage for influencer_id: {influencer_id}")
-    print("--------------------------------")
     db = get_db()
     collection = db.get_collection("campaign_influencers")
     try:
@@ -61,8 +58,6 @@ async def NegotiationInitialMessage(influencer_id: str):
             ],
         },
     }
-    print(f"{Colors.CYAN}Sending WhatsApp message to: {phone_number}")
-    print("--------------------------------")
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             await client.post(
@@ -70,10 +65,8 @@ async def NegotiationInitialMessage(influencer_id: str):
                 headers=headers,
                 json=payload_meta,
             )
-        print(f"{Colors.GREEN}WhatsApp message sent successfully")
-        print("--------------------------------")
     except Exception as e:
-        print(f"{Colors.RED} Error sending WhatsApp message: {e}")
+        print(f"[NegotiationInitialMessage] Error sending WhatsApp message: {e}")
         return {"status": "error", "message": f"Error sending WhatsApp message: {e}"}
 
     # Personalize the stored message with the influencer's name
@@ -121,11 +114,6 @@ async def NegotiationInitialMessage(influencer_id: str):
             ],
         },
     )
-
-    print(
-        f"{Colors.YELLOW}Negotiation Initial Message sent successfully and Negotiation Control Record created successfully"
-    )
-    print("--------------------------------")
     return {
         "status": "success",
         "message": "Negotiation Initial Message sent successfully",
