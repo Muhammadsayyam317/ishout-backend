@@ -1,21 +1,18 @@
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
 from app.db.connection import get_db
 from bson import ObjectId
-from app.utils.printcolors import Colors
 
 
 async def fetch_pricing_node(state: WhatsappNegotiationState, checkpointer=None):
     thread_id = state.get("thread_id")
     influencer_id = state.get("influencer_id")
-    print("[DEBUG] influencer_id: ", influencer_id)
-    print(f"{Colors.GREEN}Entering fetch_pricing_node")
 
     if state.get("min_price") and state.get("max_price"):
         return state
 
     # Guard: influencer_id must be present
     if not influencer_id:
-        print(f"{Colors.RED}[fetch_pricing_node] Missing influencer_id in state")
+        print("[fetch_pricing_node] Missing influencer_id in state")
         return state
 
     db = get_db()
@@ -27,7 +24,7 @@ async def fetch_pricing_node(state: WhatsappNegotiationState, checkpointer=None)
 
     if not influencer:
         print(
-            f"{Colors.RED}[fetch_pricing_node] Influencer not found for _id={influencer_id}"
+            f"[fetch_pricing_node] Influencer not found for _id={influencer_id}"
         )
         return state
 

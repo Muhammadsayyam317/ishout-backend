@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from agents import Agent, Runner
 from agents.agent_output import AgentOutputSchema
 from app.Guardails.input_guardrails import WhatsappInputGuardrail
@@ -14,8 +15,6 @@ import json
 
 
 async def generate_reply_node(state: WhatsappNegotiationState):
-    print(f"{Colors.GREEN}Entering generate_reply_node")
-    print("--------------------------------")
 
     history = get_history_list(state)
     set_history_list(state, history)
@@ -66,9 +65,11 @@ async def generate_reply_node(state: WhatsappNegotiationState):
         "final_reply", "Thanks for your message. We'll get back shortly."
     )
     state["final_reply"] = ai_message
-    state.setdefault("history", []).append({"sender_type": "AI", "message": ai_message})
-
-    print(f"{Colors.CYAN}Generated AI Reply: {ai_message}")
-    print(f"{Colors.YELLOW}Exiting generate_reply_node")
-    print("--------------------------------")
+    state.setdefault("history", []).append(
+        {
+            "sender_type": "AI",
+            "message": ai_message,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+    )
     return state

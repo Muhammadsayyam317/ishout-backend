@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from agents.agent_output import AgentOutputSchema
 from app.Schemas.instagram.negotiation_schema import GenerateReplyOutput
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
@@ -16,9 +17,6 @@ from app.config.credentials_config import config
 
 
 async def complete_negotiation_node(state: WhatsappNegotiationState):
-    print(f"{Colors.GREEN}Entering complete_negotiation_node")
-    print("--------------------------------")
-
     history = get_history_list(state)
     set_history_list(state, history)
 
@@ -47,7 +45,13 @@ async def complete_negotiation_node(state: WhatsappNegotiationState):
         ai_reply = "Thanks for your time! We'll follow up shortly."
 
     state["final_reply"] = ai_reply
-    state.setdefault("history", []).append({"sender_type": "AI", "message": ai_reply})
+    state.setdefault("history", []).append(
+        {
+            "sender_type": "AI",
+            "message": ai_reply,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+    )
     state["next_action"] = None
 
     influencer_id = state.get("influencer_id")
@@ -74,9 +78,5 @@ async def complete_negotiation_node(state: WhatsappNegotiationState):
             )
         except Exception as e:
             print(f"[complete_negotiation_node] Mongo persistence failed: {e}")
-
-    print(f"{Colors.CYAN}AI Generated Reply: {ai_reply}")
-    print(f"{Colors.YELLOW}Exiting from complete_negotiation_node")
-    print("--------------------------------")
 
     return state

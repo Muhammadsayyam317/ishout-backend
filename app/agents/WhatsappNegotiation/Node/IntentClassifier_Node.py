@@ -4,12 +4,10 @@ from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
 from app.Schemas.instagram.negotiation_schema import AnalyzeMessageOutput, NextAction
 from app.Guardails.input_guardrails import WhatsappInputGuardrail
 from app.utils.prompts import ANALYZE_INFLUENCER_WHATSAPP_PROMPT
-from app.utils.printcolors import Colors
 from app.utils.message_context import get_history_list
 
 
 async def intentclassifier(state: WhatsappNegotiationState, checkpointer=None):
-    print(f"{Colors.GREEN}Entering intentclassifier node")
     user_message = state.get("user_message", "")
     history = get_history_list(state)
 
@@ -47,7 +45,4 @@ async def intentclassifier(state: WhatsappNegotiationState, checkpointer=None):
         except (TypeError, ValueError):
             # Leave user_offer as-is if parsing fails
             pass
-    print(
-        f"{Colors.CYAN}IntentClassifier Result → Intent: {intent}, NextAction: {state['next_action']}, UserOffer: {state.get('user_offer')}"
-    )
     return state

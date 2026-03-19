@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from agents.agent_output import AgentOutputSchema
 from app.Schemas.instagram.negotiation_schema import GenerateReplyOutput
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
@@ -15,9 +16,6 @@ from app.utils.message_context import (
 
 
 async def close_conversation_node(state: WhatsappNegotiationState):
-    print(f"{Colors.GREEN}Entering close_conversation_node")
-    print("--------------------------------")
-
     history = get_history_list(state)
     set_history_list(state, history)
 
@@ -42,12 +40,18 @@ async def close_conversation_node(state: WhatsappNegotiationState):
         ai_reply = "Thank you! Looking forward to working together."
 
     state["final_reply"] = ai_reply
-    state.setdefault("history", []).append({"sender_type": "AI", "message": ai_reply})
+    state.setdefault("history", []).append(
+        {
+            "sender_type": "AI",
+            "message": ai_reply,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+    )
     state["next_action"] = None
 
     influencer_id = state.get("influencer_id")
     if not influencer_id:
-        print(f"{Colors.RED}[close_conversation_node] Missing influencer_id; skip campaign_influencers update")
+        print("[close_conversation_node] Missing influencer_id; skip campaign_influencers update")
     else:
         try:
             db = get_db()
@@ -65,8 +69,4 @@ async def close_conversation_node(state: WhatsappNegotiationState):
             )
         except Exception as e:
             print(f"[close_conversation_node] Mongo persistence failed: {e}")
-
-    print(f"{Colors.CYAN}AI Generated Reply: {ai_reply}")
-    print(f"{Colors.YELLOW}Exiting from close_conversation_node")
-    print("--------------------------------")
     return state

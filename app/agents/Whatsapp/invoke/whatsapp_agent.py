@@ -19,7 +19,6 @@ from app.services.websocket_manager import ws_manager
 from app.services.whatsapp.reply_button import handle_button_reply
 from app.services.whatsapp.save_message import save_conversation_message
 from app.utils.Enums.user_enum import SenderType
-from app.utils.printcolors import Colors
 
 
 def extract_whatsapp_message(event: dict):
@@ -61,9 +60,6 @@ async def process_incoming_message(thread_id, profile_name, msg_text):
         message=msg_text,
     )
 
-    print(f"{Colors.GREEN}Conversation message saved")
-    print("--------------------------------")
-
     await ws_manager.broadcast_event(
         "whatsapp.message",
         {
@@ -76,32 +72,28 @@ async def process_incoming_message(thread_id, profile_name, msg_text):
 
 
 async def handle_negotiation_agent(request, thread_id, msg_text, profile_name):
-    print(f"{Colors.GREEN}Entering into handle_negotiation_agent")
-    print("--------------------------------")
     negotiation_state = await get_negotiation_state(thread_id)
-    print(f"{Colors.CYAN}Negotiation state: {negotiation_state}")
-    print("--------------------------------")
 
     if not negotiation_state:
-        print(f"{Colors.RED}No negotiation state found for thread {thread_id}")
-        print("--------------------------------")
+        print(f"[handle_negotiation_agent] No negotiation state found for thread {thread_id}")
         return False
 
     if negotiation_state.get("agent_paused"):
         print(
-            f"{Colors.YELLOW}Negotiation is paused for thread {thread_id} — "
-            f"absorbing message, not falling through to default agent"
+            f"[handle_negotiation_agent] Negotiation is paused for thread {thread_id} "
         )
-        print("--------------------------------")
         return True
-
-    print(f"{Colors.CYAN}Routing to Negotiation Agent")
-    print("--------------------------------")
 
     # Maintain a rolling window of recent conversation history (USER + AI).
     # Normalize to list (Mongo may return history as dict or other type).
     history = get_history_list(negotiation_state)
-    history.append({"sender_type": "USER", "message": msg_text})
+    history.append(
+        {
+            "sender_type": "USER",
+            "message": msg_text,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+    )
     # Keep only the last N messages to avoid unbounded growth
     MAX_HISTORY_LENGTH = 20
     if len(history) > MAX_HISTORY_LENGTH:
@@ -130,7 +122,6 @@ async def handle_negotiation_agent(request, thread_id, msg_text, profile_name):
 
 
 async def handle_default_agent(request, thread_id, msg_text, profile_name, value):
-    print("Routing to Default WhatsApp Agent")
     whatsapp_agent = getattr(request.app.state, "whatsapp_agent", None)
     if not whatsapp_agent:
         raise HTTPException(
@@ -164,9 +155,6 @@ async def handle_default_agent(request, thread_id, msg_text, profile_name, value
 
 
 async def handle_whatsapp_events(request: Request):
-    print(f"{Colors.GREEN}Entering into handle_whatsapp_events")
-    print("--------------------------------")
-
     try:
         event = await request.json()
         first_message, thread_id, msg_text, profile_name, value = (
@@ -193,13 +181,11 @@ async def handle_whatsapp_events(request: Request):
 
         # Otherwise default agent
         await handle_default_agent(request, thread_id, msg_text, profile_name, value)
-        print(f"{Colors.YELLOW}Exiting from handle_whatsapp_events")
-        print("--------------------------------")
         return {"status": "ok"}
 
     except Exception as e:
-        print(f"{Colors.RED}Error in handle_whatsapp_events: {e}")
-        print("--------------------------------")
+        # Keep a minimal log so webhook failures are visible
+        print(f"[handle_whatsapp_events] Error in handle_whatsapp_events: {e}")
 
         raise HTTPException(
             status_code=500,

@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from agents import Agent, Runner
 from agents.agent_output import AgentOutputSchema
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
@@ -14,8 +15,6 @@ from bson import ObjectId
 
 
 async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None):
-    print(f"{Colors.GREEN}Entering counter_offer_node")
-    print("--------------------------------")
     thread_id = state.get("thread_id")
     min_price = state.get("min_price") or 0
     max_price = state.get("max_price") or 0
@@ -25,7 +24,7 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
 
     if not min_price or not max_price:
         print(
-            f"{Colors.RED}[counter_offer_node] min_price={min_price}, max_price={max_price} — pricing not loaded, skipping"
+            f"[counter_offer_node] min_price={min_price}, max_price={max_price} — pricing not loaded, skipping"
         )
         state["final_reply"] = (
             "Thanks for your interest! Let me get some details together and get back to you shortly."
@@ -36,7 +35,7 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
     # re-sending higher prices. Send a handoff-style message.
     if state.get("negotiation_status") == "escalated" and last_price == max_price:
         print(
-            f"{Colors.YELLOW}[counter_offer_node] Already escalated at max_price={max_price} → sending review/hand-off message"
+            f"[counter_offer_node] Already escalated at max_price={max_price} → sending review/hand-off message"
         )
         handoff_message = (
             "We've already shared the best rate we can offer at the moment. "
@@ -47,7 +46,13 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
         state["next_action"] = NextAction.WAIT_OR_ACKNOWLEDGE
         hist = get_history_list(state)
         set_history_list(state, hist)
-        state["history"].append({"sender_type": "AI", "message": handoff_message})
+        state["history"].append(
+            {
+                "sender_type": "AI",
+                "message": handoff_message,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        )
         if checkpointer:
             await checkpointer.save_checkpoint(
                 key=f"negotiation:{thread_id}:last_message",
@@ -127,17 +132,18 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
         state["next_action"] = NextAction.ASK_RATE
 
     state["final_reply"] = ai_message
-    state["history"].append({"sender_type": "AI", "message": ai_message})
+    state["history"].append(
+        {
+            "sender_type": "AI",
+            "message": ai_message,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+    )
 
     if checkpointer:
         await checkpointer.save_checkpoint(
             key=f"negotiation:{thread_id}:last_message", value=ai_message, ttl=300
         )
-
-    print(
-        f"{Colors.CYAN}[counter_offer_node] AI chose price=${ai_price:.2f} "
-        f"(min={min_price}, max={max_price}, last={last_price}, user_offer={user_offer})"
-    )
 
     influencer_id = state.get("influencer_id")
     if influencer_id:
@@ -155,6 +161,6 @@ async def counter_offer_node(state: WhatsappNegotiationState, checkpointer=None)
                 },
             )
         except Exception as e:
-            print(f"{Colors.RED}[counter_offer_node] Mongo persistence failed: {e}")
+            print(f"[counter_offer_node] Mongo persistence failed: {e}")
 
     return state
