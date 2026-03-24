@@ -4,12 +4,9 @@ from app.config.credentials_config import config
 import httpx
 from app.services.whatsapp.save_message import save_conversation_message
 from app.utils.Enums.user_enum import SenderType
-from app.utils.printcolors import Colors
 
 
 async def send_whatsapp_reply_node(state: WhatsappNegotiationState):
-    print(f"{Colors.GREEN}Entering into send_whatsapp_reply_node")
-    print("--------------------------------")
     final_reply = state.get("final_reply")
     thread_id = state.get("thread_id")
     if not final_reply or not thread_id:
@@ -43,8 +40,6 @@ async def send_whatsapp_reply_node(state: WhatsappNegotiationState):
                 message=final_reply,
             )
 
-            print("[send_whatsapp_reply_node] Text response:", text_response.json())
-
             # If we have a brief PDF uploaded to Meta, and this is the final
             # CLOSE_CONVERSATION accept step, send it as a one-shot document message.
             brief_media_id = state.get("brief_media_id")
@@ -61,14 +56,10 @@ async def send_whatsapp_reply_node(state: WhatsappNegotiationState):
                     },
                 }
 
-                document_response = await client.post(
+                await client.post(
                     base_url,
                     headers=headers,
                     json=document_payload,
-                )
-                print(
-                    "[send_whatsapp_reply_node] Document response:",
-                    document_response.json(),
                 )
 
                 # Also log and broadcast the S3 URL for the brief (if present on state)
@@ -85,10 +76,8 @@ async def send_whatsapp_reply_node(state: WhatsappNegotiationState):
                 state.pop("brief_media_id", None)
                 state.pop("brief_media_filename", None)
 
-        print(f"{Colors.YELLOW} Exiting from send_whatsapp_reply_node")
-        print("--------------------------------")
     except Exception as e:
         print(
-            f"{Colors.RED}[send_whatsapp_reply_node] Error sending WhatsApp message: {e}"
+            f"[send_whatsapp_reply_node] Error sending WhatsApp message: {e}"
         )
     return state

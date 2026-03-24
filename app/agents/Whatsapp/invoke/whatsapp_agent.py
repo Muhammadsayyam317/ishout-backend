@@ -19,7 +19,13 @@ from app.services.websocket_manager import ws_manager
 from app.services.whatsapp.reply_button import handle_button_reply
 from app.services.whatsapp.save_message import save_conversation_message
 from app.utils.Enums.user_enum import SenderType
-from app.utils.printcolors import Colors
+from app.services.whatsapp.save_admin_influencer_message import (
+    save_admin_influencer_message,
+)
+from app.services.whatsapp.save_admin_company_message import (
+    save_admin_company_message,
+)
+from app.utils.whatsapp_media import upload_whatsapp_media_to_s3
 
 
 def extract_whatsapp_message(event: dict):
@@ -37,14 +43,17 @@ def extract_whatsapp_message(event: dict):
         return None, None, None, None, None
 
     first_message = messages[0]
-
     thread_id = first_message.get("from")
 
-    msg_text = (
-        first_message.get("text", {}).get("body")
-        if isinstance(first_message.get("text"), dict)
-        else first_message.get("text")
-    ) or ""
+    # Detect message type
+    msg_type = first_message.get("type", "text")
+    msg_text = ""
+    
+    if msg_type == "text":
+        msg_text = first_message.get("text", {}).get("body", "")
+    elif msg_type in ["image", "audio", "video", "document"]:
+        # For media, we might still want to use the caption as msg_text if it exists
+        msg_text = first_message.get(msg_type, {}).get("caption", "")
 
     profile_name = (
         value.get("contacts", [{}])[0].get("profile", {}).get("name") or "iShout"
@@ -61,9 +70,6 @@ async def process_incoming_message(thread_id, profile_name, msg_text):
         message=msg_text,
     )
 
-    print(f"{Colors.GREEN}Conversation message saved")
-    print("--------------------------------")
-
     await ws_manager.broadcast_event(
         "whatsapp.message",
         {
@@ -76,27 +82,52 @@ async def process_incoming_message(thread_id, profile_name, msg_text):
 
 
 async def handle_negotiation_agent(request, thread_id, msg_text, profile_name):
-    print(f"{Colors.GREEN}Entering into handle_negotiation_agent")
-    print("--------------------------------")
     negotiation_state = await get_negotiation_state(thread_id)
-    print(f"{Colors.CYAN}Negotiation state: {negotiation_state}")
-    print("--------------------------------")
 
     if not negotiation_state:
-        print(f"{Colors.RED}No negotiation state found for thread {thread_id}")
-        print("--------------------------------")
+        print(f"[handle_negotiation_agent] No negotiation state found for thread {thread_id}")
         return False
 
     if negotiation_state.get("agent_paused"):
-        print(
-            f"{Colors.YELLOW}Negotiation is paused for thread {thread_id} — "
-            f"absorbing message, not falling through to default agent"
+        # When paused, we must still store + broadcast the absorbed USER message
+        # into the negotiation control doc history (so frontend timestamps stay correct).
+        timestamp = datetime.now(timezone.utc).isoformat()
+        history = get_history_list(negotiation_state)
+        history.append(
+            {
+                "sender_type": "USER",
+                "message": msg_text,
+                "timestamp": timestamp,
+            }
         )
-        print("--------------------------------")
-        return True
 
-    print(f"{Colors.CYAN}Routing to Negotiation Agent")
-    print("--------------------------------")
+        await update_negotiation_state(
+            thread_id,
+            {
+                "user_message": msg_text,
+                "thread_id": thread_id,
+                "sender_id": thread_id,
+                "name": profile_name,
+                "history": history,
+                # keep the state flags as-is (update_negotiation_state uses $set)
+                "agent_paused": negotiation_state.get("agent_paused"),
+                "human_takeover": negotiation_state.get("human_takeover", False),
+            },
+        )
+
+        await ws_manager.broadcast_event(
+            "whatsapp.message",
+            {
+                "thread_id": thread_id,
+                "sender": SenderType.USER.value,
+                "message": msg_text,
+                "timestamp": timestamp,
+                "conversation_mode": "NEGOTIATION",
+                "agent_paused": True,
+                "human_takeover": negotiation_state.get("human_takeover", False),
+            },
+        )
+        return True
 
     # Maintain a rolling window of recent conversation history (USER + AI).
     # Normalize to list (Mongo may return history as dict or other type).
@@ -108,10 +139,6 @@ async def handle_negotiation_agent(request, thread_id, msg_text, profile_name):
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
     )
-    # Keep only the last N messages to avoid unbounded growth
-    MAX_HISTORY_LENGTH = 20
-    if len(history) > MAX_HISTORY_LENGTH:
-        history = history[-MAX_HISTORY_LENGTH:]
 
     negotiation_state.update(
         {
@@ -136,7 +163,6 @@ async def handle_negotiation_agent(request, thread_id, msg_text, profile_name):
 
 
 async def handle_default_agent(request, thread_id, msg_text, profile_name, value):
-    print("Routing to Default WhatsApp Agent")
     whatsapp_agent = getattr(request.app.state, "whatsapp_agent", None)
     if not whatsapp_agent:
         raise HTTPException(
@@ -170,9 +196,6 @@ async def handle_default_agent(request, thread_id, msg_text, profile_name, value
 
 
 async def handle_whatsapp_events(request: Request):
-    print(f"{Colors.GREEN}Entering into handle_whatsapp_events")
-    print("--------------------------------")
-
     try:
         event = await request.json()
         first_message, thread_id, msg_text, profile_name, value = (
@@ -180,6 +203,27 @@ async def handle_whatsapp_events(request: Request):
         )
         if not first_message or not thread_id:
             return {"status": "ok"}
+            
+        # Detect and handle media
+        msg_type = first_message.get("type", "text")
+        mime_type = None
+        filename = None
+        
+        if msg_type in ["image", "audio", "video", "document"]:
+            media_data = first_message.get(msg_type, {})
+            media_id = media_data.get("id")
+            mime_type = media_data.get("mime_type")
+            filename = media_data.get("filename")
+            
+            if media_id:
+                s3_url = await upload_whatsapp_media_to_s3(media_id, msg_type, mime_type)
+                if s3_url:
+                    # Replace msg_text with S3 URL as requested for the 'content' field
+                    msg_text = s3_url
+                else:
+                    # If upload fails, store null or error marker in content
+                    msg_text = None
+        
         if (
             first_message.get("type") == "interactive"
             and first_message.get("interactive", {}).get("type") == "button_reply"
@@ -187,7 +231,28 @@ async def handle_whatsapp_events(request: Request):
             await handle_button_reply(first_message)
             return {"status": "ok"}
 
-        # Save + broadcast
+        # Admin flow routing first
+        admin_influencer_saved = await save_admin_influencer_message(
+            thread_id=thread_id,
+            username=profile_name,
+            sender=SenderType.USER.value,
+            message=msg_text,
+            create_if_missing=False,
+        )
+        if admin_influencer_saved:
+            return {"status": "ok"}
+
+        admin_company_saved = await save_admin_company_message(
+            thread_id=thread_id,
+            username=profile_name,
+            sender=SenderType.USER.value,
+            message=msg_text,
+            create_if_missing=False,
+        )
+        if admin_company_saved:
+            return {"status": "ok"}
+
+        # Otherwise: default WhatsApp message persistence + broadcast
         await process_incoming_message(thread_id, profile_name, msg_text)
 
         # negotiation agent
@@ -199,13 +264,11 @@ async def handle_whatsapp_events(request: Request):
 
         # Otherwise default agent
         await handle_default_agent(request, thread_id, msg_text, profile_name, value)
-        print(f"{Colors.YELLOW}Exiting from handle_whatsapp_events")
-        print("--------------------------------")
         return {"status": "ok"}
 
     except Exception as e:
-        print(f"{Colors.RED}Error in handle_whatsapp_events: {e}")
-        print("--------------------------------")
+        # Keep a minimal log so webhook failures are visible
+        print(f"[handle_whatsapp_events] Error in handle_whatsapp_events: {e}")
 
         raise HTTPException(
             status_code=500,

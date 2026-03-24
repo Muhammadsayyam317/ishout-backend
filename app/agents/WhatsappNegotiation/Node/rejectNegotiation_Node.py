@@ -1,13 +1,10 @@
 from app.Schemas.whatsapp.negotiation_schema import WhatsappNegotiationState
-from app.utils.printcolors import Colors
 from app.db.connection import get_db
 from bson import ObjectId
 from app.config.credentials_config import config
 
 
 async def reject_negotiation_node(state: WhatsappNegotiationState):
-    print(f"{Colors.GREEN}Entering reject_negotiation_node")
-    print("--------------------------------")
     state["negotiation_status"] = "rejected"
     state["negotiation_completed"] = True
     state["conversation_mode"] = "HUMAN_TAKEOVER"
@@ -32,7 +29,7 @@ async def reject_negotiation_node(state: WhatsappNegotiationState):
 
     influencer_id = state.get("influencer_id")
     if not influencer_id:
-        print(f"{Colors.RED}[reject_negotiation_node] Missing influencer_id; skip campaign_influencers update")
+        print("[reject_negotiation_node] Missing influencer_id; skip campaign_influencers update")
     else:
         try:
             db = get_db()
@@ -54,9 +51,5 @@ async def reject_negotiation_node(state: WhatsappNegotiationState):
             )
         except Exception as e:
             print(f"[reject_negotiation_node] Mongo persistence failed: {e}")
-
-    print(f"{Colors.CYAN}[reject_negotiation_node] Negotiation rejected")
-    print(f"{Colors.YELLOW}Exiting reject_negotiation_node")
-    print("--------------------------------")
 
     return state

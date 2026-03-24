@@ -34,6 +34,8 @@ from app.api.controllers.admin.reject_regenerate_influencers import (
 )
 from app.api.controllers.admin.takeover import (
     send_human_message,
+    send_admin_influencer_message,
+    send_admin_company_message,
     takeover_value,
     toggle_human_takeover,
     toggle_negotiation_takeover,
@@ -43,6 +45,8 @@ from app.api.controllers.admin.takeover import (
 from app.api.controllers.admin.user_managment import (
     Whatsapp_Users_Sessions_management,
     Whatsapp_messages_management,
+    whatsapp_admin_influencer_messages_management,
+    whatsapp_admin_company_messages_management,
     delete_user,
     get_all_users,
     update_user_status,
@@ -300,6 +304,30 @@ router.add_api_route(
     path="/whatsapp/send-human-message/{thread_id}",
     endpoint=send_human_message,
     methods=["POST"],
+    tags=["Admin"],
+)
+router.add_api_route(
+    path="/whatsapp-admin-influencer/send-human-message/{thread_id}",
+    endpoint=send_admin_influencer_message,
+    methods=["POST"],
+    tags=["Admin"],
+)
+router.add_api_route(
+    path="/whatsapp-admin-influencer-messages/{thread_id}",
+    endpoint=whatsapp_admin_influencer_messages_management,
+    methods=["GET"],
+    tags=["Admin"],
+)
+router.add_api_route(
+    path="/whatsapp-admin-company/send-human-message/{thread_id}",
+    endpoint=send_admin_company_message,
+    methods=["POST"],
+    tags=["Admin"],
+)
+router.add_api_route(
+    path="/whatsapp-admin-company-messages/{thread_id}",
+    endpoint=whatsapp_admin_company_messages_management,
+    methods=["GET"],
     tags=["Admin"],
 )
 router.add_api_route(

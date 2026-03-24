@@ -1,7 +1,6 @@
 from datetime import datetime, timezone
 from app.core.exception import InternalServerErrorException
 from app.db.connection import get_db
-from app.utils.printcolors import Colors
 from app.config.credentials_config import config
 from app.services.websocket_manager import ws_manager
 
@@ -15,8 +14,6 @@ async def save_negotiation_message(
     human_takeover: bool = False,
     conversation_mode: str = "NEGOTIATION",
 ):
-    print(f"{Colors.GREEN}Entering into save Negotiation message")
-    print("--------------------------------")
     try:
         timestamp = datetime.now(timezone.utc).isoformat()
         payload = {
@@ -36,15 +33,10 @@ async def save_negotiation_message(
 
         await ws_manager.broadcast_event("whatsapp.message", payload)
 
-        print("--------------------------------")
-        print("Whatsapp Conversation message saved")
-        print("--------------------------------")
-        print(f"{Colors.CYAN} Exiting from save Negotiation message")
         return payload
 
     except Exception as e:
-        print(f"{Colors.RED}Error in saving conversation message: {e}")
-        print("--------------------------------")
+        print(f"[save_negotiation_message] Error in saving conversation message: {e}")
         raise InternalServerErrorException(
             message=f"Error in saving conversation message: {str(e)}"
         ) from e
