@@ -12,7 +12,10 @@ async def upload_whatsapp_media_to_s3(media_id: str, media_type: str, mime_type:
     try:
         # Step 1: Fetch Media URL from Meta
         whatsapp_token = config.META_WHATSAPP_ACCESSSTOKEN
-        api_version = config.WHATSAPP_GRAPH_API_VERSION or "v19.0"
+        api_version = config.WHATSAPP_GRAPH_API_VERSION or "v22.0"
+        
+        # Ensure version string format (v22.0 instead of v.22.0)
+        api_version = api_version.replace("v.", "v")
         
         meta_url = f"https://graph.facebook.com/{api_version}/{media_id}"
         headers = {"Authorization": f"Bearer {whatsapp_token}"}
