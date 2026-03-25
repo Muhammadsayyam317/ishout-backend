@@ -13,6 +13,7 @@ from app.services.whatsapp.save_admin_company_message import (
     save_admin_company_message,
 )
 from app.services.whatsapp.send_text import send_whatsapp_text_message
+from app.services.whatsapp.send_media import send_whatsapp_media_message
 from app.core.exception import InternalServerErrorException
 from app.config.credentials_config import config
 from app.agents.WhatsappNegotiation.state.negotiation_state import (
@@ -164,25 +165,43 @@ async def send_human_message(thread_id: str, payload: HumanMessageRequest):
             raise InternalServerErrorException(
                 message="ADMIN takeover is not active for this chat"
             )
-        await send_whatsapp_text_message(to=thread_id, text=payload.message)
+
+        display_message = payload.message or payload.media_url or ""
+
+        if payload.message_type != "text" and payload.meta_media_id:
+            await send_whatsapp_media_message(
+                to=thread_id,
+                meta_media_id=payload.meta_media_id,
+                media_type=payload.message_type,
+                caption=payload.message,
+                filename=payload.media_filename,
+            )
+        else:
+            await send_whatsapp_text_message(to=thread_id, text=display_message)
+
         await save_conversation_message(
             thread_id=thread_id,
             sender="ADMIN",
-            message=payload.message,
+            message=display_message,
             agent_paused=True,
             human_takeover=True,
+            message_type=payload.message_type,
+            media_url=payload.media_url,
+            media_mime_type=payload.media_mime_type,
+            media_filename=payload.media_filename,
         )
         await ws_manager.broadcast_event(
             event_type="whatsapp.message",
             payload={
                 "thread_id": thread_id,
                 "sender": "ADMIN",
-                "message": payload.message,
-                "timestamp": datetime.now(timezone.utc),
+                "message": display_message,
+                "message_type": payload.message_type,
+                "media_url": payload.media_url,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             },
         )
-        print("ws_manager.broadcast_event payload", payload)
-        return {"success": True, "message": "Message sent successfully"}
+        return {"success": True, "message": "MmesasMessage sent successfullyucc"}
     except Exception as e:
         raise InternalServerErrorException(message=str(e)) from e
 
@@ -196,14 +215,29 @@ async def send_admin_influencer_message(
     Persist into `whatsapp_admin_influencer` collection.
     """
     try:
-        await send_whatsapp_text_message(to=thread_id, text=payload.message)
+        display_message = payload.message or payload.media_url or ""
+        if payload.message_type != "text" and payload.meta_media_id:
+            await send_whatsapp_media_message(
+                to=thread_id,
+                meta_media_id=payload.meta_media_id,
+                media_type=payload.message_type,
+                caption=payload.message,
+                filename=payload.media_filename,
+            )
+        else:
+            await send_whatsapp_text_message(to=thread_id, text=display_message)
+
         await save_admin_influencer_message(
             thread_id=thread_id,
             username="ADMIN",
             sender="ADMIN",
-            message=payload.message,
+            message=display_message,
             agent_paused=True,
             human_takeover=True,
+            message_type=payload.message_type,
+            media_url=payload.media_url,
+            media_mime_type=payload.media_mime_type,
+            media_filename=payload.media_filename,
         )
         return {"success": True, "message": "Message sent successfully"}
     except Exception as e:
@@ -219,14 +253,29 @@ async def send_admin_company_message(
     Persist into `whatsapp_admin_company` collection.
     """
     try:
-        await send_whatsapp_text_message(to=thread_id, text=payload.message)
+        display_message = payload.message or payload.media_url or ""
+        if payload.message_type != "text" and payload.meta_media_id:
+            await send_whatsapp_media_message(
+                to=thread_id,
+                meta_media_id=payload.meta_media_id,
+                media_type=payload.message_type,
+                caption=payload.message,
+                filename=payload.media_filename,
+            )
+        else:
+            await send_whatsapp_text_message(to=thread_id, text=display_message)
+
         await save_admin_company_message(
             thread_id=thread_id,
             username="ADMIN",
             sender="ADMIN",
-            message=payload.message,
+            message=display_message,
             agent_paused=True,
             human_takeover=True,
+            message_type=payload.message_type,
+            media_url=payload.media_url,
+            media_mime_type=payload.media_mime_type,
+            media_filename=payload.media_filename,
         )
         return {"success": True, "message": "Message sent successfully"}
     except Exception as e:
@@ -372,21 +421,40 @@ async def send_negotiation_human_message(thread_id: str, payload: HumanMessageRe
             raise InternalServerErrorException(
                 message="ADMIN takeover is not active for this negotiation"
             )
-        await send_whatsapp_text_message(to=thread_id, text=payload.message)
+
+        display_message = payload.message or payload.media_url or ""
+
+        if payload.message_type != "text" and payload.meta_media_id:
+            await send_whatsapp_media_message(
+                to=thread_id,
+                meta_media_id=payload.meta_media_id,
+                media_type=payload.message_type,
+                caption=payload.message,
+                filename=payload.media_filename,
+            )
+        else:
+            await send_whatsapp_text_message(to=thread_id, text=display_message)
+
         await save_negotiation_message(
             thread_id=thread_id,
             sender="ADMIN",
-            message=payload.message,
+            message=display_message,
             agent_paused=True,
             human_takeover=True,
+            message_type=payload.message_type,
+            media_url=payload.media_url,
+            media_mime_type=payload.media_mime_type,
+            media_filename=payload.media_filename,
         )
         await ws_manager.broadcast_event(
             event_type="whatsapp.message",
             payload={
                 "thread_id": thread_id,
                 "sender": "ADMIN",
-                "message": payload.message,
-                "timestamp": datetime.now(timezone.utc),
+                "message": display_message,
+                "message_type": payload.message_type,
+                "media_url": payload.media_url,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
             },
         )
         return {"success": True, "message": "Message sent successfully"}

@@ -39,9 +39,14 @@ class WhatsappConversationMessage(TypedDict, total=False):
     username: str
     sender: str
     message: str
+    message_type: str         # "text" | "image" | "video" | "audio" | "document"
+    media_url: str            # S3 URL — permanent source of truth
+    media_mime_type: str      # e.g. "image/jpeg"
+    media_filename: str       # original filename (for documents)
     agent_paused: bool
     human_takeover: bool
     timestamp: str
+
 
 
 class AgentControl(TypedDict, total=False):

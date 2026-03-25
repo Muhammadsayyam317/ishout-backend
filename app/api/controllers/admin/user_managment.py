@@ -246,6 +246,10 @@ async def Whatsapp_messages_management(
                     username=message["username"],
                     sender=message["sender"],
                     message=message["message"],
+                    message_type=message.get("message_type", "text"),
+                    media_url=message.get("media_url"),
+                    media_mime_type=message.get("media_mime_type"),
+                    media_filename=message.get("media_filename"),
                     timestamp=message["timestamp"],
                 )
                 for message in messages
@@ -294,6 +298,10 @@ async def whatsapp_admin_influencer_messages_management(
                     username=message.get("username"),
                     sender=message["sender"],
                     message=message["message"],
+                    message_type=message.get("message_type", "text"),
+                    media_url=message.get("media_url"),
+                    media_mime_type=message.get("media_mime_type"),
+                    media_filename=message.get("media_filename"),
                     timestamp=message["timestamp"],
                 )
                 for message in messages
@@ -341,6 +349,10 @@ async def whatsapp_admin_company_messages_management(
                     username=message.get("username"),
                     sender=message["sender"],
                     message=message["message"],
+                    message_type=message.get("message_type", "text"),
+                    media_url=message.get("media_url"),
+                    media_mime_type=message.get("media_mime_type"),
+                    media_filename=message.get("media_filename"),
                     timestamp=message["timestamp"],
                 )
                 for message in messages

@@ -12,6 +12,10 @@ async def save_negotiation_message(
     username: str | None = None,
     agent_paused: bool = False,
     human_takeover: bool = False,
+    message_type: str = "text",
+    media_url: str | None = None,
+    media_mime_type: str | None = None,
+    media_filename: str | None = None,
     conversation_mode: str = "NEGOTIATION",
 ):
     try:
@@ -21,6 +25,10 @@ async def save_negotiation_message(
             "username": username,
             "sender": sender,
             "message": message,
+            "message_type": message_type,
+            "media_url": media_url,
+            "media_mime_type": media_mime_type,
+            "media_filename": media_filename,
             "agent_paused": agent_paused,
             "human_takeover": human_takeover,
             "conversation_mode": conversation_mode,
