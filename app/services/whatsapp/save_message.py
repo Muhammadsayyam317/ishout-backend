@@ -12,10 +12,7 @@ async def save_conversation_message(
     username: str | None = None,
     agent_paused: bool = False,
     human_takeover: bool = False,
-    message_type: str = "text",
-    media_url: str | None = None,
-    media_mime_type: str | None = None,
-    media_filename: str | None = None,
+    conversation_mode: str = "DEFAULT",
 ):
 
     try:
@@ -32,7 +29,7 @@ async def save_conversation_message(
             "agent_paused": agent_paused,
             "human_takeover": human_takeover,
             "timestamp": timestamp,
-            "conversation_mode": "DEFAULT",
+            "conversation_mode": conversation_mode,
         }
 
         db = get_db()

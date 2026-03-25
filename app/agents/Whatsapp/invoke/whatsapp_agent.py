@@ -25,10 +25,7 @@ from app.services.whatsapp.save_admin_influencer_message import (
 from app.services.whatsapp.save_admin_company_message import (
     save_admin_company_message,
 )
-from app.utils.campaign_helpers import upload_file_to_s3_with_prefix
-from app.services.whatsapp.parser import MEDIA_TYPES
-import httpx
-import uuid
+from app.utils.whatsapp_media import upload_whatsapp_media_to_s3
 
 
 def extract_whatsapp_message(event: dict):
@@ -46,16 +43,17 @@ def extract_whatsapp_message(event: dict):
         return None, None, None, None, None
 
     first_message = messages[0]
-    msg_type = first_message.get("type", "text")
-
     thread_id = first_message.get("from")
 
-    # Text body (or caption for media)
-    msg_text = (
-        first_message.get("text", {}).get("body")
-        if isinstance(first_message.get("text"), dict)
-        else first_message.get("text")
-    ) or ""
+    # Detect message type
+    msg_type = first_message.get("type", "text")
+    msg_text = ""
+    
+    if msg_type == "text":
+        msg_text = first_message.get("text", {}).get("body", "")
+    elif msg_type in ["image", "audio", "video", "document"]:
+        # For media, we might still want to use the caption as msg_text if it exists
+        msg_text = first_message.get(msg_type, {}).get("caption", "")
 
     # For media messages, also try to get the caption as the display text
     if msg_type in MEDIA_TYPES:
@@ -287,6 +285,27 @@ async def handle_whatsapp_events(request: Request):
         )
         if not first_message or not thread_id:
             return {"status": "ok"}
+            
+        # Detect and handle media
+        msg_type = first_message.get("type", "text")
+        mime_type = None
+        filename = None
+        
+        if msg_type in ["image", "audio", "video", "document"]:
+            media_data = first_message.get(msg_type, {})
+            media_id = media_data.get("id")
+            mime_type = media_data.get("mime_type")
+            filename = media_data.get("filename")
+            
+            if media_id:
+                s3_url = await upload_whatsapp_media_to_s3(media_id, msg_type, mime_type)
+                if s3_url:
+                    # Replace msg_text with S3 URL as requested for the 'content' field
+                    msg_text = s3_url
+                else:
+                    # If upload fails, store null or error marker in content
+                    msg_text = None
+        
         if (
             first_message.get("type") == "interactive"
             and first_message.get("interactive", {}).get("type") == "button_reply"
@@ -294,9 +313,7 @@ async def handle_whatsapp_events(request: Request):
             await handle_button_reply(first_message)
             return {"status": "ok"}
 
-        # Admin flow routing first: if this thread already has admin<->influencer/company chat
-        # activity, store incoming messages in the correct dedicated collection and avoid
-        # running negotiation/default agents.
+        # Admin flow routing first
         admin_influencer_saved = await save_admin_influencer_message(
             thread_id=thread_id,
             username=profile_name,
