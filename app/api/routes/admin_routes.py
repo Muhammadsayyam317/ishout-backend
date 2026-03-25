@@ -42,6 +42,7 @@ from app.api.controllers.admin.takeover import (
     negotiation_takeover_value,
     send_negotiation_human_message,
 )
+from app.api.controllers.admin.media_upload import upload_admin_media
 from app.api.controllers.admin.user_managment import (
     Whatsapp_Users_Sessions_management,
     Whatsapp_messages_management,
@@ -303,6 +304,12 @@ router.add_api_route(
 router.add_api_route(
     path="/whatsapp/send-human-message/{thread_id}",
     endpoint=send_human_message,
+    methods=["POST"],
+    tags=["Admin"],
+)
+router.add_api_route(
+    path="/upload-media",
+    endpoint=upload_admin_media,
     methods=["POST"],
     tags=["Admin"],
 )
