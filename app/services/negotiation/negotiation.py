@@ -68,6 +68,8 @@ async def get_negotiation_control_detail(_id: str) -> Dict[str, Any]:
             "phone": serialized_doc.get("sender_id"),
             "history": serialized_doc.get("history", []),
             "conversation_mode": serialized_doc.get("conversation_mode"),
+            "admin_approved": serialized_doc.get("admin_approved"),
+            "Brand_approved": serialized_doc.get("Brand_approved"),
         }
 
     except Exception as e:
