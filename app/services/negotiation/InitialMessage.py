@@ -101,6 +101,8 @@ async def NegotiationInitialMessage(influencer_id: str):
             "manual_negotiation": False,
             "user_offer": None,
             "negotiation_completed": False,
+            "admin_approved": None,
+            "Brand_approved": None,
             "conversation_mode": "NEGOTIATION",
             "agent_paused": False,
             "human_takeover": False,

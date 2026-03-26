@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from app.db.connection import get_db
 from app.model.Whatsapp_Users_Sessions import HumanMessageRequest
-from app.model.takeover import HumanTakeoverRequest
+from app.model.takeover import HumanTakeoverRequest, NegotiationApprovalRequest
 from app.services.websocket_manager import ws_manager
 from app.services.whatsapp.save_message import save_conversation_message
 from app.services.whatsapp.save_negotiation_message import save_negotiation_message
@@ -408,6 +408,59 @@ async def negotiation_takeover_value(thread_id: str):
             }
     except Exception as e:
         raise InternalServerErrorException(message=str(e)) from e
+
+
+async def update_negotiation_approval_status(
+    thread_id: str, payload: NegotiationApprovalRequest
+):
+    """
+    Update negotiation approval statuses.
+    Accepts only one field at a time:
+    - `admin_approved`
+    - `Brand_approved`
+    Each can be a string or null (to clear).
+    """
+    data = payload.model_dump(exclude_unset=True)
+    has_admin = "admin_approved" in data
+    has_brand = "Brand_approved" in data
+
+    if not (has_admin or has_brand):
+        raise HTTPException(
+            status_code=400,
+            detail="Provide one of `admin_approved` or `Brand_approved` in the request body.",
+        )
+    if has_admin and has_brand:
+        raise HTTPException(
+            status_code=400,
+            detail="Provide only one field at a time: `admin_approved` or `Brand_approved`.",
+        )
+
+    update_payload: dict = {}
+    if has_admin:
+        update_payload["admin_approved"] = data.get("admin_approved")
+    else:
+        update_payload["Brand_approved"] = data.get("Brand_approved")
+
+    updated = await update_negotiation_state(thread_id, update_payload)
+
+    # Notify frontend about control updates.
+    if updated:
+        await ws_manager.broadcast_event(
+            event_type="NEGOTIATION_CONTROL_UPDATE",
+            payload={
+                "thread_id": thread_id,
+                "admin_approved": updated.get("admin_approved"),
+                "Brand_approved": updated.get("Brand_approved"),
+            },
+        )
+
+    return {
+        "success": True,
+        "message": "Negotiation approval status updated",
+        "thread_id": thread_id,
+        "admin_approved": updated.get("admin_approved") if updated else None,
+        "Brand_approved": updated.get("Brand_approved") if updated else None,
+    }
 
 
 async def send_negotiation_human_message(thread_id: str, payload: HumanMessageRequest):

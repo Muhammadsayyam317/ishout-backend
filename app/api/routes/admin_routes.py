@@ -41,6 +41,7 @@ from app.api.controllers.admin.takeover import (
     toggle_human_takeover,
     toggle_negotiation_takeover,
     negotiation_takeover_value,
+    update_negotiation_approval_status,
     send_negotiation_human_message,
 )
 from app.api.controllers.admin.user_managment import (
@@ -359,6 +360,12 @@ router.add_api_route(
     path="/negotiation/takeover-value/{thread_id}",
     endpoint=negotiation_takeover_value,
     methods=["GET"],
+    tags=["Admin"],
+)
+router.add_api_route(
+    path="/negotiation/approval-status/{thread_id}",
+    endpoint=update_negotiation_approval_status,
+    methods=["PATCH"],
     tags=["Admin"],
 )
 router.add_api_route(
