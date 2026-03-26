@@ -13,6 +13,7 @@ async def save_admin_company_message(
     username: str | None = None,
     agent_paused: bool = False,
     human_takeover: bool = False,
+    conversation_mode: str = "ADMIN_COMPANY",
     create_if_missing: bool = True,
 ):
     """
@@ -28,7 +29,7 @@ async def save_admin_company_message(
             "message": message,
             "agent_paused": agent_paused,
             "human_takeover": human_takeover,
-            "conversation_mode": "ADMIN_COMPANY",
+            "conversation_mode": conversation_mode,
             "timestamp": timestamp,
         }
 
