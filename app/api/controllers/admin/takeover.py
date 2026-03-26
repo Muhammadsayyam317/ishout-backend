@@ -15,10 +15,12 @@ from app.services.whatsapp.save_admin_company_message import (
 from app.services.whatsapp.send_text import send_whatsapp_text_message
 from app.core.exception import InternalServerErrorException
 from app.config.credentials_config import config
+from bson import ObjectId
 from app.agents.WhatsappNegotiation.state.negotiation_state import (
     get_negotiation_state,
     update_negotiation_state,
 )
+from app.utils.helpers import normalize_phone
 
 router = APIRouter()
 
@@ -228,6 +230,49 @@ async def send_admin_company_message(
             agent_paused=True,
             human_takeover=True,
         )
+        return {"success": True, "message": "Message sent successfully"}
+    except Exception as e:
+        raise InternalServerErrorException(message=str(e)) from e
+
+
+async def send_company_admin_message(user_id: str, payload: HumanMessageRequest):
+    """
+    Company dashboard sends a message to admin dashboard.
+
+    Dashboard-only: do NOT send WhatsApp.
+    Persist into `whatsapp_admin_company` collection with `conversation_mode="Company_Admin"`.
+    """
+    try:
+        db = get_db()
+        users_collection = db.get_collection(config.MONGODB_ATLAS_COLLECTION_USERS)
+        user_doc = await users_collection.find_one({"_id": ObjectId(user_id)})
+        if not user_doc:
+            raise InternalServerErrorException(message="Company user not found")
+
+        phone = user_doc.get("phone")
+        company_name = user_doc.get("company_name")
+
+        thread_id = normalize_phone(phone) if phone is not None else None
+        if not thread_id:
+            raise InternalServerErrorException(
+                message="Company phone number is missing or invalid"
+            )
+        if not company_name:
+            raise InternalServerErrorException(message="Company name is missing")
+
+        # Sender/username pattern matches WhatsApp inbound routing:
+        # - `sender="USER"`
+        # - `username` is company's name
+        await save_admin_company_message(
+            thread_id=thread_id,
+            username=company_name,
+            sender="USER",
+            message=payload.message,
+            agent_paused=True,
+            human_takeover=True,
+            conversation_mode="Company_Admin",
+        )
+
         return {"success": True, "message": "Message sent successfully"}
     except Exception as e:
         raise InternalServerErrorException(message=str(e)) from e
