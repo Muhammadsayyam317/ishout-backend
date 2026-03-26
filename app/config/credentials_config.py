@@ -135,6 +135,9 @@ class Config(BaseModel):
     AWS_REGION: str = Field(default=os.getenv("AWS_REGION"))
     S3_BUCKET_NAME: str = Field(default=os.getenv("S3_BUCKET_NAME"))
 
+    MESSAGE_FROM: str = Field(default=os.getenv("MESSAGE_FROM"))
+
+
 
 # config singleton instance
 config = Config()

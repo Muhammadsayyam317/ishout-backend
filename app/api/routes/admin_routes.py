@@ -36,6 +36,7 @@ from app.api.controllers.admin.takeover import (
     send_human_message,
     send_admin_influencer_message,
     send_admin_company_message,
+    send_company_admin_message,
     takeover_value,
     toggle_human_takeover,
     toggle_negotiation_takeover,
@@ -67,7 +68,6 @@ from app.services.negotiation.negotiation import (
     get_all_negotiation_controls,
     get_negotiation_control_detail,
 )
-from app.tools.regenerate_influencer import reject_and_regenerate
 
 
 router = APIRouter()
@@ -321,6 +321,13 @@ router.add_api_route(
 router.add_api_route(
     path="/whatsapp-admin-company/send-human-message/{thread_id}",
     endpoint=send_admin_company_message,
+    methods=["POST"],
+    tags=["Admin"],
+)
+
+router.add_api_route(
+    path="/whatsapp-admin-company/send-company-admin-message/{user_id}",
+    endpoint=send_company_admin_message,
     methods=["POST"],
     tags=["Admin"],
 )
