@@ -55,7 +55,7 @@ async def get_negotiation_control_detail(_id: str) -> Dict[str, Any]:
         try:
             object_id = ObjectId(_id)
         except Exception:
-            return None  
+            return None
 
         document = await collection.find_one({"_id": object_id})
         if not document:
@@ -68,10 +68,33 @@ async def get_negotiation_control_detail(_id: str) -> Dict[str, Any]:
             "phone": serialized_doc.get("sender_id"),
             "history": serialized_doc.get("history", []),
             "conversation_mode": serialized_doc.get("conversation_mode"),
+            "admin_approved": serialized_doc.get("admin_approved"),
+            "Brand_approved": serialized_doc.get("Brand_approved"),
         }
 
     except Exception as e:
         print(f"{Colors.RED}Error in get_negotiation_control_detail: {e}")
         raise InternalServerErrorException(
             message=f"Error in get_negotiation_control_detail: {str(e)}"
+        ) from e
+
+
+async def delete_negotiation_control(thread_id: str) -> Dict[str, Any]:
+    try:
+        db = get_db()
+        collection = db.get_collection(config.MONGODB_NEGOTIATION_AGENT_CONTROLS)
+
+        result = await collection.delete_one({"thread_id": thread_id})
+        if result.deleted_count == 0:
+            return None
+
+        return {
+            "message": "Negotiation control deleted successfully",
+            "thread_id": thread_id,
+        }
+
+    except Exception as e:
+        print(f"{Colors.RED}Error in delete_negotiation_control: {e}")
+        raise InternalServerErrorException(
+            message=f"Error in delete_negotiation_control: {str(e)}"
         ) from e

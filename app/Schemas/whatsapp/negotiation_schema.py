@@ -46,6 +46,8 @@ class WhatsappNegotiationState(TypedDict):
     negotiation_completed: Optional[bool]
     agent_paused: Optional[bool]
     admin_takeover: Optional[bool]
+    admin_approved: Optional[str]
+    Brand_approved: Optional[str]
     brief_media_id: Optional[str]
     brief_media_filename: Optional[str]
     brief_s3_url: Optional[str]

@@ -41,6 +41,7 @@ from app.api.controllers.admin.takeover import (
     toggle_human_takeover,
     toggle_negotiation_takeover,
     negotiation_takeover_value,
+    update_negotiation_approval_status,
     send_negotiation_human_message,
 )
 from app.api.controllers.admin.user_managment import (
@@ -67,6 +68,7 @@ from app.services.negotiation.InitialMessage import NegotiationInitialMessage
 from app.services.negotiation.negotiation import (
     get_all_negotiation_controls,
     get_negotiation_control_detail,
+    delete_negotiation_control,
 )
 
 
@@ -362,6 +364,12 @@ router.add_api_route(
     tags=["Admin"],
 )
 router.add_api_route(
+    path="/negotiation/approval-status/{thread_id}",
+    endpoint=update_negotiation_approval_status,
+    methods=["PATCH"],
+    tags=["Admin"],
+)
+router.add_api_route(
     path="/negotiation/send-human-message/{thread_id}",
     endpoint=send_negotiation_human_message,
     methods=["POST"],
@@ -426,3 +434,19 @@ async def negotiation_control_detail_route(_id: str):
     if not detail:
         raise HTTPException(status_code=404, detail="Negotiation control not found")
     return detail
+
+
+@router.delete("/negotiation-controls/{thread_id}", tags=["Admin"])
+async def delete_negotiation_control_route(
+    thread_id: str,
+    current_user: dict = Depends(require_admin_access),
+):
+    try:
+        result = await delete_negotiation_control(thread_id)
+        if not result:
+            raise HTTPException(status_code=404, detail="Negotiation control not found")
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
