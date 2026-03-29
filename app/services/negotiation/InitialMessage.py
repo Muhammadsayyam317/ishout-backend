@@ -30,6 +30,45 @@ async def NegotiationInitialMessage(influencer_id: str):
     if not influencer:
         return {"status": "error", "message": "Influencer not found"}
 
+    campaign_id = influencer.get("campaign_id")
+    brand_thread_id = None
+    campaign_logo_url = None
+    if campaign_id:
+        try:
+            campaigns_collection = db.get_collection(
+                config.MONGODB_ATLAS_COLLECTION_CAMPAIGNS
+            )
+            briefs_collection = db.get_collection(
+                config.MONGODB_CAMPAIGN_BRIEF_GENERATION
+            )
+            camp_oid = (
+                campaign_id
+                if isinstance(campaign_id, ObjectId)
+                else ObjectId(str(campaign_id))
+            )
+            campaign = await campaigns_collection.find_one(
+                {"_id": camp_oid},
+                {"brand_thread_id": 1, "brief_id": 1},
+            )
+            if campaign:
+                brand_thread_id = campaign.get("brand_thread_id")
+                brief_id = campaign.get("brief_id")
+                if brief_id:
+                    briefs = await briefs_collection.find(
+                        {"_id": {"$in": [str(brief_id)]}}
+                    ).to_list(length=None)
+                    brief_logo_map = {
+                        str(doc["_id"]): (doc.get("response") or {}).get(
+                            "campaign_logo_url"
+                        )
+                        for doc in briefs
+                    }
+                    campaign_logo_url = brief_logo_map.get(str(brief_id))
+        except (InvalidId, TypeError, ValueError) as e:
+            print(
+                f"[NegotiationInitialMessage] Could not resolve campaign / brief fields: {e}"
+            )
+
     influencer_name = influencer.get("username")
     phone_number = influencer.get("phone_number")
 
@@ -70,9 +109,7 @@ async def NegotiationInitialMessage(influencer_id: str):
         return {"status": "error", "message": f"Error sending WhatsApp message: {e}"}
 
     # Personalize the stored message with the influencer's name
-    personalized_message = INITIAL_OUTREACH_MESSAGE.format(
-        name=influencer_name or ""
-    )
+    personalized_message = INITIAL_OUTREACH_MESSAGE.format(name=influencer_name or "")
 
     await save_negotiation_message(
         thread_id=phone_number,
@@ -89,6 +126,9 @@ async def NegotiationInitialMessage(influencer_id: str):
         data={
             "thread_id": phone_number,
             "influencer_id": influencer_id,
+            "campaign_id": campaign_id,
+            "brand_thread_id": brand_thread_id,
+            "campaign_logo_url": campaign_logo_url,
             "analysis": {},
             "final_reply": None,
             "intent": None,

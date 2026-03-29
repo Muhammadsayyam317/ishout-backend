@@ -115,6 +115,11 @@ async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]
         if not campaign_name:
             campaign_name = f"Campaign - {', '.join(request_data.category)} - {', '.join(request_data.platform)}"
 
+        brand_thread_id = None
+        if request_data.user_id:
+            user_details = await _populate_user_details(request_data.user_id)
+            brand_thread_id = user_details.get("phone")
+
         campaign_doc = {
             "name": campaign_name,
             "platform": request_data.platform,
@@ -123,6 +128,7 @@ async def create_campaign(request_data: CreateCampaignRequest) -> Dict[str, Any]
             "country": request_data.country,
             "user_id": request_data.user_id,
             "company_name": request_data.company_name,
+            "brand_thread_id": brand_thread_id,
             "user_type": "Website",
             "status": CampaignStatus.PENDING,
             "limit": request_data.limit,
