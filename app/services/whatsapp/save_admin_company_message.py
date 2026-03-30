@@ -15,6 +15,10 @@ async def save_admin_company_message(
     human_takeover: bool = False,
     conversation_mode: str = "ADMIN_COMPANY",
     create_if_missing: bool = True,
+    negotiation_id: str | None = None,
+    video_url: str | None = None,
+    video_status: str | None = None,
+    brand_thread_id: str | None = None,
 ):
     """
     Save one admin<->company message and broadcast it.
@@ -32,6 +36,14 @@ async def save_admin_company_message(
             "conversation_mode": conversation_mode,
             "timestamp": timestamp,
         }
+        if negotiation_id is not None:
+            payload["negotiation_id"] = negotiation_id
+        if video_url is not None:
+            payload["video_url"] = video_url
+        if video_status is not None:
+            payload["video_status"] = video_status
+        if brand_thread_id is not None:
+            payload["brand_thread_id"] = brand_thread_id
 
         db = get_db()
         collection = db.get_collection(config.MONGODB_WHATSAPP_ADMIN_COMPANY)

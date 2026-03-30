@@ -1,5 +1,6 @@
 from datetime import datetime
 from bson.objectid import ObjectId
+from fastapi import Query
 from app.model.whatsappconversation import WhatsappConversationMessage
 from app.config.credentials_config import config
 from app.core.exception import (
@@ -313,15 +314,27 @@ async def whatsapp_admin_influencer_messages_management(
 
 async def whatsapp_admin_company_messages_management(
     thread_id: str,
+    negotiation_id: str = Query(
+        ...,
+        description="Must match negotiation_id stored on each message; results require both thread_id and negotiation_id.",
+    ),
     page: int = 1,
     page_size: int = 20,
 ) -> Dict[str, Any]:
     try:
+        neg = negotiation_id.strip()
+        if not neg:
+            raise BadRequestException(message="negotiation_id cannot be empty")
+
         db = get_db()
         collection = db.get_collection(config.MONGODB_WHATSAPP_ADMIN_COMPANY)
         skip = (page - 1) * page_size
+
+        # Both must match (AND) — same as MongoDB filter with multiple keys
+        query: Dict[str, Any] = {"thread_id": thread_id, "negotiation_id": neg}
+
         cursor = (
-            collection.find({"thread_id": thread_id})
+            collection.find(query)
             .sort("timestamp", -1)
             .skip(skip)
             .limit(page_size)
@@ -330,7 +343,7 @@ async def whatsapp_admin_company_messages_management(
         messages = [convert_objectid(m) for m in messages]
         messages.reverse()
 
-        total = await collection.count_documents({"thread_id": thread_id})
+        total = await collection.count_documents(query)
         total_pages = (total + page_size - 1) // page_size
 
         return {
@@ -342,6 +355,7 @@ async def whatsapp_admin_company_messages_management(
                     sender=message["sender"],
                     message=message["message"],
                     timestamp=message["timestamp"],
+                    negotiation_id=message.get("negotiation_id"),
                 )
                 for message in messages
             ],
