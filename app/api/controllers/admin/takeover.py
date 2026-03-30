@@ -1,7 +1,10 @@
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException
 from app.db.connection import get_db
-from app.model.Whatsapp_Users_Sessions import HumanMessageRequest
+from app.model.Whatsapp_Users_Sessions import (
+    HumanMessageRequest,
+    AdminApproveVideoRequest,
+)
 from app.model.takeover import HumanTakeoverRequest, NegotiationApprovalRequest
 from app.services.websocket_manager import ws_manager
 from app.services.whatsapp.save_message import save_conversation_message
@@ -217,11 +220,11 @@ async def send_admin_company_message(
     payload: HumanMessageRequest,
 ):
     """
-    Admin sends a human message to company (admin<->company flow).
-    Persist into `whatsapp_admin_company` collection.
+    Admin dashboard → company: persist only (no outbound WhatsApp).
+    Stored in `whatsapp_admin_company` collection.
     """
     try:
-        await send_whatsapp_text_message(to=thread_id, text=payload.message)
+        neg_id = (payload.negotiation_id or "").strip() or None
         await save_admin_company_message(
             thread_id=thread_id,
             username="ADMIN",
@@ -229,6 +232,7 @@ async def send_admin_company_message(
             message=payload.message,
             agent_paused=True,
             human_takeover=True,
+            negotiation_id=neg_id,
         )
         return {"success": True, "message": "Message sent successfully"}
     except Exception as e:
@@ -263,6 +267,7 @@ async def send_company_admin_message(user_id: str, payload: HumanMessageRequest)
         # Sender/username pattern matches WhatsApp inbound routing:
         # - `sender="USER"`
         # - `username` is company's name
+        neg_id = (payload.negotiation_id or "").strip() or None
         await save_admin_company_message(
             thread_id=thread_id,
             username=company_name,
@@ -271,9 +276,47 @@ async def send_company_admin_message(user_id: str, payload: HumanMessageRequest)
             agent_paused=True,
             human_takeover=True,
             conversation_mode="Company_Admin",
+            negotiation_id=neg_id,
         )
 
         return {"success": True, "message": "Message sent successfully"}
+    except Exception as e:
+        raise InternalServerErrorException(message=str(e)) from e
+
+
+async def admin_approve_video_to_brand(payload: AdminApproveVideoRequest):
+    """
+    When admin approves influencer video, store it into `whatsapp_admin_company`
+    so it appears in the brand chat (filtered by thread_id + negotiation_id).
+    """
+    try:
+        neg_id = (payload.negotiation_id or "").strip()
+        video_url = (payload.video_url or "").strip()
+        brand_thread_id = (payload.brand_thread_id or "").strip()
+
+        if not neg_id or not video_url or not brand_thread_id:
+            raise HTTPException(
+                status_code=400,
+                detail="negotiation_id, video_url, and brand_thread_id are required.",
+            )
+
+        await save_admin_company_message(
+            thread_id=brand_thread_id,
+            username="ADMIN",
+            sender="ADMIN",
+            message=video_url,
+            agent_paused=True,
+            human_takeover=True,
+            conversation_mode="ADMIN_COMPANY_VIDEO",
+            negotiation_id=neg_id,
+            video_url=video_url,
+            video_status=payload.video_status,
+            brand_thread_id=brand_thread_id,
+        )
+
+        return {"success": True, "message": "Video sent to brand chat"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise InternalServerErrorException(message=str(e)) from e
 

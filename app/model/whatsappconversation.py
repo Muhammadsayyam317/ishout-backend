@@ -42,6 +42,7 @@ class WhatsappConversationMessage(TypedDict, total=False):
     agent_paused: bool
     human_takeover: bool
     timestamp: str
+    negotiation_id: Optional[str]
 
 
 class AgentControl(TypedDict, total=False):

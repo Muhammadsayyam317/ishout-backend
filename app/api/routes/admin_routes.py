@@ -37,6 +37,7 @@ from app.api.controllers.admin.takeover import (
     send_admin_influencer_message,
     send_admin_company_message,
     send_company_admin_message,
+    admin_approve_video_to_brand,
     takeover_value,
     toggle_human_takeover,
     toggle_negotiation_takeover,
@@ -337,6 +338,13 @@ router.add_api_route(
     path="/whatsapp-admin-company-messages/{thread_id}",
     endpoint=whatsapp_admin_company_messages_management,
     methods=["GET"],
+    tags=["Admin"],
+)
+
+router.add_api_route(
+    path="/whatsapp-admin-company/approve-video",
+    endpoint=admin_approve_video_to_brand,
+    methods=["POST"],
     tags=["Admin"],
 )
 router.add_api_route(
