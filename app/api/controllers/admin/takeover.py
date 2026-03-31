@@ -310,7 +310,8 @@ async def admin_approve_video_to_brand(payload: AdminApproveVideoRequest):
             conversation_mode="ADMIN_COMPANY_VIDEO",
             negotiation_id=neg_id,
             video_url=video_url,
-            video_status=payload.video_status,
+            video_approve_admin=payload.video_approve_admin,
+            video_approve_brand=payload.video_approve_brand,
             brand_thread_id=brand_thread_id,
         )
 

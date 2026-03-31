@@ -63,6 +63,9 @@ class Config(BaseModel):
             "MONGODB_WHATSAPP_ADMIN_COMPANY", "whatsapp_admin_company"
         )
     )
+    MONGODB_CONTENT_FEEDBACK: str = Field(
+        default=os.getenv("MONGODB_CONTENT_FEEDBACK", "content_feedback")
+    )
     MONGODB_CAMPAIGN_BRIEF_GENERATION: str = Field(
         default=os.getenv("MONGODB_CAMPAIGN_BRIEF_GENERATION", "CampaignBriefGeneration")
     )

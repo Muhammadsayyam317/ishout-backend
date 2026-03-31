@@ -45,6 +45,12 @@ from app.api.controllers.admin.takeover import (
     update_negotiation_approval_status,
     send_negotiation_human_message,
 )
+from app.api.controllers.admin.content_feedback import (
+    upsert_content_feedback,
+    get_content_feedback_admin,
+    get_content_feedback_brand,
+)
+from app.Schemas.content_feedback import ContentFeedbackUpsertRequest
 from app.api.controllers.admin.user_managment import (
     Whatsapp_Users_Sessions_management,
     Whatsapp_messages_management,
@@ -60,7 +66,10 @@ from app.Schemas.campaign import (
     AdminGenerateInfluencersRequest,
     CampaignStatusUpdateRequest,
 )
-from app.middleware.auth_middleware import require_admin_access
+from app.middleware.auth_middleware import (
+    require_admin_access,
+    require_company_or_admin_access,
+)
 from app.services.instagram.list_on_conversations import (
     instagram_conversation_messages,
     instagram_conversations_list,
@@ -347,6 +356,31 @@ router.add_api_route(
     methods=["POST"],
     tags=["Admin"],
 )
+
+
+@router.post("/content-feedback", tags=["Admin"])
+async def content_feedback_upsert_route(
+    request_data: ContentFeedbackUpsertRequest,
+    current_user: dict = Depends(require_company_or_admin_access),
+):
+    return await upsert_content_feedback(request_data)
+
+
+@router.get("/content-feedback/admin", tags=["Admin"])
+async def content_feedback_admin_route(
+    feedback_id: str,
+    current_user: dict = Depends(require_company_or_admin_access),
+):
+    return await get_content_feedback_admin(feedback_id)
+
+
+@router.get("/content-feedback/brand", tags=["Admin"])
+async def content_feedback_brand_route(
+    feedback_id: str,
+    current_user: dict = Depends(require_company_or_admin_access),
+):
+    return await get_content_feedback_brand(feedback_id)
+
 router.add_api_route(
     path="/whatsapp/toggle-takeover/{thread_id}",
     endpoint=toggle_human_takeover,
