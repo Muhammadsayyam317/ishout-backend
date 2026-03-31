@@ -24,7 +24,7 @@ class HumanMessageRequest(BaseModel):
 class AdminApproveVideoRequest(BaseModel):
     negotiation_id: str
     video_url: str
-    # Example: "admin_approved"
-    video_status: str = "admin_approved"
+    video_approve_admin: Optional[str] = None
+    video_approve_brand: Optional[str] = None
     # This is the WhatsApp thread id / brand phone used as `thread_id`
     brand_thread_id: str

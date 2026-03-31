@@ -17,7 +17,8 @@ async def save_admin_company_message(
     create_if_missing: bool = True,
     negotiation_id: str | None = None,
     video_url: str | None = None,
-    video_status: str | None = None,
+    video_approve_admin: str | None = None,
+    video_approve_brand: str | None = None,
     brand_thread_id: str | None = None,
 ):
     """
@@ -40,8 +41,10 @@ async def save_admin_company_message(
             payload["negotiation_id"] = negotiation_id
         if video_url is not None:
             payload["video_url"] = video_url
-        if video_status is not None:
-            payload["video_status"] = video_status
+        if video_approve_admin is not None:
+            payload["video_approve_admin"] = video_approve_admin
+        if video_approve_brand is not None:
+            payload["video_approve_brand"] = video_approve_brand
         if brand_thread_id is not None:
             payload["brand_thread_id"] = brand_thread_id
 
@@ -55,7 +58,27 @@ async def save_admin_company_message(
             if not exists:
                 return None
 
-        await collection.insert_one(payload)
+        # For approved-video events, keep one record per negotiation/video and
+        # update statuses in-place instead of creating a new document each time.
+        if conversation_mode == "ADMIN_COMPANY_VIDEO" and negotiation_id:
+            query = {
+                "thread_id": thread_id,
+                "negotiation_id": negotiation_id,
+                "conversation_mode": conversation_mode,
+            }
+            if video_url is not None:
+                query["video_url"] = video_url
+
+            existing_video_doc = await collection.find_one(query, {"_id": 1})
+            if existing_video_doc:
+                await collection.update_one(
+                    {"_id": existing_video_doc["_id"]},
+                    {"$set": payload},
+                )
+            else:
+                await collection.insert_one(payload)
+        else:
+            await collection.insert_one(payload)
 
         await ws_manager.broadcast_event("whatsapp.message", payload)
         return payload
