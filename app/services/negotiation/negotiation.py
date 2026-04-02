@@ -4,6 +4,7 @@ from app.utils.printcolors import Colors
 from app.core.exception import InternalServerErrorException
 from app.utils.mongo_serializer import serialize_mongo_data
 from bson import ObjectId
+from bson.errors import InvalidId
 from app.config.credentials_config import config
 
 
@@ -97,4 +98,42 @@ async def delete_negotiation_control(thread_id: str) -> Dict[str, Any]:
         print(f"{Colors.RED}Error in delete_negotiation_control: {e}")
         raise InternalServerErrorException(
             message=f"Error in delete_negotiation_control: {str(e)}"
+        ) from e
+
+
+async def get_agreed_negotiations_by_campaign_id(campaign_id: str) -> Dict[str, Any]:
+    """
+    Return negotiation control docs where:
+    - campaign_id matches the provided campaign_id
+    - negotiation_status is 'agreed'
+    """
+    try:
+        db = get_db()
+        collection = db.get_collection(config.MONGODB_NEGOTIATION_AGENT_CONTROLS)
+
+        filters = [
+            {"campaign_id": campaign_id, "negotiation_status": "agreed"},
+        ]
+
+        # Some docs may store campaign_id as ObjectId; include that match too.
+        try:
+            filters.append(
+                {"campaign_id": ObjectId(campaign_id), "negotiation_status": "agreed"}
+            )
+        except InvalidId:
+            pass
+
+        query = filters[0] if len(filters) == 1 else {"$or": filters}
+        docs = await collection.find(query).sort("_updated_at", -1).to_list(length=None)
+        serialized = serialize_mongo_data(docs)
+
+        return {
+            "campaign_id": campaign_id,
+            "negotiations": serialized,
+            "total": len(serialized),
+        }
+    except Exception as e:
+        print(f"{Colors.RED}Error in get_agreed_negotiations_by_campaign_id: {e}")
+        raise InternalServerErrorException(
+            message=f"Error in get_agreed_negotiations_by_campaign_id: {str(e)}"
         ) from e
