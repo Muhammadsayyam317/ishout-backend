@@ -79,6 +79,7 @@ from app.services.negotiation.negotiation import (
     get_all_negotiation_controls,
     get_negotiation_control_detail,
     delete_negotiation_control,
+    get_agreed_negotiations_by_campaign_id,
 )
 
 
@@ -381,6 +382,7 @@ async def content_feedback_brand_route(
 ):
     return await get_content_feedback_brand(feedback_id)
 
+
 router.add_api_route(
     path="/whatsapp/toggle-takeover/{thread_id}",
     endpoint=toggle_human_takeover,
@@ -490,5 +492,16 @@ async def delete_negotiation_control_route(
         return result
     except HTTPException:
         raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/negotiation-controls/agreed/{campaign_id}", tags=["Admin"])
+async def get_agreed_negotiations_by_campaign_id_route(
+    campaign_id: str,
+    current_user: dict = Depends(require_company_or_admin_access),
+):
+    try:
+        return await get_agreed_negotiations_by_campaign_id(campaign_id)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
