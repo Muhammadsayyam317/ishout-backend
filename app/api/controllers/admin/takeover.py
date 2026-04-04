@@ -288,16 +288,21 @@ async def admin_approve_video_to_brand(payload: AdminApproveVideoRequest):
     """
     When admin approves influencer video, store it into `whatsapp_admin_company`
     so it appears in the brand chat (filtered by thread_id + negotiation_id).
+    Also upsert a row in `MONGODB_APPROVED_CONTENT` for audit / listings.
     """
     try:
         neg_id = (payload.negotiation_id or "").strip()
+        campaign_id = (payload.campaign_id or "").strip()
         video_url = (payload.video_url or "").strip()
         brand_thread_id = (payload.brand_thread_id or "").strip()
 
-        if not neg_id or not video_url or not brand_thread_id:
+        if not neg_id or not campaign_id or not video_url or not brand_thread_id:
             raise HTTPException(
                 status_code=400,
-                detail="negotiation_id, video_url, and brand_thread_id are required.",
+                detail=(
+                    "negotiation_id, campaign_id, video_url, and brand_thread_id "
+                    "are required."
+                ),
             )
 
         await save_admin_company_message(
@@ -313,6 +318,41 @@ async def admin_approve_video_to_brand(payload: AdminApproveVideoRequest):
             video_approve_admin=payload.video_approve_admin,
             video_approve_brand=payload.video_approve_brand,
             brand_thread_id=brand_thread_id,
+        )
+
+        db = get_db()
+        approved_coll = db.get_collection(config.MONGODB_APPROVED_CONTENT)
+        now = datetime.now(timezone.utc)
+        approved_set: dict = {
+            "video_url": video_url,
+            "campaign_id": campaign_id,
+            "negotiation_id": neg_id,
+            "brand_thread_id": brand_thread_id,
+            "updated_at": now,
+        }
+        admin_st = (
+            (payload.video_approve_admin or "").strip()
+            if payload.video_approve_admin is not None
+            else ""
+        )
+        brand_st = (
+            (payload.video_approve_brand or "").strip()
+            if payload.video_approve_brand is not None
+            else ""
+        )
+        if admin_st:
+            approved_set["video_approve_admin"] = admin_st
+        if brand_st:
+            approved_set["video_approve_brand"] = brand_st
+
+        await approved_coll.update_one(
+            {
+                "negotiation_id": neg_id,
+                "campaign_id": campaign_id,
+                "video_url": video_url,
+            },
+            {"$set": approved_set, "$setOnInsert": {"created_at": now}},
+            upsert=True,
         )
 
         return {"success": True, "message": "Video sent to brand chat"}

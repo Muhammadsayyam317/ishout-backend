@@ -23,6 +23,7 @@ class HumanMessageRequest(BaseModel):
 
 class AdminApproveVideoRequest(BaseModel):
     negotiation_id: str
+    campaign_id: str
     video_url: str
     video_approve_admin: Optional[str] = None
     video_approve_brand: Optional[str] = None
