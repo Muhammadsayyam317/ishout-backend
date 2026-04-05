@@ -66,6 +66,9 @@ class Config(BaseModel):
     MONGODB_CONTENT_FEEDBACK: str = Field(
         default=os.getenv("MONGODB_CONTENT_FEEDBACK", "content_feedback")
     )
+    MONGODB_APPROVED_CONTENT: str = Field(
+        default=os.getenv("MONGODB_APPROVED_CONTENT", "approved_content")
+    )
     MONGODB_CAMPAIGN_BRIEF_GENERATION: str = Field(
         default=os.getenv("MONGODB_CAMPAIGN_BRIEF_GENERATION", "CampaignBriefGeneration")
     )

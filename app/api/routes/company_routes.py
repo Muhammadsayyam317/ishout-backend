@@ -4,7 +4,6 @@ from app.Schemas.campaign_influencers import (
     CampaignBriefDBResponse,
     CampaignBriefRequest,
     CampaignBriefResponse,
-    UpdateCampaignBriefRequest,
     CampaignBriefLogoUpdateResponse,
 )
 from app.api.controllers.admin.approved_campaign import (
@@ -19,17 +18,18 @@ from app.api.controllers.company.approved_influencers import (
     ReviewPendingInfluencersByCampaignId,
     get_company_campaign_influencers,
 )
+from app.api.controllers.company.approved_content import (
+    get_approved_content_by_campaign_id,
+)
 from app.middleware.auth_middleware import (
     require_company_user_access,
     require_company_or_admin_access,
 )
 from app.api.controllers.admin.campaign_controller import (
     create_campaign,
-    user_reject_influencers,
 )
 from app.Schemas.campaign import (
     CreateCampaignRequest,
-    UserRejectInfluencersRequest,
 )
 from app.services.whatsapp.send_text import send_message_from_ishout_to_user
 from app.tools.search_influencers import search_influencers
@@ -42,12 +42,10 @@ from app.agents.campaiagncreation.create_campaign import (
     create_campaign_brief,
     get_campaign_brief_by_id,
     get_campaign_briefs,
-    update_campaign_brief_service,
     update_campaign_brief_with_files,
     delete_campaign_brief_service,
     update_campaign_brief_logo_service,
 )
-import json
 
 router = APIRouter()
 
@@ -237,3 +235,15 @@ async def update_campaign_brief_logo_endpoint(
     Update a campaign brief's logo by uploading a new image file.
     """
     return await update_campaign_brief_logo_service(brief_id, file)
+
+
+@router.get("/approved-content", tags=["Company"])
+async def get_approved_content_by_campaign_route(
+    campaign_id: str,
+    current_user: dict = Depends(require_company_user_access),
+):
+    # Simple: return approved-content filtered by campaign_id only.
+    # Controller already filters:
+    # - video_approve_admin == "approved"
+    # - video_approve_brand == "approved"
+    return await get_approved_content_by_campaign_id(campaign_id)
